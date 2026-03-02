@@ -1,0 +1,200 @@
+/* Base Landing Styles Copied for context */
+.full-screen {
+    min-height: 100vh;
+    position: relative;
+    background-color: var(--bg-dark);
+}
+
+.gradient-bg {
+    background: radial-gradient(circle at 15% 50%, rgba(91, 192, 190, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(58, 80, 107, 0.15) 0%, transparent 50%),
+        var(--bg-dark);
+}
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 40px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-light);
+    letter-spacing: 1px;
+}
+
+/* Dashboard Glass Panels & Elements */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
+}
+
+.page-title {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+/* Form Styles */
+.vims-form {
+    margin-top: 16px;
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.floating-label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    transition: var(--transition);
+    pointer-events: none;
+}
+
+.form-control:focus~.floating-label,
+.form-control:not(:placeholder-shown)~.floating-label {
+    top: -10px;
+    left: 12px;
+    font-size: 0.8rem;
+    background: var(--bg-card);
+    /* To cover background */
+    padding: 0 8px;
+    color: var(--accent);
+    border-radius: 4px;
+}
+
+select.form-control {
+    appearance: none;
+}
+
+select.form-control option {
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+}
+
+/* Plan Cards Grid */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.plan-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.plan-card h3 {
+    font-size: 1.35rem;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.plan-card p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex-grow: 1;
+    margin-bottom: 24px;
+}
+
+.plan-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* Toasts REMOVED - Using global styles.css */
+
+.btn-primary {
+    background: var(--accent);
+    color: var(--bg-card);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background: var(--btn-hover-bg);
+    color: var(--btn-hover-text);
+    box-shadow: var(--glass-shadow);
+    transform: translateY(-2px);
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-text:hover {
+    color: var(--accent);
+}

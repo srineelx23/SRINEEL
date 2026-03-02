@@ -1,0 +1,320 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Linq;
+using VIMS.Application.DTOs;
+using VIMS.Application.Interfaces.Services;
+using VIMS.Application.Interfaces.Repositories;
+using VIMS.Application.Services;
+using VIMS.Domain.Entities;
+
+namespace VIMS.API.Controllers
+{
+    [Authorize(Roles ="Customer")]
+    [Route("api/[controller]")]
+    [ApiController]
+    public class CustomerController : ControllerBase
+    {
+        private readonly ICustomerService _customerService;
+        private readonly IPolicyPlanService _policyPlanService;
+        private readonly IPricingService _pricingService;
+        private readonly IPolicyRepository _policyRepository;
+        private readonly VIMS.Application.Interfaces.Repositories.IClaimsRepository _claimsRepository;
+        private readonly VIMS.Application.Interfaces.Repositories.IPaymentRepository _paymentRepository;
+
+        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository)
+        {
+            _customerService = customerService;
+            _policyPlanService = policyPlanService;
+            _pricingService = pricingService;
+            _policyRepository = policyRepository;
+            _claimsRepository = claimsRepository;
+            _paymentRepository = paymentRepository;
+        }
+
+        [HttpGet("policy/{policyId}")]
+        public async Task<IActionResult> GetPolicy(int policyId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdValue))
+                return Unauthorized(new { message = "UserId claim missing in token" });
+
+            int customerId = int.Parse(userIdValue);
+            var policy = await _policyRepository.GetByIdAsync(policyId);
+            if (policy == null || policy.CustomerId != customerId)
+                return NotFound(new { message = "Policy not found" });
+
+            var result = new
+            {
+                policy.PolicyId,
+                policy.PolicyNumber,
+                Status = policy.Status.ToString(),
+                policy.PremiumAmount,
+                policy.InvoiceAmount,
+                policy.StartDate,
+                policy.EndDate,
+                Vehicle = policy.Vehicle == null ? null : new {
+                    policy.Vehicle.VehicleId,
+                    policy.Vehicle.Make,
+                    policy.Vehicle.Model,
+                    policy.Vehicle.Year,
+                    Documents = policy.Vehicle.VehicleApplication?.Documents?.Select(d => new { d.DocumentType, d.FilePath })
+                },
+                Plan = policy.Plan == null ? null : new { policy.Plan.PlanId, policy.Plan.PlanName }
+            };
+
+            return Ok(result);
+        }
+
+        [HttpGet("claim/{id}")]
+        public async Task<IActionResult> GetClaim(int id)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var claim = await _claimsRepository.GetByIdAsync(id);
+            if (claim == null || claim.CustomerId != userId)
+                return NotFound(new { message = "Claim not found" });
+
+            var result = new
+            {
+                claim.ClaimId,
+                claim.ClaimNumber,
+                claim.PolicyId,
+                claim.CustomerId,
+                ClaimType = claim.claimType.ToString(),
+                Status = claim.Status.ToString(),
+                ApprovedAmount = claim.ApprovedAmount,
+                DecisionType = claim.DecisionType,
+                Documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
+                Policy = claim.Policy == null ? null : new { claim.Policy.PolicyId, claim.Policy.PolicyNumber, claim.Policy.InvoiceAmount }
+            };
+
+            return Ok(result);
+        }
+
+        [HttpGet("policy/{policyId}/status")]
+        public async Task<IActionResult> GetPolicyStatus(int policyId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdValue))
+                return Unauthorized(new { message = "UserId claim missing in token" });
+
+            int customerId = int.Parse(userIdValue);
+            var policy = await _policyRepository.GetByIdAsync(policyId);
+            if (policy == null || policy.CustomerId != customerId)
+                return NotFound(new { message = "Policy not found" });
+
+            // RenewalDue: very simple rule - if EndDate within 30 days
+            if (policy.EndDate <= DateTime.UtcNow)
+                return Ok(new { status = "Expired" });
+
+            if ((policy.EndDate - DateTime.UtcNow).TotalDays <= 30)
+                return Ok(new { status = "RenewalDue" });
+
+            return Ok(new { status = policy.Status.ToString() });
+        }
+
+        [HttpGet("policy/{policyId}/payment-status")]
+        public async Task<IActionResult> GetPolicyPaymentStatus(int policyId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdValue))
+                return Unauthorized(new { message = "UserId claim missing in token" });
+
+            int customerId = int.Parse(userIdValue);
+            var policy = await _policyRepository.GetByIdAsync(policyId);
+            if (policy == null || policy.CustomerId != customerId)
+                return NotFound(new { message = "Policy not found" });
+
+            var hasUnpaid = await _paymentRepository.HasUnpaidAsync(policyId);
+            return Ok(new { hasUnpaid = hasUnpaid });
+        }
+        [HttpGet("policy/{policyId}/years")]
+        public async Task<IActionResult> GetPolicyYears(int policyId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdValue))
+                return Unauthorized(new { message = "UserId claim missing in token" });
+
+            int customerId = int.Parse(userIdValue);
+            var policy = await _policyRepository.GetByIdAsync(policyId);
+            if (policy == null || policy.CustomerId != customerId)
+                return NotFound(new { message = "Policy not found" });
+
+            // Determine number of years and build per-year status
+            var totalYears = policy.SelectedYears;
+            var now = DateTime.UtcNow;
+            var yearStatuses = Enumerable.Range(1, totalYears).Select(i =>
+            {
+                var yearStart = policy.StartDate.AddYears(i - 1);
+                var yearEnd = yearStart.AddYears(1);
+                string status;
+                if (yearEnd <= now)
+                    status = "Paid"; // approximate: ended years considered paid
+                else if (yearStart <= now && yearEnd > now)
+                    status = policy.IsCurrentYearPaid ? "Paid" : "Pending";
+                else
+                    status = "Upcoming";
+
+                return new { Year = i, Status = status };
+            });
+
+            return Ok(yearStatuses);
+        }
+        [AllowAnonymous]
+        [HttpGet("all-policy-plans")]
+        public async Task<IActionResult> ViewAllPoliciesAsync()
+        {
+            var res= await _customerService.ViewAllPoliciesAsync();
+            return Ok(res);
+        }
+        [HttpPost("vehicle-application")]
+        public async Task<IActionResult> CreateApplication(CreateVehicleApplicationDTO dto)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            await _customerService.CreateApplicationAsync(dto,userId);
+            return Ok("Application submitted.");
+        }
+        [HttpGet("my-applications")]
+public async Task<IActionResult> GetMyApplications()
+{
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+    var applications = await _customerService.GetMyApplicationsAsync(userId);
+
+    return Ok(applications);
+}
+        [HttpPost("calculate-quote")]
+        public async Task<IActionResult> CalculateQuote(CalculateQuoteDTO dto)
+        {
+            var plan = await _policyPlanService.GetPolicyPlanAsync(dto.PlanId);
+
+            if (plan == null)
+                return BadRequest("Invalid plan");
+
+            // Pricing service expects the DTO and plan per its interface signature
+            var result = _pricingService.CalculateAnnualPremium(dto, plan, false);
+
+            return Ok(result);
+        }
+        [HttpGet("my-policies")]
+        public async Task<IActionResult> GetMyPolicies()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdValue))
+                return Unauthorized(new { message = "UserId claim missing in token" });
+
+            int customerId = int.Parse(userIdValue);
+
+            var result = await _customerService.GetMyPoliciesAsync(customerId);
+
+            return Ok(result);
+        }
+        [HttpPost("pay-annual/{policyId}")]
+        public async Task<IActionResult> PayAnnual(int policyId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var result = await _customerService.PayAnnualPremiumAsync(policyId, userId);
+
+            return Ok(result);
+        }
+
+        [HttpPost("renew/{policyId}")]
+        public async Task<IActionResult> RenewPolicy(int policyId, RenewPolicyDTO dto)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var result = await _customerService.RenewPolicyAsync(policyId, dto, userId);
+
+            return Ok(result);
+        }
+
+        [HttpPost("claim/submit")]
+        public async Task<IActionResult> SubmitClaim([FromForm] SubmitClaimDTO dto)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var claimsService = HttpContext.RequestServices.GetService(typeof(VIMS.Application.Interfaces.Services.IClaimsService)) as VIMS.Application.Interfaces.Services.IClaimsService;
+            if (claimsService == null)
+                return StatusCode(500, "Claims service not available");
+
+            var res = await claimsService.SubmitClaimAsync(dto, userId);
+            return Ok(new { message = res });
+        }
+
+        [HttpGet("claims/my")]
+        public async Task<IActionResult> GetMyClaims()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var claims = await _claimsRepository.GetByCustomerIdAsync(userId);
+
+            var result = claims.Select(c => new
+            {
+                c.ClaimId,
+                c.ClaimNumber,
+                c.PolicyId,
+                c.CustomerId,
+                ClaimType = c.claimType.ToString(),
+                Status = c.Status.ToString(),
+                ApprovedAmount = c.ApprovedAmount,
+                Documents = c.Documents == null ? null : c.Documents.Select(d => new { d.Document1, d.Document2 }),
+                Policy = c.Policy == null ? null : new
+                {
+                    c.Policy.PolicyId,
+                    c.Policy.PolicyNumber,
+                    InvoiceAmount = c.Policy.InvoiceAmount,
+                    StartDate = c.Policy.StartDate,
+                    EndDate = c.Policy.EndDate,
+                    Plan = c.Policy.Plan == null ? null : new { c.Policy.Plan.PlanId, c.Policy.Plan.PlanName }
+                },
+                Vehicle = c.Policy?.Vehicle == null ? null : new
+                {
+                    c.Policy.Vehicle.VehicleId,
+                    c.Policy.Vehicle.RegistrationNumber,
+                    c.Policy.Vehicle.Make,
+                    c.Policy.Vehicle.Model,
+                    c.Policy.Vehicle.Year,
+                    Application = c.Policy.Vehicle.VehicleApplication == null ? null : new { c.Policy.Vehicle.VehicleApplication.Make, c.Policy.Vehicle.VehicleApplication.Model, c.Policy.Vehicle.VehicleApplication.Year, Documents = c.Policy.Vehicle.VehicleApplication.Documents == null ? null : c.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath) }
+                }
+            });
+
+            return Ok(result);
+        }
+
+        [HttpPost("policy/cancel/{policyId}")]
+        public async Task<IActionResult> CancelPolicy(int policyId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var policy = await _policyRepository.GetByIdAsync(policyId);
+            if (policy == null || policy.CustomerId != userId)
+                return NotFound(new { message = "Policy not found" });
+
+            policy.Status = VIMS.Domain.Enums.PolicyStatus.Cancelled;
+            await _policyRepository.UpdateAsync(policy);
+
+            return Ok(new { message = "Policy cancelled" });
+        }
+
+        [HttpGet("payments/my")]
+        public async Task<IActionResult> GetMyPayments()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var payments = await _paymentRepository.GetAllAsync();
+            var myPayments = payments.Where(p => p.Policy != null && p.Policy.CustomerId == userId).Select(p => new
+            {
+                p.PaymentId,
+                p.PolicyId,
+                p.Amount,
+                p.PaymentDate,
+                Status = p.Status.ToString(),
+                p.TransactionReference,
+                PolicyNumber = p.Policy?.PolicyNumber
+            }).ToList();
+
+            return Ok(myPayments);
+        }
+    }
+}
+

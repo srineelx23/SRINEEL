@@ -1,0 +1,433 @@
+<div class="dashboard-layout">
+    <!-- Notifications -->
+    <div *ngIf="errorMessage()" class="error-toast">{{ errorMessage() }}</div>
+    <div *ngIf="successMessage()" class="success-toast">{{ successMessage() }}</div>
+
+    <!-- Navigation Sidebar -->
+    <nav class="hover-navbar">
+        <div class="nav-brand">
+            <span class="logo-shield">🛡️</span>
+            <h2>VIMS Admin</h2>
+        </div>
+
+        <div class="sidebar-nav">
+            <a (click)="goHome()" class="nav-item">Home</a>
+            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+            <a (click)="switchTab('vehicles')" [class.active]="activeTab() === 'vehicles'" class="nav-item">Vehicles</a>
+            <a (click)="switchTab('users')" [class.active]="activeTab() === 'users'" class="nav-item">Users</a>
+            <a (click)="switchTab('plans')" [class.active]="activeTab() === 'plans'" class="nav-item">Plans</a>
+        </div>
+
+        <div class="sidebar-footer">
+            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Overview Tab -->
+        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Executive Overview</h1>
+                <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
+            </header>
+
+            <div class="dashboard-cards" style="margin-bottom: 32px;">
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
+                    <h3>Gross Premiums (Revenue)</h3>
+                    <p class="stat-number" style="color: var(--accent);">+{{ totalRevenue() | currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+                    <h3>Claim Payouts (Losses)</h3>
+                    <p class="stat-number" style="color: var(--error);">-{{ totalPayoutAmount() | currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel"
+                    [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--success)' : '4px solid var(--error)'}">
+                    <h3>Net Profit / Reserve</h3>
+                    <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}">
+                        {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
+                            currency:'INR' }} </p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
+                    <h3>Policies & Claims</h3>
+                    <p class="stat-number" style="color: var(--warning); font-size: 1.5rem; margin-top: 10px;">{{
+                        totalActivePolicies() }} Active | {{ totalClaimsApproved() }} Resolved</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Charts -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Revenue History (Current Year)</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Monthly premium
+                        collections</p>
+                    <div style="height: 280px; width: 100%;">
+                        <canvas baseChart [data]="revenueChartData" [options]="revenueChartOptions()"
+                            [type]="revenueChartType"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 4px;">Claims Distribution</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Current portfolio
+                        breakdown</p>
+                    <div style="flex: 1; min-height: 340px;">
+                        <canvas baseChart [data]="claimsChartData" [options]="claimsChartOptions()"
+                            [type]="claimsChartType"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicles Registry Tab -->
+        <div *ngIf="activeTab() === 'vehicles'" class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Vehicle Registry</h1>
+                    <p class="page-subtitle">Track and filter all high-value insulated assets currently protected.</p>
+                </div>
+                <div class="form-group" style="width: 300px;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Filter
+                        Minimum Assessed Value (INR)</label>
+                    <input type="number" class="form-control" [(ngModel)]="vehicleIdvFilter"
+                        placeholder="Filter by Assessed Value >=">
+                </div>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;">
+                <p *ngIf="!selectedVehicle() && filteredVehicles().length === 0"
+                    style="color: var(--text-muted); font-style: italic;">No
+                    vehicles match the filter criteria.</p>
+
+                <table class="vims-table" *ngIf="!selectedVehicle() && filteredVehicles().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Reg. Number</th>
+                            <th>Manufacturer & Model</th>
+                            <th>Mfg. Year</th>
+                            <th>Current Assessed IDV</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let v of filteredVehicles()" (click)="viewVehicleDetails(v)"
+                            style="cursor: pointer;" title="Click for Insights">
+                            <td>{{ v.registrationNumber }}</td>
+                            <td>{{ v.make }} {{ v.model }}</td>
+                            <td>{{ v.year }}</td>
+                            <td style="color: var(--accent); font-weight: 500;">{{ v.currentIdv | currency:'INR' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Vehicle Details Overlay -->
+                <div *ngIf="selectedVehicle()" class="fade-in">
+                    <button class="btn-outline" style="margin-bottom: 24px;" (click)="backToVehicles()">← Back to
+                        Registry</button>
+
+                    <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
+                        selectedVehicle().registrationNumber }}</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                            <h3>Owner Profile</h3>
+                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                                selectedVehicle().customerName || 'N/A' }}</p>
+                        </div>
+                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                            <h3>Asset Value</h3>
+                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                                selectedVehicle().currentIdv
+                                | currency:'INR' }}</p>
+                        </div>
+                    </div>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Active & Past Policies</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Policy ID</th>
+                            <th>Plan</th>
+                            <th>Premium</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr *ngFor="let p of vehiclePolicies()">
+                            <td>{{ p.policyId }}</td>
+                            <td>{{ p.policyPlan?.planName || 'Standard' }}</td>
+                            <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                            <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status === 'Active'
+                                    || p.status === 0 ? 'Active' : p.status }}</span></td>
+                        </tr>
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Payment Ledgers</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Txn ID</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr *ngFor="let pmt of vehicleTransactions()">
+                            <td style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ pmt.id
+                                || 'N/A' }}</td>
+                            <td>{{ pmt.date ? (pmt.date | date:'mediumDate') : 'N/A' }}</td>
+                            <td>
+                                <span class="status-badge"
+                                    [style.background]="pmt.isCredit ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
+                                    [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                                    {{ pmt.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 700;"
+                                [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                                {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
+                            </td>
+                            <td><span class="status-badge"
+                                    [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' || pmt.status === 'Settled') ? 'paid' : 'pending'">
+                                    {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' ||
+                                    pmt.status === 'Settled') ? 'Settled' : 'Pending' }}</span>
+                            </td>
+                        </tr>
+                        <tr *ngIf="vehicleTransactions().length === 0">
+                            <td colspan="5"
+                                style="color: var(--text-muted); text-align: center; padding: 24px; font-style: italic;">
+                                No transactions found for this vehicle.</td>
+                        </tr>
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Filed Claims</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Claim No.</th>
+                            <th>Incident Type</th>
+                            <th>Approved</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr *ngFor="let c of vehicleClaims()">
+                            <td>{{ c.claimNumber }}</td>
+                            <td>{{ c.claimType }}</td>
+                            <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
+                                : 'Pending' }}</td>
+                            <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status === 1 ||
+                                    c.status === 'Approved' ? 'Approved' : (c.status === 2 || c.status === 'Rejected' ?
+                                    'Rejected' : 'Under Review') }}</span></td>
+                        </tr>
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Linked Documents</h3>
+                    <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <a *ngFor="let doc of vehicleDocuments()" [href]="doc.url" target="_blank"
+                            style="color: var(--accent); margin-right: 16px; text-decoration: underline; display: inline-block; margin-bottom: 8px;">📄
+                            {{ doc.name }}</a>
+                        <p *ngIf="vehicleDocuments().length === 0" style="color: var(--text-muted); font-size: 0.9rem;">
+                            No documents attached to this vehicle or its claims.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Management Tab -->
+        <div *ngIf="activeTab() === 'users'" class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Identity Access Management</h1>
+                    <p class="page-subtitle">Configure system users, support officers, and agents.</p>
+                </div>
+                <div style="display: flex; gap: 16px;">
+                    <select class="form-control" [(ngModel)]="userRoleFilter"
+                        style="width: 200px; background: rgba(58, 80, 107, 0.4);">
+                        <option *ngFor="let role of rolesList()" [value]="role">{{ role === 'All' ? 'All Roles' : role
+                            }}</option>
+                    </select>
+                    <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
+                    <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
+                        style="background: var(--accent);">+ Provision Officer</button>
+                </div>
+            </header>
+
+            <!-- Creation Module -->
+            <div *ngIf="isCreatingAgent() || isCreatingClaimsOfficer()" class="glass-panel slide-in"
+                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
+                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
+                    (click)="switchTab('users')">Cancel</button>
+                <h2 style="margin-bottom: 24px;">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New
+                    Claims Officer' }}</h2>
+                <form class="vims-form" (ngSubmit)="submitUserRegistration()">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div>
+                            <label>Full Assigned Name</label>
+                            <input type="text" name="fullName" class="form-control" [(ngModel)]="registerForm.fullName"
+                                required>
+                        </div>
+                        <div>
+                            <label>Secure Identifier (Email)</label>
+                            <input type="email" name="email" class="form-control" [(ngModel)]="registerForm.email"
+                                required>
+                        </div>
+                        <div>
+                            <label>Temporary Password</label>
+                            <input type="password" name="password" class="form-control"
+                                [(ngModel)]="registerForm.password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Provision Identity</button>
+                </form>
+            </div>
+
+            <!-- Users List -->
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!isCreatingAgent() && !isCreatingClaimsOfficer()">
+                <p *ngIf="filteredUsers().length === 0" style="color: var(--text-muted); font-style: italic;">No users
+                    mapped to this filter.</p>
+                <table class="vims-table" *ngIf="filteredUsers().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Database ID</th>
+                            <th>Full Name</th>
+                            <th>Identifier (Email)</th>
+                            <th>Authorization Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let u of filteredUsers()">
+                            <td>#{{ u.userId }}</td>
+                            <td>{{ u.fullName }}</td>
+                            <td>{{ u.email }}</td>
+                            <td><span class="status-badge"
+                                    style="background: var(--card-inner-border); color: var(--text-main);">{{
+                                    u.displayRole }}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Plans & Infrastructure Tab -->
+        <div *ngIf="activeTab() === 'plans'" class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Policy Architect</h1>
+                    <p class="page-subtitle">Deploy or modify underlying insurance products globally.</p>
+                </div>
+                <button class="btn-primary" (click)="openPlanForm()">+ Architect New Plan</button>
+            </header>
+
+            <div *ngIf="isCreatingPlan()" class="glass-panel slide-in"
+                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
+                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
+                    (click)="switchTab('plans')">Cancel Module</button>
+                <h2 style="margin-bottom: 24px;">Architect Enterprise Coverage Plan</h2>
+                <form class="vims-form" (ngSubmit)="submitPlanRegistration()">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Plan Commercial Name</label>
+                            <input type="text" name="planName" class="form-control" [(ngModel)]="planForm.planName"
+                                required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Plan Underwriting Details</label>
+                            <textarea name="description" class="form-control" [(ngModel)]="planForm.description"
+                                rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Coverage Vector (%)</label>
+                            <input type="number" name="coveragePercent" class="form-control"
+                                [(ngModel)]="planForm.coveragePercent" required min="1" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Statutory Deductible (INR)</label>
+                            <input type="number" name="deductibleAmount" class="form-control"
+                                [(ngModel)]="planForm.deductibleAmount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Risk Constraint: Max Cap (INR) (Optional)</label>
+                            <input type="number" name="maxCoverageAmount" class="form-control"
+                                [(ngModel)]="planForm.maxCoverageAmount">
+                        </div>
+                    </div>
+                    <div
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--bg-dark); padding: 16px; border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversThirdParty" [(ngModel)]="planForm.coversThirdParty"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes 3rd Party
+                            Liability
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversOwnDamage" [(ngModel)]="planForm.coversOwnDamage"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes Personal
+                            Damage
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversTheft" [(ngModel)]="planForm.coversTheft"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Insures Against Theft
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="isZeroDepreciationAvailable"
+                                [(ngModel)]="planForm.isZeroDepreciationAvailable"
+                                style="accent-color: var(--success); width: 18px; height: 18px;"> Offer
+                            Zero-Depreciation
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-primary" style="background: var(--success); border: none;">Deploy
+                        Plan To System</button>
+                </form>
+            </div>
+
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!isCreatingPlan()">
+                <p *ngIf="orderedPlans().length === 0" style="color: var(--text-muted); font-style: italic;">No Plans
+                    deployed
+                    in system infrastructure.</p>
+                <div *ngIf="orderedPlans().length > 0" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div *ngFor="let p of orderedPlans()" class="glass-panel"
+                        style="background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); padding: 24px; box-shadow: none; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin-bottom: 8px; color: var(--text-main);">
+                                {{ p.planName }}
+                                <span class="status-badge"
+                                    [ngStyle]="{'background': p.status === 1 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(255, 90, 95, 0.2)', 'color': p.status === 1 ? 'var(--success)' : 'var(--error)'}">
+                                    {{ p.status === 1 ? 'Available Globally' : 'Deactivated' }}
+                                </span>
+                            </h3>
+                            <p
+                                style="color: var(--text-light); max-width: 600px; line-height: 1.5; margin-bottom: 12px;">
+                                {{ p.description }}</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
+                                <strong>Coverage:</strong> {{ p.coveragePercent }}%
+                                <ng-container *ngIf="p.maxCoverageAmount">
+                                    &nbsp;|&nbsp; <strong>Max Cap:</strong> {{ p.maxCoverageAmount | currency:'INR' }}
+                                </ng-container>
+                                &nbsp;|&nbsp; <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }}
+                                <br>
+                                <strong>Perks:</strong>
+                                <span *ngIf="p.coversOwnDamage"> Own Damage,</span>
+                                <span *ngIf="p.coversThirdParty"> 3rd Party,</span>
+                                <span *ngIf="p.coversTheft"> Theft,</span>
+                                <span *ngIf="p.isZeroDepreciationAvailable"
+                                    style="color: var(--success); font-weight: 600;"> ✓ Zero-Dep</span>
+                            </p>
+                        </div>
+                        <div>
+                            <button *ngIf="p.status === 1" class="btn-outline"
+                                style="color: var(--error); border-color: var(--error);"
+                                (click)="togglePlanStatus(p.planId, p.status)">Deprecate Plan</button>
+                            <button *ngIf="p.status !== 1" class="btn-outline"
+                                style="color: var(--success); border-color: var(--success);"
+                                (click)="togglePlanStatus(p.planId, p.status || 0)">Restore Plan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>

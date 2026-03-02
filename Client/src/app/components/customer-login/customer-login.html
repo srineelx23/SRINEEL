@@ -1,0 +1,59 @@
+<div class="full-screen gradient-bg login-page relative overflow-hidden">
+    <!-- Back Button -->
+    <a href="/" class="back-btn">
+        <span>←</span> Return to Home
+    </a>
+
+    <!-- Error Toast Component -->
+    <div *ngIf="errorMessage()" class="error-toast">
+        ⚠️ {{ errorMessage() }}
+    </div>
+
+    <div class="login-wrapper container">
+        <div class="login-card glass-panel">
+            <!-- Left Info Side -->
+            <div class="login-info">
+                <div class="brand">
+                    <span class="logo-shield">🛡️</span>
+                    <h2>VIMS</h2>
+                </div>
+                <h3>Welcome Back</h3>
+                <p>Log in to manage your policies, track claims, or instantly download your vehicle documents.</p>
+
+                <div class="info-footer">
+                    <span>Not a member?</span>
+                    <a href="/register" class="link-styled">Get a quote today ➔</a>
+                </div>
+            </div>
+
+            <!-- Right Form Side -->
+            <div class="login-form-container">
+                <h2 class="form-title">Customer Login</h2>
+                <form class="vims-form" (ngSubmit)="login()">
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
+                            placeholder="" required>
+                        <label for="email" class="floating-label">Email Address</label>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" id="password" name="password" [(ngModel)]="password" class="form-control"
+                            placeholder="" required>
+                        <label for="password" class="floating-label">Password</label>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="#" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width-btn">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,182 @@
+###############################################################################
+# Vehicle Insurance Management System — Combined .gitignore
+# Covers: ASP.NET Core / .NET backend  +  Angular / Node frontend
+###############################################################################
+
+
+# =============================================================================
+# DOTNET / ASP.NET CORE
+# =============================================================================
+
+## Build outputs
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/repositories.config
+
+## User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## Visual Studio
+.vs/
+*.aps
+*.ncb
+*.opendb
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.opendb
+*.vsp
+*.vspx
+.vscode/settings.json
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+_ReSharper*/
+.axoCover/
+coverage*.json
+coverage*.xml
+coverage*.info
+**/.localhistory/
+
+## Publishing / deployment
+[Pp]ublish/
+[Pp]ublish[Oo]utput/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.publishproj
+*.pubxml.user
+web.config
+
+## Secrets and local configuration — NEVER commit these
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+*.pfx
+*.p12
+secrets.json
+**/Properties/launchSettings.json
+
+## Entity Framework migrations auto-generated snapshot (optional — remove if you DO track migrations)
+# **/Migrations/
+
+## Temporary files
+*.tmp
+*.temp
+~$*
+
+
+# =============================================================================
+# ANGULAR / NODE / FRONTEND
+# =============================================================================
+
+## Dependencies
+Client/node_modules/
+node_modules/
+
+## Build outputs
+Client/dist/
+Client/.angular/
+dist/
+.angular/
+
+## Environment files — NEVER commit real secrets
+Client/src/environments/environment.prod.ts
+Client/src/environments/environment.local.ts
+
+## Angular cache
+.angular/cache/
+
+## NPM / Yarn / PNPM lock files (keep ONE, ignore the others)
+# yarn.lock
+# pnpm-lock.yaml
+package-lock.json
+
+## Vite / esbuild cache
+.vite/
+.esbuild/
+
+## Test coverage
+Client/coverage/
+coverage/
+
+## Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+
+# =============================================================================
+# OS / EDITOR GENERIC
+# =============================================================================
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+## Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+## Linux
+*~
+
+## VS Code workspace settings (keep extensions recommendation, ignore personal settings)
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+## JetBrains / Rider
+.idea/
+
+## Vim / Emacs
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+*.bak
+*.orig
+*.patch

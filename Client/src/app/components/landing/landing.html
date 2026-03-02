@@ -1,0 +1,77 @@
+<div class="full-screen gradient-bg landing-page">
+    <!-- Navbar -->
+    <nav class="navbar glass-panel">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-text" style="font-weight: 800; font-size: 1.5rem;">VIMS</span>
+            </div>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#services">Services</a>
+                <a href="#claims">Claims</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="nav-actions">
+                <ng-container *ngIf="userName()">
+                    <span style="color: var(--text-light); margin-right: 16px; font-weight: 500;">Welcome, {{ userName()
+                        }}!</span>
+                    <a (click)="goToDashboard()" class="btn-text"
+                        style="cursor: pointer; margin-right: 12px; color: var(--text-light);">Dashboard</a>
+                    <a (click)="logout()" class="btn-outline hero-btn" style="cursor: pointer; padding: 8px 16px;">Sign
+                        Out</a>
+                </ng-container>
+                <ng-container *ngIf="!userName()">
+                    <a href="/login" class="nav-link-login">Log In</a>
+                    <a href="/register" class="btn-primary">Get a Quote</a>
+                </ng-container>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="hero container">
+        <div class="hero-content">
+            <div class="badge glass-panel">Premium Protection</div>
+            <h1>Drive with <span class="highlight">Confidence</span>. We've got you covered.</h1>
+            <p>Secure your journey with VIMS. Instant quotes, hassle-free claims, and 24/7 dedicated support for
+                complete peace of mind.</p>
+
+            <div class="hero-cta">
+                <a href="#" (click)="explorePlans($event)" class="btn-primary hero-btn">Explore Plans</a>
+                <a href="#benefits" class="btn-outline hero-btn">Watch Video</a>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <h2>99%</h2>
+                    <p>Claims Approved</p>
+                </div>
+                <div class="stat-item">
+                    <h2>24/7</h2>
+                    <p>Roadside Help</p>
+                </div>
+                <div class="stat-item">
+                    <h2>10k+</h2>
+                    <p>Happy Drivers</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <!-- Illustrative CSS element representing a safe car / shield -->
+            <div class="glass-orb"></div>
+            <div class="glass-card glass-panel floating-card-1">
+                <div>
+                    <h4>Comprehensive Plan</h4>
+                    <span style="color: var(--success); font-weight: 500;">Active</span>
+                </div>
+            </div>
+            <div class="glass-card glass-panel floating-card-2">
+                <div>
+                    <h4>Instant Claim</h4>
+                    <span style="color: var(--success); font-weight: 500;">Approved</span>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

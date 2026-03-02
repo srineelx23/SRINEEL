@@ -1,0 +1,524 @@
+<div class="dashboard-layout">
+    <!-- Display Error/Success Messages -->
+    <div *ngIf="errorMessage()" class="error-toast">
+        {{ errorMessage() }}
+    </div>
+    <div *ngIf="successMessage()" class="success-toast">
+        {{ successMessage() }}
+    </div>
+    <!-- Hovering Navbar -->
+    <nav class="hover-navbar">
+        <div class="nav-brand">
+            <span class="logo-shield">🛡️</span>
+            <h2>VIMS</h2>
+        </div>
+
+        <div class="sidebar-nav">
+            <a (click)="goHome()" class="nav-item">Home</a>
+            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+            <a (click)="switchTab('policies')" [class.active]="activeTab() === 'policies'" class="nav-item">Policies</a>
+            <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
+            <a (click)="switchTab('applied')" [class.active]="activeTab() === 'applied'" class="nav-item">Applied</a>
+            <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
+        </div>
+
+        <div class="sidebar-footer">
+            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Overview Tab -->
+        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Dashboard Overview</h1>
+                <p class="page-subtitle">Welcome back. Here is a summary of your account.</p>
+            </header>
+
+            <div class="dashboard-cards"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
+                    <h3>Total Policies</h3>
+                    <p class="stat-number">{{ policies().length }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
+                    <h3>Active Policies</h3>
+                    <p class="stat-number">{{ activePolicies().length }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
+                    <h3>Pending Policies</h3>
+                    <p class="stat-number">{{ pendingPolicies().length }}</p>
+                </div>
+            </div>
+
+            <div class="dashboard-cards"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
+                    <h3>Pending Claims</h3>
+                    <p class="stat-number">{{ pendingClaimsList().length }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
+                    <h3>Approved Claims</h3>
+                    <p class="stat-number">{{ approvedClaims().length }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+                    <h3>Rejected Claims</h3>
+                    <p class="stat-number">{{ rejectedClaims().length }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="activeTab() === 'policies'" class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Insurance Portfolio</h1>
+                    <p class="page-subtitle">Categorized view of your coverage and renewal status.</p>
+                </div>
+                <div class="category-filters">
+                    <button class="filter-pill" [class.active]="policyFilter() === 'Active'"
+                        (click)="policyFilter.set('Active'); selectedPolicy.set(null); renewingPolicyId.set(null);">Active
+                        ({{activePolicies().length}})</button>
+                    <button class="filter-pill" [class.active]="policyFilter() === 'Pending'"
+                        (click)="policyFilter.set('Pending'); selectedPolicy.set(null); renewingPolicyId.set(null);">Pending
+                        ({{pendingPolicies().length}})</button>
+                    <button class="filter-pill" [class.active]="policyFilter() === 'History'"
+                        (click)="policyFilter.set('History'); selectedPolicy.set(null); renewingPolicyId.set(null);">History
+                        ({{inactivePolicies().length}})</button>
+                </div>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedPolicy()">
+                <!-- Active Policies -->
+                <div *ngIf="policyFilter() === 'Active'">
+                    <p *ngIf="activePolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No active
+                        policies found.</p>
+                    <table class="vims-table" *ngIf="activePolicies().length > 0">
+                        <thead>
+                            <tr>
+                                <th>Policy No.</th>
+                                <th>Plan Name</th>
+                                <th>Vehicle</th>
+                                <th>Premium</th>
+                                <th>Insured Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of activePolicies()" (click)="viewPolicyDetails(p.policyId)"
+                                style="cursor: pointer;">
+                                <td>{{ p.policyNumber }}</td>
+                                <td>{{ p.planName }}</td>
+                                <td>{{ p.vehicleRegistrationNumber }}</td>
+                                <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                                <td>{{ p.idv | currency:'INR' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pending Policies -->
+                <div *ngIf="policyFilter() === 'Pending'">
+                    <p *ngIf="pendingPolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                        pending applications found.</p>
+                    <table class="vims-table" *ngIf="pendingPolicies().length > 0">
+                        <thead>
+                            <tr>
+                                <th>Policy No.</th>
+                                <th>Vehicle Detail</th>
+                                <th>Premium</th>
+                                <th>Insured Value</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of pendingPolicies()" (click)="viewPolicyDetails(p.policyId)"
+                                style="cursor: pointer;">
+                                <td>{{ p.policyNumber }}</td>
+                                <td>{{ p.vehicleRegistrationNumber }} ({{p.vehicleModel}})</td>
+                                <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                                <td>{{ p.idv | currency:'INR' }}</td>
+                                <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- History Policies -->
+                <div *ngIf="policyFilter() === 'History'">
+                    <p *ngIf="inactivePolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                        historical data.</p>
+                    <table class="vims-table" *ngIf="inactivePolicies().length > 0">
+                        <thead>
+                            <tr>
+                                <th>Policy No.</th>
+                                <th>Plan</th>
+                                <th>Premium</th>
+                                <th>Insured Value</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of inactivePolicies()" (click)="viewPolicyDetails(p.policyId)"
+                                style="cursor: pointer;">
+                                <td>{{ p.policyNumber }}</td>
+                                <td>{{ p.planName }}</td>
+                                <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                                <td>{{ p.idv | currency:'INR' }}</td>
+                                <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detailed Policy View -->
+            <div *ngIf="selectedPolicy()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+                <button class="btn-outline"
+                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                    (click)="closePolicyDetails()">← Back to Policies</button>
+                <h2 class="form-title" style="margin-bottom: 24px;">Policy Details: {{ selectedPolicy().policyNumber }}
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <!-- Policy Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Coverage Information</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Status:</strong>
+                            <span class="status-badge" [ngClass]="selectedPolicy().status.toLowerCase()"
+                                style="display: inline-block;">{{ selectedPolicy().status }}</span>
+                        </p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Plan
+                                Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Start
+                                Date:</strong> {{ selectedPolicy().startDate | date:'mediumDate' }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Expiry
+                                Date:</strong> {{ selectedPolicy().endDate | date:'mediumDate' }}</p>
+                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
+                                Paid:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                                selectedPolicy().premiumAmount | currency:'INR' }}</span></p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Insured
+                                IDV:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                                selectedPolicy().invoiceAmount | currency:'INR' }}</span></p>
+                    </div>
+
+                    <!-- Vehicle Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Information</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Make &
+                                Model:</strong> {{ selectedPolicy().vehicle?.make }} {{ selectedPolicy().vehicle?.model
+                            }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Manufactured
+                                Year:</strong> {{ selectedPolicy().vehicle?.year }}</p>
+                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                        <p style="margin-bottom: 8px;"><strong style="color: var(--text-muted);">Uploaded
+                                Documents:</strong></p>
+                        <ul
+                            style="list-style-type: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                            <li *ngFor="let doc of selectedPolicy().vehicle?.documents" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; display: inline-block; width: fit-content; margin-bottom: 0;">
+                                <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank"
+                                    style="color: var(--text-light); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
+                                </a>
+                            </li>
+                        </ul>
+                        <p *ngIf="!selectedPolicy().vehicle?.documents || selectedPolicy().vehicle?.documents.length === 0"
+                            style="color: var(--text-muted); font-style: italic; margin-top: 8px;">No documents
+                            available.</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 16px; margin-top: 16px;">
+                    <button
+                        *ngIf="selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
+                        class="btn-primary" style="padding: 10px 24px;"
+                        (click)="payPremium(selectedPolicy().policyId)">Pay Outstanding Premium</button>
+                    <button *ngIf="selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
+                        class="btn-primary"
+                        style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
+                        (click)="startRenew(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
+                    <button *ngIf="selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
+                        class="btn-outline" style="color: var(--error); border-color: var(--error);"
+                        (click)="cancelPolicy(selectedPolicy().policyId)">Cancel Policy</button>
+                </div>
+            </div>
+
+            <!-- Renewal Form Module -->
+            <div class="glass-panel" style="padding: 32px; margin-top: 24px; background: rgba(91, 192, 190, 0.05);"
+                *ngIf="renewingPolicyId()">
+                <h2 class="form-title" style="margin-bottom: 24px;">Renew Policy #{{ renewingPolicyId() }}</h2>
+                <form class="vims-form" (ngSubmit)="submitRenew()">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId" class="form-control"
+                                required style="padding-top: 16px; padding-bottom: 16px;">
+                                <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
+                                <option *ngFor="let plan of plans()" [value]="plan.planId">{{ plan.planName }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="renewYears" name="renewYears" [(ngModel)]="renewForm.SelectedYears"
+                                class="form-control" style="padding-top: 16px; padding-bottom: 16px;">
+                                <option value="1">Extend by 1 Year</option>
+                                <option value="2">Extend by 2 Years</option>
+                                <option value="3">Extend by 3 Years</option>
+                                <option value="5">Extend by 5 Years</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; margin-top: 16px;">
+                        <button type="submit" class="btn-primary">Confirm Renewal</button>
+                        <button type="button" class="btn-text" (click)="renewingPolicyId.set(null)">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Applied (Applications) Tab -->
+        <div *ngIf="activeTab() === 'applied'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Vehicle Applications</h1>
+                <p class="page-subtitle">Track your submitted applications that are still under review or completed.</p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;">
+                <p *ngIf="applications().length === 0" style="color: var(--text-muted); padding: 16px;">No applications
+                    found.</p>
+
+                <table class="vims-table" *ngIf="applications().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Application ID</th>
+                            <th>Registration No.</th>
+                            <th>Date Applied</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let a of applications()">
+                            <td>#{{ a.vehicleApplicationId }}</td>
+                            <td>{{ a.registrationNumber }}</td>
+                            <td>{{ a.createdAt | date:'mediumDate' }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="a.status ? a.status.toLowerCase() : ''">{{
+                                    a.status === 'Pending' ? 'Under Review' : a.status }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Claims Center Tab -->
+        <div *ngIf="activeTab() === 'claims'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Claims Center</h1>
+                <p class="page-subtitle">File new claims and track investigations centrally.</p>
+            </header>
+
+            <div *ngIf="!selectedClaim()"
+                [ngStyle]="{'display': 'grid', 'grid-template-columns': isFilingClaim() ? '2fr 1fr' : '1fr', 'gap': '24px'}">
+                <div class="glass-panel" style="padding: 24px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3>Claims History</h3>
+                        <button class="btn-primary" (click)="startClaim()" *ngIf="!isFilingClaim()"
+                            style="background: var(--error);">+ File New Claim</button>
+                    </div>
+
+                    <p *ngIf="claims().length === 0" style="color: var(--text-muted); padding: 16px;">No claims history
+                        found.</p>
+
+                    <table class="vims-table" *ngIf="claims().length > 0">
+                        <thead>
+                            <tr>
+                                <th>Claim No.</th>
+                                <th>Policy No.</th>
+                                <th>Type</th>
+                                <th>Approved Amt</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of claims()" (click)="viewClaimDetails(c)" style="cursor: pointer;">
+                                <td>{{ c.claimNumber }}</td>
+                                <td>{{ c.policy?.policyNumber }}</td>
+                                <td>{{ c.claimType }}</td>
+                                <td>{{ c.approvedAmount ? (c.approvedAmount | currency:'INR') : 'Pending Assessment' }}
+                                </td>
+                                <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="glass-panel" style="padding: 32px; background: rgba(58, 80, 107, 0.4);"
+                    *ngIf="isFilingClaim()">
+                    <h3 style="margin-bottom: 24px; font-size: 1.5rem;">File Incident Claim</h3>
+                    <form class="vims-form" (ngSubmit)="submitClaim()">
+                        <div class="form-group">
+                            <select id="claimPolicy" name="claimPolicy" [(ngModel)]="claimForm.PolicyId"
+                                class="form-control" required style="padding-top: 16px; padding-bottom: 16px;">
+                                <option [ngValue]="null" disabled selected>Select Affected Policy</option>
+                                <option *ngFor="let p of policies()" [value]="p.policyId">{{ p.policyNumber }} ({{
+                                    p.vehicle?.make }} {{ p.vehicle?.model }})</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <select id="claimType" name="claimType" [(ngModel)]="claimForm.ClaimType"
+                                class="form-control" required style="padding-top: 16px; padding-bottom: 16px;">
+                                <option value="Damage">Vehicle Damage / Accident</option>
+                                <option value="Theft">Total Theft</option>
+                                <option value="ThirdParty">Third-Party Liability</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 16px; margin-top: 16px;">
+                            <label
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Upload
+                                Primary Evidence (Photo/Police Report)</label>
+                            <input type="file" (change)="onClaimFileChange($event, 'doc1')" class="form-control"
+                                accept=".pdf,.jpg,.jpeg,.png" style="padding: 12px;" required>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <label
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Upload
+                                Secondary Evidence (Optional)</label>
+                            <input type="file" (change)="onClaimFileChange($event, 'doc2')" class="form-control"
+                                accept=".pdf,.jpg,.jpeg,.png" style="padding: 12px;">
+                        </div>
+
+                        <button type="submit" class="btn-primary full-width-btn"
+                            style="background: var(--error); color: var(--text-on-error);">Submit Final Claim</button>
+                        <button type="button" class="btn-text full-width-btn"
+                            style="margin-top: 8px; text-align: center;"
+                            (click)="isFilingClaim.set(false)">Cancel</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Detailed Claim View -->
+            <div *ngIf="selectedClaim()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+                <button class="btn-outline"
+                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                    (click)="closeClaimDetails()">← Back to Claims</button>
+                <h2 class="form-title" style="margin-bottom: 24px;">Claim Details: {{ selectedClaim().claimNumber }}
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- Claim Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Incident Information</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Status:</strong>
+                            <span class="status-badge" [ngClass]="selectedClaim().status.toLowerCase()"
+                                style="display: inline-block;">{{ selectedClaim().status }}</span>
+                        </p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type:</strong> {{
+                            selectedClaim().claimType }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
+                                No:</strong> {{ selectedClaim().policy?.policyNumber }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                            {{ selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }} ({{
+                            selectedClaim().vehicle?.registrationNumber }})</p>
+                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
+                                Amt:</strong>
+                            <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);"
+                                *ngIf="selectedClaim().approvedAmount">{{ selectedClaim().approvedAmount |
+                                currency:'INR' }}</span>
+                            <span style="font-style: italic; color: var(--text-muted);"
+                                *ngIf="!selectedClaim().approvedAmount">Pending Assessment</span>
+                        </p>
+                    </div>
+
+                    <!-- Documents Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Evidence Documents</h3>
+                        <p *ngIf="!selectedClaim().documents || selectedClaim().documents.length === 0"
+                            style="color: var(--text-muted); font-style: italic;">No evidence documents uploaded.</p>
+
+                        <div *ngIf="selectedClaim().documents && selectedClaim().documents.length > 0"
+                            style="display: flex; flex-direction: column; gap: 12px;">
+                            <ng-container *ngFor="let doc of selectedClaim().documents">
+                                <a *ngIf="doc.document1" [href]="'https://localhost:7257/' + doc.document1"
+                                    target="_blank" class="btn-outline"
+                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                    <span style="font-size: 1.2rem;">📄</span> View Primary Evidence
+                                </a>
+                                <a *ngIf="doc.document2" [href]="'https://localhost:7257/' + doc.document2"
+                                    target="_blank" class="btn-outline"
+                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                    <span style="font-size: 1.2rem;">📄</span> View Secondary Evidence
+                                </a>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Tab -->
+        <div *ngIf="activeTab() === 'payments'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Transaction History</h1>
+                <p class="page-subtitle">A comprehensive record of your premium payments.</p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;">
+                <p *ngIf="payments().length === 0" style="color: var(--text-muted); padding: 16px;">No transactions
+                    recorded.</p>
+
+                <table class="vims-table" *ngIf="payments().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Policy No.</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of payments()">
+                            <td>#{{ p.paymentId }}</td>
+                            <td>{{ p.policyNumber || 'N/A' }}</td>
+                            <td>{{ p.paymentDate | date:'mediumDate' }}</td>
+                            <td style="font-weight: 500;">{{ p.amount | currency:'INR' }}</td>
+                            <td>{{ p.transactionReference || 'Auto' }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>

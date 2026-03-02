@@ -1,0 +1,389 @@
+/* Dashboard Layout */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-gradient);
+    color: var(--text-main);
+    font-family: var(--font-body);
+}
+
+/* Sidebar REMOVED - Using Hovering Navbar */
+
+.hover-navbar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 80px);
+    max-width: 1400px;
+    height: 70px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    z-index: 1000;
+    box-shadow: var(--glass-shadow);
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-brand h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.sidebar-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.nav-item:hover {
+    background: var(--accent-glow);
+    color: var(--text-main);
+}
+
+.nav-item.active {
+    background: var(--accent);
+    color: var(--bg-card);
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+}
+
+.btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    color: var(--error);
+    font-size: 1.05rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: var(--transition);
+}
+
+.btn-logout:hover {
+    background: rgba(255, 90, 95, 0.1);
+}
+
+/* Main Content Area */
+.main-content {
+    width: 100%;
+    padding: 120px 40px 60px;
+    /* More top padding for hovering navbar */
+    min-height: 100vh;
+}
+
+.page-header {
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-family: var(--font-heading);
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+/* Overview Cards */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.stat-card {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    background: var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.stat-card h3 {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    color: var(--text-main);
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tables */
+.vims-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.vims-table th {
+    padding: 16px 20px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--glass-border);
+    white-space: nowrap;
+}
+
+.vims-table td {
+    padding: 20px;
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--glass-border);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Category Filters */
+.category-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 16px;
+}
+
+.filter-pill {
+    padding: 8px 24px;
+    border-radius: 40px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.filter-pill:hover {
+    border-color: var(--accent);
+    color: var(--text-main);
+}
+
+.filter-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-card);
+}
+
+.vims-table tbody tr:hover {
+    background: var(--accent-glow);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--success);
+}
+
+.status-badge.pending {
+    background: rgba(217, 119, 6, 0.1);
+    color: #D97706;
+}
+
+.status-badge.cancelled {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--error);
+}
+
+.status-badge.expired {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-muted);
+}
+
+.status-badge.paid,
+.status-badge.approved {
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--success);
+}
+
+.status-badge.submitted,
+.status-badge.underreview {
+    background: rgba(217, 119, 6, 0.1);
+    color: var(--warning);
+}
+
+.status-badge.rejected {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--error);
+}
+
+/* Form Styles */
+.vims-form {
+    margin-top: 16px;
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.floating-label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    transition: var(--transition);
+    pointer-events: none;
+}
+
+.form-control:focus~.floating-label,
+.form-control:not(:placeholder-shown)~.floating-label {
+    top: -10px;
+    left: 12px;
+    font-size: 0.8rem;
+    background: var(--bg-card);
+    /* To cover background */
+    padding: 0 8px;
+    color: var(--accent);
+    border-radius: 4px;
+}
+
+select.form-control {
+    appearance: none;
+}
+
+select.form-control option {
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+}
+
+/* Plan Cards Grid */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.plan-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.plan-card h3 {
+    font-size: 1.35rem;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.plan-card p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex-grow: 1;
+    margin-bottom: 24px;
+}
+
+.plan-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* Toasts REMOVED - Using global styles.css */

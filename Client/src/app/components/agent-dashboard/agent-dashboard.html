@@ -1,0 +1,426 @@
+<div class="dashboard-layout">
+    <!-- Display Error/Success Messages -->
+    <div *ngIf="errorMessage()" class="error-toast">
+        {{ errorMessage() }}
+    </div>
+    <div *ngIf="successMessage()" class="success-toast">
+        {{ successMessage() }}
+    </div>
+
+    <!-- Hovering Navbar -->
+    <nav class="hover-navbar">
+        <div class="nav-brand">
+            <span class="logo-shield">🛡️</span>
+            <h2>VIMS Agent</h2>
+        </div>
+
+        <div class="sidebar-nav">
+            <a (click)="goHome()" class="nav-item">Home</a>
+            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+            <a (click)="switchTab('applications')" [class.active]="activeTab() === 'applications'"
+                class="nav-item">Applications</a>
+            <a (click)="switchTab('history')" [class.active]="activeTab() === 'history'" class="nav-item">History</a>
+            <a (click)="switchTab('customers')" [class.active]="activeTab() === 'customers'"
+                class="nav-item">Customers</a>
+        </div>
+
+        <div class="sidebar-footer">
+            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Overview Tab -->
+        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Agent Overview</h1>
+                <p class="page-subtitle">Welcome back. Here is a summary of your assigned tasks.</p>
+            </header>
+
+            <div class="dashboard-cards">
+                <div class="stat-card glass-panel" style="cursor: pointer;" (click)="switchTab('applications')">
+                    <h3>Pending Applications</h3>
+                    <p class="stat-number" style="color: var(--error);">{{ pendingApps().length }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="cursor: pointer;" (click)="switchTab('customers')">
+                    <h3>Supervised Customers</h3>
+                    <p class="stat-number">{{ customers().length }}</p>
+                </div>
+                <div class="stat-card glass-panel">
+                    <h3>Reviewed Applications</h3>
+                    <p class="stat-number" style="color: var(--success);">{{ reviewedApps().length }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applications Tab -->
+        <div *ngIf="activeTab() === 'applications'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Pending Applications</h1>
+                <p class="page-subtitle">Review vehicle insurance applications assigned to you.</p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedApp()">
+                <p *ngIf="pendingApps().length === 0" style="color: var(--text-muted); padding: 16px;">No pending
+                    applications in your queue.</p>
+
+                <table class="vims-table" *ngIf="pendingApps().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Applicant</th>
+                            <th>Vehicle</th>
+                            <th>Registration</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let app of pendingApps()" (click)="openAppReview(app)" style="cursor: pointer;">
+                            <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
+                            <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
+                            <td>{{ app.registrationNumber }}</td>
+                            <td>{{ app.createdAt | date }}</td>
+                            <td><span class="status-badge pending">Pending Review</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Detailed Application Review View -->
+            <div *ngIf="selectedApp()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+                <button class="btn-outline"
+                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                    (click)="closeAppReview()">← Back to List</button>
+
+                <h2 class="form-title" style="margin-bottom: 24px;">Review Application: {{
+                    selectedApp().registrationNumber }}</h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Details</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
+                            {{ selectedApp().customer?.fullName || 'Customer ' + selectedApp().customerId }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                            {{ selectedApp().make }} {{ selectedApp().model }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
+                            {{ selectedApp().registrationNumber }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
+                                Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Mileage:</strong>
+                            {{ selectedApp().kilometersDriven }} km</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
+                            {{ selectedApp().createdAt | date }}</p>
+                    </div>
+
+                    <!-- Documents -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Documents</h3>
+                        <p *ngIf="!selectedApp().documents || selectedApp().documents.length === 0"
+                            style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+
+                        <div *ngIf="selectedApp().documents && selectedApp().documents.length > 0"
+                            style="display: flex; flex-direction: column; gap: 12px;">
+                            <ng-container *ngFor="let doc of selectedApp().documents">
+                                <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
+                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                    <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
+                                </a>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Action Form (Only for Pending) -->
+                <div class="glass-panel" *ngIf="selectedApp().status === 'Pending'"
+                    style="padding: 24px; border: 1px solid var(--accent); background: rgba(58, 80, 107, 0.1);">
+                    <h3 style="margin-bottom: 24px;">Decision</h3>
+                    <form class="vims-form" (ngSubmit)="submitReview()">
+
+                        <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+                                <input type="radio" [value]="true" name="approvedDecision"
+                                    [(ngModel)]="reviewAction.approved"
+                                    style="accent-color: var(--success); width: 18px; height: 18px;">
+                                Approve Application
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+                                <input type="radio" [value]="false" name="rejectDecision"
+                                    [(ngModel)]="reviewAction.approved"
+                                    style="accent-color: var(--error); width: 18px; height: 18px;">
+                                Reject Application
+                            </label>
+                        </div>
+
+                        <!-- Approve Fields -->
+                        <div *ngIf="reviewAction.approved" class="form-group slide-in">
+                            <label for="invoiceAmt"
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Determined
+                                Invoice Amount (from documents)</label>
+                            <input type="number" id="invoiceAmt" name="invoiceAmt" class="form-control"
+                                [(ngModel)]="reviewAction.invoiceAmount" placeholder="e.g. 500000" required>
+                        </div>
+
+                        <!-- Reject Fields -->
+                        <div *ngIf="!reviewAction.approved" class="form-group slide-in">
+                            <label for="rejectReason"
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Rejection
+                                Reason</label>
+                            <textarea id="rejectReason" name="rejectReason" class="form-control"
+                                [(ngModel)]="reviewAction.rejectionReason" rows="3"
+                                placeholder="Explain why this application is rejected..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 16px; padding: 12px 32px;"
+                            [ngStyle]="{'background': reviewAction.approved ? 'var(--success)' : 'var(--error)'}">
+                            {{ reviewAction.approved ? 'Confirm Approval' : 'Submit Rejection' }}
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Read-Only History View (For non-Pending) -->
+                <div class="glass-panel" *ngIf="selectedApp().status !== 'Pending'"
+                    style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
+                    <h3 style="margin-bottom: 24px; color: var(--text-main);">Decision Record</h3>
+
+                    <p style="margin-bottom: 8px;"><strong
+                            style="color: var(--text-muted); display: inline-block; width: 140px;">Final
+                            Status:</strong>
+                        <span class="status-badge" [ngClass]="selectedApp().status.toLowerCase()"
+                            style="display: inline-block;">{{ selectedApp().status }}</span>
+                    </p>
+
+                    <p style="margin-bottom: 8px;" *ngIf="selectedApp().status === 'Approved'"><strong
+                            style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
+                            Value:</strong>
+                        <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
+                            selectedApp().invoiceAmount | currency:'INR' }}</span>
+                    </p>
+
+                    <div *ngIf="selectedApp().status === 'Rejected'"
+                        style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
+                        <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
+                            Reason:</strong>
+                        <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div *ngIf="activeTab() === 'history'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Application History</h1>
+                <p class="page-subtitle">A record of vehicle applications you have approved or rejected.</p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedApp()">
+                <p *ngIf="reviewedApps().length === 0" style="color: var(--text-muted); padding: 16px;">No applications
+                    have been reviewed yet.</p>
+
+                <table class="vims-table" *ngIf="reviewedApps().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Applicant</th>
+                            <th>Vehicle</th>
+                            <th>Registration</th>
+                            <th>Decision Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let app of reviewedApps()" (click)="openAppReview(app)" style="cursor: pointer;">
+                            <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
+                            <td>{{ app.make }} {{ app.model }}</td>
+                            <td>{{ app.registrationNumber }}</td>
+                            <td>{{ app.createdAt | date }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="app.status.toLowerCase()"
+                                    style="display: inline-block;">{{ app.status }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Detailed Application History View (Re-using the same panel logic) -->
+            <div *ngIf="selectedApp()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+                <button class="btn-outline"
+                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                    (click)="closeAppReview()">← Back to History</button>
+
+                <h2 class="form-title" style="margin-bottom: 24px;">Application Record: {{
+                    selectedApp().registrationNumber }}</h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+                    <!-- App Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Details</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
+                            {{ selectedApp().customer?.fullName || 'Customer ' + selectedApp().customerId }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                            {{ selectedApp().make }} {{ selectedApp().model }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
+                            {{ selectedApp().registrationNumber }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
+                                Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Mileage:</strong>
+                            {{ selectedApp().kilometersDriven }} km</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
+                            {{ selectedApp().createdAt | date }}</p>
+                    </div>
+
+                    <!-- Documents (Hidden for Past Applications per requirement) -->
+                    <div class="glass-panel"
+                        style="background: rgba(255, 255, 255, 0.05); padding: 24px; border-radius: 12px; border: 1px dashed var(--card-inner-border); box-shadow: none; display: flex; align-items: center; justify-content: center;">
+                        <p style="color: var(--text-muted); font-style: italic; margin: 0;">Documents cannot be viewed
+                            after an application is closed.</p>
+                    </div>
+                </div>
+
+                <!-- Read-Only History View -->
+                <div class="glass-panel"
+                    style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
+                    <h3 style="margin-bottom: 24px; color: var(--text-main);">Decision Record</h3>
+
+                    <p style="margin-bottom: 8px;"><strong
+                            style="color: var(--text-muted); display: inline-block; width: 140px;">Final
+                            Status:</strong>
+                        <span class="status-badge" [ngClass]="selectedApp().status.toLowerCase()"
+                            style="display: inline-block;">{{ selectedApp().status }}</span>
+                    </p>
+
+                    <p style="margin-bottom: 8px;" *ngIf="selectedApp().status === 'Approved'"><strong
+                            style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
+                            Value:</strong>
+                        <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
+                            selectedApp().invoiceAmount | currency:'INR' }}</span>
+                    </p>
+
+                    <div *ngIf="selectedApp().status === 'Rejected'"
+                        style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
+                        <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
+                            Reason:</strong>
+                        <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Tab -->
+        <div *ngIf="activeTab() === 'customers'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Supervised Customers</h1>
+                <p class="page-subtitle">View your assigned customers and their active policies.</p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedCustomerRecord()">
+                <p *ngIf="customers().length === 0" style="color: var(--text-muted); padding: 16px;">No customers
+                    assigned yet.</p>
+
+                <table class="vims-table" *ngIf="customers().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Registration No.</th>
+                            <th>Policy Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let c of customers()" (click)="openCustomerDetails(c)" style="cursor: pointer;">
+                            <td>{{ c.customerName }}</td>
+                            <td>{{ c.registrationNumber }}</td>
+                            <td>{{ c.policyNumber }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="c.policyStatus?.toLowerCase()"
+                                    style="display: inline-block;">{{ c.policyStatus }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Detailed Customer Policy View -->
+            <div *ngIf="selectedCustomerRecord()" class="glass-panel fade-in"
+                style="padding: 32px; position: relative;">
+                <button class="btn-outline"
+                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                    (click)="closeCustomerDetails()">← Back to List</button>
+
+                <h2 class="form-title" style="margin-bottom: 24px;">Customer Record: {{
+                    selectedCustomerRecord().customerName }}</h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- Policy & Vehicle Info -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Policy & Vehicle Information</h3>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Email:</strong>
+                            {{ selectedCustomerRecord().email }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                            {{ selectedCustomerRecord().vehicleMake }} {{ selectedCustomerRecord().vehicleModel }} ({{
+                            selectedCustomerRecord().vehicleYear }})</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
+                            {{ selectedCustomerRecord().registrationNumber }}</p>
+                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
+                                Number:</strong> {{ selectedCustomerRecord().policyNumber }}</p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
+                                Status:</strong> <span class="status-badge"
+                                [ngClass]="selectedCustomerRecord().policyStatus?.toLowerCase()"
+                                style="display: inline-block;">{{ selectedCustomerRecord().policyStatus }}</span></p>
+                        <p style="margin-bottom: 8px;"><strong
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
+                                Amount:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                                selectedCustomerRecord().premiumAmount | currency:'INR' }}</span></p>
+                    </div>
+
+                    <!-- Documents -->
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                        <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Documents</h3>
+                        <p *ngIf="!selectedCustomerRecord().documents || selectedCustomerRecord().documents.length === 0"
+                            style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+
+                        <div *ngIf="selectedCustomerRecord().documents && selectedCustomerRecord().documents.length > 0"
+                            style="display: flex; flex-direction: column; gap: 12px;">
+                            <ng-container *ngFor="let doc of selectedCustomerRecord().documents; let i = index">
+                                <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
+                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                    <span style="font-size: 1.2rem;">📄</span> View Document {{ i + 1 }}
+                                </a>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

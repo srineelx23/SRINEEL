@@ -1,0 +1,393 @@
+/* Match the global theme */
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-dark);
+    position: relative;
+    padding-top: 100px;
+    /* Space for the top navbar */
+}
+
+/* Hovering Navbar matches the system theme */
+.hover-navbar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 80px);
+    max-width: 1400px;
+    height: 70px;
+    background: var(--nav-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 40px;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-shield {
+    font-size: 1.8rem;
+}
+
+.nav-brand h2 {
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+}
+
+.nav-item {
+    padding: 10px 20px;
+    color: var(--text-light);
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.nav-item.active {
+    background: var(--accent);
+    color: var(--bg-dark);
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+}
+
+.btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 90, 95, 0.4);
+    color: var(--error);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    letter-spacing: 0.3px;
+}
+
+.btn-logout:hover {
+    background: var(--error);
+    color: #ffffff;
+    border-color: var(--error);
+    box-shadow: 0 0 18px rgba(255, 90, 95, 0.45);
+    transform: translateY(-1px) scale(1.03);
+}
+
+.btn-logout:active {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+
+/* Main Content Layout */
+.main-content {
+    flex: 1;
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+}
+
+/* Shared Components */
+.glass-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Dashboard Cards for KPI */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+}
+
+.stat-card h3 {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.stat-number {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Tables */
+.vims-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 16px;
+}
+
+.vims-table th {
+    text-align: left;
+    padding: 16px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.vims-table td {
+    padding: 16px;
+    color: var(--text-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vims-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.vims-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Forms */
+.vims-form .form-group {
+    margin-bottom: 20px;
+}
+
+.vims-form label {
+    display: block;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    background: rgba(10, 25, 47, 0.5);
+    border: 1px solid var(--border-light);
+    padding: 14px 16px;
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(91, 192, 190, 0.2);
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--accent);
+    color: var(--bg-dark);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(91, 192, 190, 0.3);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border-light);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 140px;
+}
+
+.btn-outline:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--text-muted);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active,
+.status-badge.paid,
+.status-badge.approved {
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--success);
+}
+
+.status-badge.pending,
+.status-badge.submitted,
+.status-badge.underreview {
+    background: rgba(217, 119, 6, 0.1);
+    color: var(--warning);
+}
+
+.status-badge.cancelled,
+.status-badge.rejected,
+.status-badge.failed {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--error);
+}
+
+.status-badge.expired {
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-muted);
+}
+
+/* Notifications */
+.error-toast,
+.success-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 1000;
+    animation: slideInDown 0.3s ease forwards;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.error-toast {
+    background: var(--error);
+    color: var(--text-on-error);
+    border-left: 4px solid rgba(0, 0, 0, 0.2);
+}
+
+.success-toast {
+    background: var(--success);
+    color: var(--text-on-success);
+    border-left: 4px solid rgba(0, 0, 0, 0.2);
+}
+
+/* Animations */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.slide-in {
+    animation: slideInUp 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

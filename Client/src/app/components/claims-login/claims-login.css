@@ -1,0 +1,282 @@
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.login-card {
+    display: flex;
+    width: 100%;
+    max-width: 1000px;
+    min-height: 600px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid var(--glass-border);
+}
+
+/* Left Info Side */
+.login-info {
+    flex: 1;
+    background: var(--admin-bg-gradient);
+    padding: 60px 48px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: auto;
+}
+
+.brand h2 {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+}
+
+.logo-shield {
+    font-size: 1.75rem;
+}
+
+.login-info h3 {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    color: var(--text-main);
+}
+
+.login-info p {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    max-width: 320px;
+    line-height: 1.6;
+}
+
+.info-footer {
+    margin-top: auto;
+    padding-top: 40px;
+}
+
+.info-footer span {
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.link-styled {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+/* Right Form Side */
+.login-form-container {
+    flex: 1;
+    background: var(--glass-bg);
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.form-title {
+    font-size: 2rem;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.vims-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Floating Label Inputs */
+.form-group {
+    position: relative;
+}
+
+.form-control {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    transition: var(--transition);
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: var(--accent);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.floating-label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    transition: var(--transition);
+    pointer-events: none;
+}
+
+.form-control:focus~.floating-label,
+.form-control:not(:placeholder-shown)~.floating-label {
+    top: 0;
+    font-size: 0.75rem;
+    padding: 0 4px;
+    background: var(--bg-card);
+    /* Mimicking label breaking line */
+    color: var(--accent);
+}
+
+/* Form Options */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.forgot-link {
+    color: var(--text-muted);
+}
+
+.forgot-link:hover {
+    color: var(--accent);
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.125rem;
+    margin-top: 16px;
+}
+
+/* Checkbox specific */
+.checkbox-container {
+    display: block;
+    position: relative;
+    padding-left: 28px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-muted);
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.checkbox-container:hover input~.checkmark {
+    border-color: var(--accent);
+}
+
+.checkbox-container input:checked~.checkmark {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked~.checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid var(--bg-dark);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .login-card {
+        flex-direction: column;
+    }
+
+    .login-info {
+        padding: 40px;
+        min-height: 240px;
+    }
+
+    .login-form-container {
+        padding: 40px;
+    }
+}
+
+@media (max-width: 600px) {
+    .login-form-container {
+        padding: 32px 20px;
+    }
+
+    .form-title {
+        font-size: 1.75rem;
+    }
+}
+
+/* Error Toast Component */
+.error-toast {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background-color: var(--error);
+    color: var(--text-on-error);
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+    font-weight: 500;
+    font-family: var(--font-body);
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

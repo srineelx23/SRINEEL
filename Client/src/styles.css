@@ -1,0 +1,277 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+
+:root {
+    /* Premium Ocean Blue & Teal Palette */
+    --bg-dark: #070F22;
+    --bg-card: #0F1A36;
+    --bg-gradient: linear-gradient(135deg, #070F22 0%, #0F1A36 100%);
+    --admin-bg-gradient: linear-gradient(135deg, #0A0A0A 0%, #1A1A1D 100%);
+    --card-bg: #0F1A36;
+    --border-light: rgba(255, 255, 255, 0.1);
+
+    --primary: #3A506B;
+    --primary-light: #507196;
+    --accent: #5BC0BE;
+    --accent-glow: rgba(91, 192, 190, 0.4);
+
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    --nav-bg: rgba(15, 26, 54, 0.8);
+    --border-light: rgba(255, 255, 255, 0.1);
+
+    --text-main: #F1F5F9;
+    --text-light: #E2E8F0;
+    --text-muted: #94A3B8;
+    --text-on-accent: #070F22;
+    --text-on-success: #FFFFFF;
+    --text-on-error: #FFFFFF;
+
+    --error: #FF5A5F;
+    --success: #2E8540;
+    --warning: #F5A623;
+
+    /* Glassmorphism Variables */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+    /* Professional Refinements */
+    --card-inner-bg: rgba(0, 0, 0, 0.2);
+    --card-inner-border: rgba(255, 255, 255, 0.05);
+    --btn-hover-bg: #FFFFFF;
+    --btn-hover-text: #070F22;
+
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.1);
+
+    /* Animation */
+    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+[data-theme="light"] {
+    /* Refined Professional Light Theme */
+    --bg-dark: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --bg-gradient: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+    --admin-bg-gradient: linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%);
+    --card-bg: #FFFFFF;
+    --border-light: rgba(15, 23, 42, 0.08);
+
+    --primary: #0F172A;
+    --primary-light: #334155;
+    --accent: #2563EB;
+    --accent-glow: rgba(37, 99, 235, 0.1);
+
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --border-light: rgba(15, 23, 42, 0.08);
+
+    --text-main: #0F172A;
+    --text-light: #334155;
+    --text-muted: #64748B;
+    --text-on-accent: #FFFFFF;
+    --text-on-success: #FFFFFF;
+    --text-on-error: #FFFFFF;
+
+    --error: #DC2626;
+    --success: #16A34A;
+    --warning: #D97706;
+
+    /* Clean UI Elements for Light Mode */
+    --glass-bg: #FFFFFF;
+    --glass-border: #E2E8F0;
+    --glass-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+    /* Professional Refinements */
+    --card-inner-bg: #F8FAFC;
+    --card-inner-border: #E2E8F0;
+    --btn-hover-bg: #0F172A;
+    --btn-hover-text: #FFFFFF;
+
+    /* Form Elements */
+    --input-bg: #FFFFFF;
+    --input-border: #CBD5E1;
+}
+
+/* Base Reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--text-main);
+    background: var(--bg-dark);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    text-decoration: underline;
+    color: var(--text-light);
+}
+
+/* Utilities */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--glass-shadow);
+}
+
+.btn-primary {
+    display: inline-block;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background: var(--btn-hover-bg);
+    color: var(--btn-hover-text);
+    box-shadow: 0 0 16px var(--accent-glow);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    display: inline-block;
+    background: transparent;
+    color: var(--text-main);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.btn-outline:hover {
+    background: var(--glass-bg);
+    border-color: var(--accent);
+    color: var(--accent) !important;
+    /* Ensure visibility against light mode a:hover */
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.full-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Global Back Button */
+.back-btn {
+    position: absolute;
+    top: 32px;
+    left: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    font-weight: 500;
+    z-index: 50;
+    transition: var(--transition);
+}
+
+.back-btn:hover {
+    color: var(--accent);
+    transform: translateX(-4px);
+    text-decoration: none;
+}
+
+/* Premium gradient backgrounds */
+.gradient-bg {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+}
+
+.admin-bg {
+    background: var(--admin-bg-gradient);
+    background-attachment: fixed;
+}
+
+/* Global Toasts - Elevated Layer */
+.error-toast,
+.success-toast {
+    position: fixed;
+    top: 100px;
+    right: 24px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    z-index: 10000;
+    /* Overlap navbar and everything else */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    animation: slideInRightGlobal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.error-toast {
+    background-color: var(--error);
+    color: var(--text-on-error);
+    border-left: 5px solid rgba(0, 0, 0, 0.2);
+}
+
+.success-toast {
+    background-color: var(--success);
+    color: var(--text-on-success);
+    border-left: 5px solid rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideInRightGlobal {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

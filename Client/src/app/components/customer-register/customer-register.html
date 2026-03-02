@@ -1,0 +1,90 @@
+<div class="full-screen gradient-bg login-page relative overflow-hidden">
+    <!-- Back Button -->
+    <a href="/" class="back-btn">
+        <span>←</span> Return to Home
+    </a>
+
+    <!-- Error/Success Toast Components -->
+    <div *ngIf="errorMessage()" class="error-toast">
+        ⚠️ {{ errorMessage() }}
+    </div>
+    <div *ngIf="successMessage()" class="success-toast">
+        ✅ {{ successMessage() }}
+    </div>
+
+    <div class="login-wrapper container">
+        <div class="login-card glass-panel" style="max-width: 1100px;">
+            <!-- Left Info Side -->
+            <div class="login-info"
+                style="background: linear-gradient(135deg, rgba(91, 192, 190, 0.2) 0%, rgba(58, 80, 107, 0.4) 100%);">
+                <div class="brand">
+                    <span class="logo-shield">✨</span>
+                    <h2>VIMS</h2>
+                </div>
+                <h3>Get Covered</h3>
+                <p>Join thousands of drivers who trust VIMS for instant policy approvals, premium coverage, and
+                    lightning-fast claim resolutions.</p>
+
+                <div class="info-footer">
+                    <span>Already a member?</span>
+                    <a href="/login" class="link-styled">Sign in instead ➔</a>
+                </div>
+            </div>
+
+            <!-- Right Form Side -->
+            <div class="login-form-container" style="padding: 48px 60px;">
+                <h2 class="form-title" style="margin-bottom: 28px;">Create Account</h2>
+
+                <form class="vims-form" (ngSubmit)="register()" style="gap: 16px;">
+                    <!-- Names Row -->
+                    <div style="display: flex; gap: 16px; width: 100%;">
+                        <div class="form-group" style="flex: 1;">
+                            <input type="text" id="firstName" name="firstName" [(ngModel)]="firstName"
+                                class="form-control" placeholder="" required>
+                            <label for="firstName" class="floating-label">First Name</label>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <input type="text" id="lastName" name="lastName" [(ngModel)]="lastName" class="form-control"
+                                placeholder="" required>
+                            <label for="lastName" class="floating-label">Last Name</label>
+                        </div>
+                    </div>
+
+                    <!-- Email Row -->
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
+                            placeholder="" required>
+                        <label for="email" class="floating-label">Email Address</label>
+                    </div>
+
+                    <!-- Passwords Row -->
+                    <div style="display: flex; gap: 16px; width: 100%; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1;">
+                            <input type="password" id="password" name="password" [(ngModel)]="password"
+                                class="form-control" placeholder="" required>
+                            <label for="password" class="floating-label">Create Password</label>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                [(ngModel)]="confirmPassword" class="form-control" placeholder="" required>
+                            <label for="confirmPassword" class="floating-label">Confirm Password</label>
+                        </div>
+                    </div>
+
+                    <!-- Terms -->
+                    <div class="form-options" style="margin-bottom: 8px;">
+                        <label class="checkbox-container">
+                            <input type="checkbox" required>
+                            <span class="checkmark"></span>
+                            I agree to the <a href="#" class="link-styled" style="font-size: 0.875rem;">Terms &
+                                Conditions</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width-btn" style="margin-top: 8px;">Complete
+                        Registration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

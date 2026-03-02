@@ -1,0 +1,185 @@
+<div class="full-screen gradient-bg landing-page" style="overflow-y: auto;">
+    <nav class="navbar glass-panel">
+        <div class="nav-container">
+            <div class="logo" style="cursor: pointer;" (click)="goHome()">
+                <span class="logo-text" style="font-weight: 800; font-size: 1.5rem;">VIMS</span>
+            </div>
+            <div class="nav-actions" style="display: flex; gap: 12px; align-items: center;">
+                <a (click)="goHome()" class="btn-text" style="cursor: pointer; color: var(--text-main);">Home</a>
+                <button *ngIf="isLoggedIn()" (click)="logout()" class="btn-outline hero-btn"
+                    style="padding: 8px 16px;">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Display Error/Success Messages -->
+    <div *ngIf="errorMessage()" class="error-toast">
+        {{ errorMessage() }}
+    </div>
+    <div *ngIf="successMessage()" class="success-toast">
+        {{ successMessage() }}
+    </div>
+
+    <main class="container" style="padding-top: 100px; padding-bottom: 60px;">
+        <header class="page-header" style="text-align: center; margin-bottom: 40px;">
+            <h1 class="page-title" style="font-size: 2.5rem; margin-bottom: 12px;">Explore Coverage Plans</h1>
+            <p class="page-subtitle" style="font-size: 1.1rem; opacity: 0.8;">Get an instant quote and apply for premium
+                vehicle insurance.</p>
+        </header>
+
+        <!-- Available Plans Grid -->
+        <div *ngIf="!selectedPlanForQuote() && !isApplying()" class="plans-grid fade-in">
+            <div class="plan-card glass-panel" *ngFor="let plan of plans()">
+                <h3>{{ plan.planName }}</h3>
+                <p>{{ plan.description || 'Comprehensive coverage for your vehicle. Discover more protection features
+                    and affordable pricing specific to this tier.' }}</p>
+                <div class="plan-actions">
+                    <button class="btn-text" (click)="markInterested(plan.planId)">Interested</button>
+                    <button class="btn-primary" (click)="openQuoteForm(plan.planId)"
+                        style="padding: 10px 16px; font-size: 0.95rem;">Get a Quote</button>
+                </div>
+            </div>
+            <p *ngIf="plans().length === 0"
+                style="color: var(--text-muted); padding: 16px; text-align: center; width: 100%;">Loading available
+                plans...</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;"
+            *ngIf="selectedPlanForQuote() || calculatedQuote()">
+            <!-- Quote Calculator Form -->
+            <div class="glass-panel" style="padding: 32px;" *ngIf="selectedPlanForQuote() && !isApplying()">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 class="form-title" style="margin-bottom: 0;">Calculate Your Quote</h2>
+                    <button class="btn-text" (click)="cancelQuoteProcess()">Cancel</button>
+                </div>
+                <form class="vims-form" (ngSubmit)="calculateQuote()">
+
+                    <!-- Grid Layout for Inputs -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <!-- Select Plan (Auto-set and disabled since they selected it) -->
+                        <div class="form-group" style="grid-column: span 2;">
+                            <select id="plan" name="plan" [(ngModel)]="quoteForm.PlanId" class="form-control" required
+                                disabled style="padding-top: 16px; padding-bottom: 16px; opacity: 0.7;">
+                                <option *ngFor="let plan of plans()" [value]="plan.planId">{{ plan.planName }} - {{
+                                    plan.description }}</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="number" id="invoiceAmount" name="invoiceAmount"
+                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder="" required>
+                            <label for="invoiceAmount" class="floating-label">Current Vehicle Value ($)</label>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="number" id="manufactureYear" name="manufactureYear"
+                                [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder="" required>
+                            <label for="manufactureYear" class="floating-label">Manufacture Year</label>
+                        </div>
+
+                        <div class="form-group">
+                            <select id="fuelType" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control"
+                                style="padding-top: 16px; padding-bottom: 16px;">
+                                <option value="Petrol">Petrol</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="EV">Electric (EV)</option>
+                                <option value="Hybrid">Hybrid</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <select id="vehicleType" name="vehicleType" [(ngModel)]="quoteForm.VehicleType"
+                                class="form-control" style="padding-top: 16px; padding-bottom: 16px;">
+                                <option value="Private">Private / Personal</option>
+                                <option value="Commercial">Commercial Use</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven"
+                                class="form-control" placeholder="" required>
+                            <label for="kms" class="floating-label">Kilometers Driven</label>
+                        </div>
+
+                        <div class="form-group">
+                            <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
+                                class="form-control" style="padding-top: 16px; padding-bottom: 16px;">
+                                <option value="1">1 Year Coverage</option>
+                                <option value="2">2 Years Coverage</option>
+                                <option value="3">3 Years Coverage (10% Discount)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary full-width-btn" style="margin-top: 24px;">Generate Instant
+                        Quote</button>
+                </form>
+            </div>
+
+            <!-- Application Form (Shows after quote is calculated and user clicks proceed) -->
+            <div class="glass-panel" style="padding: 32px;" *ngIf="isApplying()">
+                <h2 class="form-title" style="margin-bottom: 24px;">Vehicle Documents</h2>
+                <form class="vims-form" (ngSubmit)="submitApplication()">
+                    <div class="form-group">
+                        <input type="text" id="regNo" name="regNo" [(ngModel)]="applicationForm.RegistrationNumber"
+                            class="form-control" placeholder="" required>
+                        <label for="regNo" class="floating-label">Registration Number</label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <input type="text" id="make" name="make" [(ngModel)]="applicationForm.Make"
+                                class="form-control" placeholder="" required>
+                            <label for="make" class="floating-label">Vehicle Make</label>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="model" name="model" [(ngModel)]="applicationForm.Model"
+                                class="form-control" placeholder="" required>
+                            <label for="model" class="floating-label">Vehicle Model</label>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Upload
+                            Original Invoice</label>
+                        <input type="file" (change)="onFileChange($event, 'invoice')" class="form-control"
+                            accept=".pdf,.jpg,.jpeg,.png" style="padding: 12px;" required>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Upload
+                            Registration Certificate (RC)</label>
+                        <input type="file" (change)="onFileChange($event, 'rc')" class="form-control"
+                            accept=".pdf,.jpg,.jpeg,.png" style="padding: 12px;" required>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width-btn"
+                        style="background: var(--success); color: var(--text-on-success);">Submit Application</button>
+                    <button type="button" class="btn-text full-width-btn" style="margin-top: 8px; text-align: center;"
+                        (click)="isApplying.set(false); calculatedQuote.set(null);">Cancel</button>
+                </form>
+            </div>
+
+            <!-- Quote Output Side Panel -->
+            <div class="glass-panel" style="padding: 32px;" *ngIf="calculatedQuote() && !isApplying()">
+                <h3 style="font-size: 1.5rem; margin-bottom: 8px;">Your Official Quote</h3>
+                <p style="color: var(--text-muted); margin-bottom: 24px;">Estimated premium based on vehicle age, type,
+                    and depreciation.</p>
+
+                <div
+                    style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--card-inner-border);">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px;">Annual Premium</p>
+                    <p
+                        style="font-size: 2.5rem; color: var(--accent); font-family: var(--font-heading); font-weight: 700;">
+                        {{ calculatedQuote().premium | currency:'INR' }}</p>
+                    <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px;">Insured IDV Value</p>
+                    <p style="font-size: 1.25rem; font-weight: 500;">{{ calculatedQuote().idv | currency:'INR' }}</p>
+                </div>
+
+                <button class="btn-primary full-width-btn" (click)="startApplication()" *ngIf="!isApplying()">Apply for
+                    this Policy</button>
+            </div>
+        </div>
+    </main>
+</div>
