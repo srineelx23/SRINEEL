@@ -17,6 +17,8 @@ export class CustomerRegister {
   email = '';
   password = '';
   confirmPassword = '';
+  securityQuestion = '';
+  securityAnswer = '';
 
   errorMessage = signal('');
   successMessage = signal('');
@@ -24,11 +26,19 @@ export class CustomerRegister {
   private authService = inject(AuthService);
   private router = inject(Router);
 
+  // List of security questions
+  securityQuestions = [
+    "Father's Name",
+    "Mother's Name",
+    "Wife's Name",
+    "Pet's Name"
+  ];
+
   register() {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    if (!this.firstName || !this.lastName || !this.email || !this.password) {
+    if (!this.firstName || !this.lastName || !this.email || !this.password || !this.securityQuestion || !this.securityAnswer) {
       this.errorMessage.set('Please fill out all required fields.');
       this.autoHideToast();
       return;
@@ -46,7 +56,9 @@ export class CustomerRegister {
     const payload = {
       FullName: fullName,
       Email: this.email.trim(),
-      Password: this.password
+      Password: this.password,
+      SecurityQuestion: this.securityQuestion,
+      SecurityAnswer: this.securityAnswer.trim().toLowerCase()
     };
 
     this.authService.registerCustomer(payload).subscribe({

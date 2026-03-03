@@ -23,6 +23,7 @@ namespace VIMS.API
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddControllers();
+            builder.Services.AddHttpContextAccessor();
             // Add services to the container.
             builder.Services.AddAuthorization();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckl
@@ -48,7 +49,9 @@ namespace VIMS.API
             builder.Services.AddScoped<VIMS.Application.Interfaces.Repositories.IPaymentRepository, VIMS.Infrastructure.Repositories.PaymentRepository>();
             builder.Services.AddScoped<IPolicyPlanService, PolicyPlanService>();
             builder.Services.AddScoped<IPricingService, PricingService>();
+            builder.Services.AddScoped<IAuditService, AuditService>();
             builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
+            builder.Services.AddScoped<IFileStorageService, FileStorageService>();
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();

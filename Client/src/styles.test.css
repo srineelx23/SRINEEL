@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+:root {
+    --bg-dark: #070F22;
+    /* ... rest of the generic vars if needed ... */
+}
+
+/* Just enough for layout tests if any */

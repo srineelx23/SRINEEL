@@ -11,6 +11,7 @@ namespace VIMS.Application.DTOs
         public string token { get; set; }
         public string name { get; set; }
         public string Role { get; set; }
+        public bool IsSecurityQuestionSet { get; set; }
     }
 }
 

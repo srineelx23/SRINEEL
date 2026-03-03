@@ -12,18 +12,44 @@
                 <a href="#contact">Contact</a>
             </div>
             <div class="nav-actions">
-                <ng-container *ngIf="userName()">
-                    <span style="color: var(--text-light); margin-right: 16px; font-weight: 500;">Welcome, {{ userName()
-                        }}!</span>
-                    <a (click)="goToDashboard()" class="btn-text"
-                        style="cursor: pointer; margin-right: 12px; color: var(--text-light);">Dashboard</a>
-                    <a (click)="logout()" class="btn-outline hero-btn" style="cursor: pointer; padding: 8px 16px;">Sign
-                        Out</a>
-                </ng-container>
-                <ng-container *ngIf="!userName()">
-                    <a href="/login" class="nav-link-login">Log In</a>
-                    <a href="/register" class="btn-primary">Get a Quote</a>
-                </ng-container>
+                @if (userName()) {
+                <!-- Premium profile dropdown same as dashboard -->
+                <div class="nav-profile-container" style="position: relative;">
+                    <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown"
+                        style="display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-radius: 30px; cursor: pointer; transition: var(--transition); background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);">
+                        <div class="profile-avatar"
+                            style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">
+                            {{ userName()!.charAt(0) }}
+                        </div>
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span
+                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;">Account</span>
+                            <span style="color: var(--text-main); font-size: 0.9rem; font-weight: 600;">{{
+                                userName() }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down" [style.transform]="showDropdown ? 'rotate(180deg)' : 'none'"
+                            style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                    </div>
+
+                    <!-- Dropdown Menu -->
+                    @if (showDropdown) {
+                    <div class="dropdown-menu fade-in" (mouseleave)="showDropdown = false">
+                        <div class="dropdown-item" (click)="goToDashboard(); showDropdown = false">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Dashboard</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item danger" (click)="logout()">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>Sign Out</span>
+                        </div>
+                    </div>
+                    }
+                </div>
+                } @else {
+                <a href="/login" class="nav-link-login">Log In</a>
+                <a href="/register" class="btn-primary">Get a Quote</a>
+                }
             </div>
         </div>
     </nav>

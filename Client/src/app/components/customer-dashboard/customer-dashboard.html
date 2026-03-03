@@ -1,11 +1,15 @@
 <div class="dashboard-layout">
     <!-- Display Error/Success Messages -->
-    <div *ngIf="errorMessage()" class="error-toast">
+    @if (errorMessage()) {
+    <div class="error-toast">
         {{ errorMessage() }}
     </div>
-    <div *ngIf="successMessage()" class="success-toast">
+    }
+    @if (successMessage()) {
+    <div class="success-toast">
         {{ successMessage() }}
     </div>
+    }
     <!-- Hovering Navbar -->
     <nav class="hover-navbar">
         <div class="nav-brand">
@@ -23,8 +27,9 @@
             <a (click)="switchTab('transfers')" [class.active]="activeTab() === 'transfers'" class="nav-item"
                 style="position:relative">
                 Transfers
-                <span *ngIf="incomingTransfers().length > 0" class="transfer-badge">{{ incomingTransfers().length
-                    }}</span>
+                @if (incomingTransfers().length > 0) {
+                <span class="transfer-badge">{{ incomingTransfers().length }}</span>
+                }
             </a>
         </div>
 
@@ -42,8 +47,8 @@
                 </div>
 
                 <!-- Dropdown Menu -->
-                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
-                    (mouseleave)="showUserDropdown.set(false)">
+                @if (showUserDropdown()) {
+                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
                     <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
                         <i class="fa-solid fa-gear"></i>
                         <span>Settings</span>
@@ -54,6 +59,7 @@
                         <span>Sign Out</span>
                     </div>
                 </div>
+                }
             </div>
         </div>
     </nav>
@@ -61,7 +67,8 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Overview Tab -->
-        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+        @if (activeTab() === 'overview') {
+        <div class="tab-content fade-in">
 
             <!-- Hero Greeting -->
             <div class="overview-hero">
@@ -155,14 +162,18 @@
                     <button class="btn-outline-sm" (click)="switchTab('policies')">View All Policies →</button>
                 </div>
 
-                <div *ngIf="myVehicles().length === 0" class="empty-state-mini">
+                @if (myVehicles().length === 0) {
+                <div class="empty-state-mini">
                     <span>🚘</span>
                     <p>No insured vehicles yet. <a (click)="switchTab('applied')"
                             style="color:var(--accent);cursor:pointer;">Apply for a policy</a> to get started.</p>
                 </div>
+                }
 
-                <div class="vehicle-cards-grid" *ngIf="myVehicles().length > 0">
-                    <div class="vehicle-card glass-panel" *ngFor="let v of myVehicles()">
+                @if (myVehicles().length > 0) {
+                <div class="vehicle-cards-grid">
+                    @for (v of myVehicles(); track v.reg) {
+                    <div class="vehicle-card glass-panel">
                         <div class="vehicle-card-top">
                             <div class="vehicle-icon-wrap"><i class="fa-solid fa-car"></i></div>
                             <span class="status-badge" [ngClass]="v.status?.toLowerCase()">{{ v.status }}</span>
@@ -182,11 +193,15 @@
                             </div>
                         </div>
                     </div>
+                    }
                 </div>
+                }
             </div>
         </div>
+        }
 
-        <div *ngIf="activeTab() === 'policies'" class="tab-content fade-in">
+        @if (activeTab() === 'policies') {
+        <div class="tab-content fade-in">
             <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
                     <h1 class="page-title">Insurance Portfolio</h1>
@@ -209,12 +224,17 @@
                 </div>
             </header>
 
-            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedPolicy()">
+            <div class="glass-panel" style="padding: 24px;">
+                @if (!selectedPolicy()) {
                 <!-- Active Policies -->
-                <div *ngIf="policyFilter() === 'Active'">
-                    <p *ngIf="activePolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No active
+                @if (policyFilter() === 'Active') {
+                <div>
+                    @if (activePolicies().length === 0) {
+                    <p style="color: var(--text-muted); padding: 16px;">No active
                         policies found.</p>
-                    <table class="vims-table" *ngIf="activePolicies().length > 0">
+                    }
+                    @if (activePolicies().length > 0) {
+                    <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Policy No.</th>
@@ -225,23 +245,30 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let p of activePolicies()" (click)="viewPolicyDetails(p.policyId)"
-                                style="cursor: pointer;">
+                            @for (p of activePolicies(); track p.policyId) {
+                            <tr (click)="viewPolicyDetails(p.policyId)" style="cursor: pointer;">
                                 <td>{{ p.policyNumber }}</td>
                                 <td>{{ p.planName }}</td>
                                 <td>{{ p.vehicleRegistrationNumber }}</td>
                                 <td>{{ p.premiumAmount | currency:'INR' }}</td>
                                 <td>{{ p.idv | currency:'INR' }}</td>
                             </tr>
+                            }
                         </tbody>
                     </table>
+                    }
                 </div>
+                }
 
                 <!-- Pending Policies (Applications) -->
-                <div *ngIf="policyFilter() === 'Pending'">
-                    <p *ngIf="pendingPolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                @if (policyFilter() === 'Pending') {
+                <div>
+                    @if (pendingPolicies().length === 0) {
+                    <p style="color: var(--text-muted); padding: 16px;">No
                         pending applications awaiting review.</p>
-                    <table class="vims-table" *ngIf="pendingPolicies().length > 0">
+                    }
+                    @if (pendingPolicies().length > 0) {
+                    <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Policy No.</th>
@@ -252,8 +279,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let p of pendingPolicies()" (click)="viewPolicyDetails(p.policyId)"
-                                style="cursor: pointer;">
+                            @for (p of pendingPolicies(); track p.policyId) {
+                            <tr (click)="viewPolicyDetails(p.policyId)" style="cursor: pointer;">
                                 <td>{{ p.policyNumber }}</td>
                                 <td>{{ p.vehicleRegistrationNumber }} ({{p.vehicleModel}})</td>
                                 <td>{{ p.premiumAmount | currency:'INR' }}</td>
@@ -261,15 +288,22 @@
                                 <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
                                 </td>
                             </tr>
+                            }
                         </tbody>
                     </table>
+                    }
                 </div>
+                }
 
                 <!-- Policies Awaiting Payment -->
-                <div *ngIf="policyFilter() === 'PendingPayment'">
-                    <p *ngIf="pendingPaymentPolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                @if (policyFilter() === 'PendingPayment') {
+                <div>
+                    @if (pendingPaymentPolicies().length === 0) {
+                    <p style="color: var(--text-muted); padding: 16px;">No
                         policies found with pending payment.</p>
-                    <table class="vims-table" *ngIf="pendingPaymentPolicies().length > 0">
+                    }
+                    @if (pendingPaymentPolicies().length > 0) {
+                    <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Policy No.</th>
@@ -281,7 +315,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let p of pendingPaymentPolicies()" style="cursor: pointer;">
+                            @for (p of pendingPaymentPolicies(); track p.policyId) {
+                            <tr style="cursor: pointer;">
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.policyNumber }}</td>
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.planName }}</td>
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.vehicleRegistrationNumber }}
@@ -300,15 +335,22 @@
                                     </button>
                                 </td>
                             </tr>
+                            }
                         </tbody>
                     </table>
+                    }
                 </div>
+                }
 
                 <!-- History Policies -->
-                <div *ngIf="policyFilter() === 'History'">
-                    <p *ngIf="inactivePolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                @if (policyFilter() === 'History') {
+                <div>
+                    @if (inactivePolicies().length === 0) {
+                    <p style="color: var(--text-muted); padding: 16px;">No
                         historical data.</p>
-                    <table class="vims-table" *ngIf="inactivePolicies().length > 0">
+                    }
+                    @if (inactivePolicies().length > 0) {
+                    <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Policy No.</th>
@@ -319,8 +361,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let p of inactivePolicies()" (click)="viewPolicyDetails(p.policyId)"
-                                style="cursor: pointer;">
+                            @for (p of inactivePolicies(); track p.policyId) {
+                            <tr (click)="viewPolicyDetails(p.policyId)" style="cursor: pointer;">
                                 <td>{{ p.policyNumber }}</td>
                                 <td>{{ p.planName }}</td>
                                 <td>{{ p.premiumAmount | currency:'INR' }}</td>
@@ -328,143 +370,171 @@
                                 <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
                                 </td>
                             </tr>
+                            }
                         </tbody>
                     </table>
+                    }
                 </div>
-            </div>
+                }
+                }
 
-            <!-- Detailed Policy View -->
-            <div *ngIf="selectedPolicy()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
-                <button class="btn-outline"
-                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-                    (click)="closePolicyDetails()">← Back to Policies</button>
-                <h2 class="form-title" style="margin-bottom: 24px;">Policy Details: {{ selectedPolicy().policyNumber }}
-                </h2>
+                <!-- Detailed Policy View -->
+                @if (selectedPolicy()) {
+                <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
+                    <button class="btn-outline"
+                        style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+                        (click)="closePolicyDetails()">← Back to Policies</button>
+                    <h2 class="form-title" style="margin-bottom: 24px;">Policy Details: {{ selectedPolicy().policyNumber
+                        }}
+                    </h2>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-                    <!-- Policy Info -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Coverage Information</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Status:</strong>
-                            <span class="status-badge" [ngClass]="selectedPolicy().status.toLowerCase()"
-                                style="display: inline-block;">{{ selectedPolicy().status }}</span>
-                        </p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Plan
-                                Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Start
-                                Date:</strong> {{ selectedPolicy().startDate | date:'mediumDate' }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Expiry
-                                Date:</strong> {{ selectedPolicy().endDate | date:'mediumDate' }}</p>
-                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
-                                Paid:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
-                                selectedPolicy().premiumAmount | currency:'INR' }}</span></p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Insured
-                                IDV:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
-                                selectedPolicy().invoiceAmount | currency:'INR' }}</span></p>
-                    </div>
-
-                    <!-- Vehicle Info -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Information</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Make &
-                                Model:</strong> {{ selectedPolicy().vehicle?.make }} {{ selectedPolicy().vehicle?.model
-                            }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Manufactured
-                                Year:</strong> {{ selectedPolicy().vehicle?.year }}</p>
-                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
-                        <p style="margin-bottom: 8px;"><strong style="color: var(--text-muted);">Uploaded
-                                Documents:</strong></p>
-                        <ul
-                            style="list-style-type: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                            <li *ngFor="let doc of selectedPolicy().vehicle?.documents" class="btn-outline"
-                                style="padding: 8px 16px; border-radius: 6px; display: inline-block; width: fit-content; margin-bottom: 0;">
-                                <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank"
-                                    style="color: var(--text-light); text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
-                                </a>
-                            </li>
-                        </ul>
-                        <p *ngIf="!selectedPolicy().vehicle?.documents || selectedPolicy().vehicle?.documents.length === 0"
-                            style="color: var(--text-muted); font-style: italic; margin-top: 8px;">No documents
-                            available.</p>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;">
-                    <button
-                        *ngIf="selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
-                        class="btn-primary" style="padding: 10px 24px;"
-                        (click)="payPremium(selectedPolicy().policyId)">Pay Outstanding Premium</button>
-                    <button *ngIf="selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
-                        class="btn-primary"
-                        style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
-                        (click)="startRenew(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
-                    <button *ngIf="selectedPolicy().status === 'Active'" class="btn-primary"
-                        style="padding: 10px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5);"
-                        (click)="openTransferModal(selectedPolicy().policyId)">
-                        <i class="fa-solid fa-right-left" style="margin-right: 8px;"></i>Transfer Policy
-                    </button>
-                    <button *ngIf="selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
-                        class="btn-outline" style="color: var(--error); border-color: var(--error);"
-                        (click)="cancelPolicy(selectedPolicy().policyId)">Cancel Policy</button>
-                </div>
-            </div>
-
-            <!-- Renewal Form Module -->
-            <div class="glass-panel" style="padding: 32px; margin-top: 24px; background: rgba(91, 192, 190, 0.05);"
-                *ngIf="renewingPolicyId()">
-                <h2 class="form-title" style="margin-bottom: 24px;">Renew Policy #{{ renewingPolicyId() }}</h2>
-                <form class="vims-form" (ngSubmit)="submitRenew()">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-group">
-                            <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId" class="form-control"
-                                required style="padding-top: 16px; padding-bottom: 16px;">
-                                <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
-                                <option *ngFor="let plan of plans()" [value]="plan.planId">{{ plan.planName }}</option>
-                            </select>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <!-- Policy Info -->
+                        <div class="glass-panel"
+                            style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                            <h3 style="color: var(--accent); margin-bottom: 16px;">Coverage Information</h3>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Status:</strong>
+                                <span class="status-badge" [ngClass]="selectedPolicy().status.toLowerCase()"
+                                    style="display: inline-block;">{{ selectedPolicy().status }}</span>
+                            </p>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Plan
+                                    Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Start
+                                    Date:</strong> {{ selectedPolicy().startDate | date:'mediumDate' }}</p>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Expiry
+                                    Date:</strong> {{ selectedPolicy().endDate | date:'mediumDate' }}</p>
+                            <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
+                                    Paid:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                                    selectedPolicy().premiumAmount | currency:'INR' }}</span></p>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Insured
+                                    IDV:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                                    selectedPolicy().invoiceAmount | currency:'INR' }}</span></p>
                         </div>
-                        <div class="form-group">
-                            <select id="renewYears" name="renewYears" [(ngModel)]="renewForm.SelectedYears"
-                                class="form-control" style="padding-top: 16px; padding-bottom: 16px;">
-                                <option value="1">Extend by 1 Year</option>
-                                <option value="2">Extend by 2 Years</option>
-                                <option value="3">Extend by 3 Years</option>
-                                <option value="5">Extend by 5 Years</option>
-                            </select>
+
+                        <!-- Vehicle Info -->
+                        <div class="glass-panel"
+                            style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
+                            <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Information</h3>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Make &
+                                    Model:</strong> {{ selectedPolicy().vehicle?.make }} {{
+                                selectedPolicy().vehicle?.model
+                                }}</p>
+                            <p style="margin-bottom: 8px;"><strong
+                                    style="color: var(--text-muted); display: inline-block; width: 140px;">Manufactured
+                                    Year:</strong> {{ selectedPolicy().vehicle?.year }}</p>
+                            <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                            <p style="margin-bottom: 8px;"><strong style="color: var(--text-muted);">Uploaded
+                                    Documents:</strong></p>
+                            <ul
+                                style="list-style-type: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                                @for (doc of selectedPolicy().vehicle?.documents; track doc.documentId) {
+                                <li class="btn-outline"
+                                    style="padding: 8px 16px; border-radius: 6px; display: inline-block; width: fit-content; margin-bottom: 0;">
+                                    <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank"
+                                        style="color: var(--text-light); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
+                                    </a>
+                                </li>
+                                }
+                            </ul>
+                            @if (!selectedPolicy().vehicle?.documents || selectedPolicy().vehicle?.documents.length ===
+                            0) {
+                            <p style="color: var(--text-muted); font-style: italic; margin-top: 8px;">No documents
+                                available.</p>
+                            }
                         </div>
                     </div>
-                    <div style="display: flex; gap: 16px; margin-top: 16px;">
-                        <button type="submit" class="btn-primary">Confirm Renewal</button>
-                        <button type="button" class="btn-text" (click)="renewingPolicyId.set(null)">Cancel</button>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;">
+                        @if (selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' &&
+                        selectedPolicy().status !== 'Expired') {
+                        <button class="btn-primary" style="padding: 10px 24px;"
+                            (click)="payPremium(selectedPolicy().policyId)">Pay Outstanding Premium</button>
+                        }
+                        @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired') {
+                        <button class="btn-primary"
+                            style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
+                            (click)="startRenew(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
+                        }
+                        @if (selectedPolicy().status === 'Active') {
+                        <button class="btn-primary"
+                            style="padding: 10px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5);"
+                            (click)="openTransferModal(selectedPolicy().policyId)">
+                            <i class="fa-solid fa-right-left" style="margin-right: 8px;"></i>Transfer Policy
+                        </button>
+                        }
+                        @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired') {
+                        <button class="btn-outline" style="color: var(--error); border-color: var(--error);"
+                            (click)="cancelPolicy(selectedPolicy().policyId)">Cancel Policy</button>
+                        }
                     </div>
-                </form>
+                </div>
+                }
+
+                <!-- Renewal Form Module -->
+                @if (renewingPolicyId()) {
+                <div class="glass-panel" style="padding: 32px; margin-top: 24px; background: rgba(91, 192, 190, 0.05);">
+                    <h2 class="form-title" style="margin-bottom: 24px;">Renew Policy #{{ renewingPolicyId() }}</h2>
+                    <form class="vims-form" (ngSubmit)="submitRenew()">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId"
+                                    class="form-control" required style="padding-top: 16px; padding-bottom: 16px;">
+                                    <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
+                                    @for (plan of plans(); track plan.planId) {
+                                    <option [value]="plan.planId">{{ plan.planName }}
+                                    </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <select id="renewYears" name="renewYears" [(ngModel)]="renewForm.SelectedYears"
+                                    class="form-control" style="padding-top: 16px; padding-bottom: 16px;">
+                                    <option value="1">Extend by 1 Year</option>
+                                    <option value="2">Extend by 2 Years</option>
+                                    <option value="3">Extend by 3 Years</option>
+                                    <option value="5">Extend by 5 Years</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; margin-top: 16px;">
+                            <button type="submit" class="btn-primary">Confirm Renewal</button>
+                            <button type="button" class="btn-text" (click)="renewingPolicyId.set(null)">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                }
             </div>
         </div>
+        }
 
         <!-- Applied (Applications) Tab -->
-        <div *ngIf="activeTab() === 'applied'" class="tab-content fade-in">
+        @if (activeTab() === 'applied') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Vehicle Applications</h1>
-                <p class="page-subtitle">Track your submitted applications that are still under review or completed.</p>
+                <p class="page-subtitle">Track your submitted applications that are still under review or completed.
+                </p>
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
-                <p *ngIf="applications().length === 0" style="color: var(--text-muted); padding: 16px;">No applications
+                @if (applications().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No
+                    applications
                     found.</p>
+                }
 
-                <table class="vims-table" *ngIf="applications().length > 0">
+                @if (applications().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Application ID</th>
@@ -474,7 +544,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let a of applications()">
+                        @for (a of applications(); track a.vehicleApplicationId) {
+                        <tr>
                             <td>#{{ a.vehicleApplicationId }}</td>
                             <td>{{ a.registrationNumber }}</td>
                             <td>{{ a.createdAt | date:'mediumDate' }}</td>
@@ -483,32 +554,43 @@
                                     a.status === 'Pending' ? 'Under Review' : a.status }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
+        }
 
         <!-- Claims Center Tab -->
-        <div *ngIf="activeTab() === 'claims'" class="tab-content fade-in">
+        @if (activeTab() === 'claims') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Claims Center</h1>
                 <p class="page-subtitle">File new claims and track investigations centrally.</p>
             </header>
 
-            <div *ngIf="!selectedClaim()"
+            @if (!selectedClaim()) {
+            <div
                 [ngStyle]="{'display': 'grid', 'grid-template-columns': isFilingClaim() ? '2fr 1fr' : '1fr', 'gap': '24px'}">
                 <div class="glass-panel" style="padding: 24px;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                         <h3>Claims History</h3>
-                        <button class="btn-primary" (click)="startClaim()" *ngIf="!isFilingClaim()"
-                            style="background: var(--error);">+ File New Claim</button>
+                        @if (!isFilingClaim()) {
+                        <button class="btn-primary" (click)="startClaim()" style="background: var(--error);">+ File
+                            New Claim</button>
+                        }
                     </div>
 
-                    <p *ngIf="claims().length === 0" style="color: var(--text-muted); padding: 16px;">No claims history
+                    @if (claims().length === 0) {
+                    <p style="color: var(--text-muted); padding: 16px;">No claims
+                        history
                         found.</p>
+                    }
 
-                    <table class="vims-table" *ngIf="claims().length > 0">
+                    @if (claims().length > 0) {
+                    <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Claim No.</th>
@@ -519,29 +601,36 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let c of claims()" (click)="viewClaimDetails(c)" style="cursor: pointer;">
+                            @for (c of claims(); track c.claimId) {
+                            <tr (click)="viewClaimDetails(c)" style="cursor: pointer;">
                                 <td>{{ c.claimNumber }}</td>
                                 <td>{{ c.policy?.policyNumber }}</td>
                                 <td>{{ c.claimType }}</td>
-                                <td>{{ c.approvedAmount ? (c.approvedAmount | currency:'INR') : 'Pending Assessment' }}
+                                <td>{{ c.approvedAmount ? (c.approvedAmount | currency:'INR') : 'Pending Assessment'
+                                    }}
                                 </td>
-                                <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status }}</span>
+                                <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status
+                                        }}</span>
                                 </td>
                             </tr>
+                            }
                         </tbody>
                     </table>
+                    }
                 </div>
 
-                <div class="glass-panel" style="padding: 32px; background: rgba(58, 80, 107, 0.4);"
-                    *ngIf="isFilingClaim()">
+                @if (isFilingClaim()) {
+                <div class="glass-panel" style="padding: 32px; background: rgba(58, 80, 107, 0.4);">
                     <h3 style="margin-bottom: 24px; font-size: 1.5rem;">File Incident Claim</h3>
                     <form class="vims-form" (ngSubmit)="submitClaim()">
                         <div class="form-group">
                             <select id="claimPolicy" name="claimPolicy" [(ngModel)]="claimForm.PolicyId"
                                 class="form-control" required style="padding-top: 16px; padding-bottom: 16px;">
                                 <option [ngValue]="null" disabled selected>Select Affected Policy</option>
-                                <option *ngFor="let p of policies()" [value]="p.policyId">{{ p.policyNumber }} ({{
+                                @for (p of policies(); track p.policyId) {
+                                <option [value]="p.policyId">{{ p.policyNumber }} ({{
                                     p.vehicle?.make }} {{ p.vehicle?.model }})</option>
+                                }
                             </select>
                         </div>
 
@@ -571,20 +660,25 @@
                         </div>
 
                         <button type="submit" class="btn-primary full-width-btn"
-                            style="background: var(--error); color: var(--text-on-error);">Submit Final Claim</button>
+                            style="background: var(--error); color: var(--text-on-error);">Submit Final
+                            Claim</button>
                         <button type="button" class="btn-text full-width-btn"
                             style="margin-top: 8px; text-align: center;"
                             (click)="isFilingClaim.set(false)">Cancel</button>
                     </form>
                 </div>
+                }
             </div>
+            }
 
             <!-- Detailed Claim View -->
-            <div *ngIf="selectedClaim()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+            @if (selectedClaim()) {
+            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
                 <button class="btn-outline"
                     style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
                     (click)="closeClaimDetails()">← Back to Claims</button>
-                <h2 class="form-title" style="margin-bottom: 24px;">Claim Details: {{ selectedClaim().claimNumber }}
+                <h2 class="form-title" style="margin-bottom: 24px;">Claim Details: {{
+                    selectedClaim().claimNumber }}
                 </h2>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -598,7 +692,8 @@
                                 style="display: inline-block;">{{ selectedClaim().status }}</span>
                         </p>
                         <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type:</strong> {{
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type:</strong>
+                            {{
                             selectedClaim().claimType }}</p>
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
@@ -611,11 +706,15 @@
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
                                 Amt:</strong>
-                            <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);"
-                                *ngIf="selectedClaim().approvedAmount">{{ selectedClaim().approvedAmount |
+                            @if (selectedClaim().approvedAmount) {
+                            <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
+                                selectedClaim().approvedAmount |
                                 currency:'INR' }}</span>
-                            <span style="font-style: italic; color: var(--text-muted);"
-                                *ngIf="!selectedClaim().approvedAmount">Pending Assessment</span>
+                            }
+                            @if (!selectedClaim().approvedAmount) {
+                            <span style="font-style: italic; color: var(--text-muted);">Pending
+                                Assessment</span>
+                            }
                         </p>
                     </div>
 
@@ -623,31 +722,39 @@
                     <div class="glass-panel"
                         style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; box-shadow: none; border: 1px solid var(--card-inner-border);">
                         <h3 style="color: var(--accent); margin-bottom: 16px;">Evidence Documents</h3>
-                        <p *ngIf="!selectedClaim().documents || selectedClaim().documents.length === 0"
-                            style="color: var(--text-muted); font-style: italic;">No evidence documents uploaded.</p>
+                        @if (!selectedClaim().documents || selectedClaim().documents.length === 0) {
+                        <p style="color: var(--text-muted); font-style: italic;">No evidence documents uploaded.
+                        </p>
+                        }
 
-                        <div *ngIf="selectedClaim().documents && selectedClaim().documents.length > 0"
-                            style="display: flex; flex-direction: column; gap: 12px;">
-                            <ng-container *ngFor="let doc of selectedClaim().documents">
-                                <a *ngIf="doc.document1" [href]="'https://localhost:7257/' + doc.document1"
-                                    target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View Primary Evidence
-                                </a>
-                                <a *ngIf="doc.document2" [href]="'https://localhost:7257/' + doc.document2"
-                                    target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View Secondary Evidence
-                                </a>
-                            </ng-container>
+                        @if (selectedClaim().documents && selectedClaim().documents.length > 0) {
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            @for (doc of selectedClaim().documents; track $index) {
+                            @if (doc.document1) {
+                            <a [href]="'https://localhost:7257/' + doc.document1" target="_blank" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View Primary Evidence
+                            </a>
+                            }
+                            @if (doc.document2) {
+                            <a [href]="'https://localhost:7257/' + doc.document2" target="_blank" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View Secondary Evidence
+                            </a>
+                            }
+                            }
                         </div>
+                        }
                     </div>
                 </div>
             </div>
+            }
         </div>
+        }
 
         <!-- Payments Tab -->
-        <div *ngIf="activeTab() === 'payments'" class="tab-content fade-in">
+        @if (activeTab() === 'payments') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Transaction History</h1>
                 <p class="page-subtitle">A comprehensive record of your premium payments and claim payouts.</p>
@@ -658,10 +765,14 @@
                     style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-credit-card"></i> Premium Payments
                 </h2>
-                <p *ngIf="premiumPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No premium
+                @if (premiumPayments().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No
+                    premium
                     payments recorded.</p>
+                }
 
-                <table class="vims-table" *ngIf="premiumPayments().length > 0">
+                @if (premiumPayments().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Transaction ID</th>
@@ -673,7 +784,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let p of premiumPayments()">
+                        @for (p of premiumPayments(); track p.paymentId) {
+                        <tr>
                             <td>#{{ p.paymentId }}</td>
                             <td>{{ p.policyNumber || 'N/A' }}</td>
                             <td>{{ p.paymentDate | date:'mediumDate' }}</td>
@@ -681,12 +793,15 @@
                                     }}</td>
                             <td>{{ p.transactionReference || 'Auto' }}</td>
                             <td>
-                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{
+                                    p.status
                                     }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
 
             <div class="glass-panel" style="padding: 24px; margin-bottom: 24px;">
@@ -694,10 +809,13 @@
                     style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--success); display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-hand-holding-dollar"></i> Claim Payouts
                 </h2>
-                <p *ngIf="claimPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No claim
+                @if (claimPayments().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No claim
                     payouts recorded.</p>
+                }
 
-                <table class="vims-table" *ngIf="claimPayments().length > 0">
+                @if (claimPayments().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Transaction ID</th>
@@ -709,7 +827,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let p of claimPayments()">
+                        @for (p of claimPayments(); track p.paymentId) {
+                        <tr>
                             <td>#{{ p.paymentId }}</td>
                             <td>{{ p.policyNumber || 'N/A' }}</td>
                             <td>{{ p.paymentDate | date:'mediumDate' }}</td>
@@ -717,12 +836,15 @@
                                     p.amount) | currency:'INR' }}</td>
                             <td>{{ p.transactionReference || 'Auto' }}</td>
                             <td>
-                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{
+                                    p.status
                                     }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
 
             <div class="glass-panel" style="padding: 24px;">
@@ -730,10 +852,14 @@
                     style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--warning); display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-money-bill-transfer"></i> Transfer Payments
                 </h2>
-                <p *ngIf="transferPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No transfer
+                @if (transferPayments().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No
+                    transfer
                     payments recorded.</p>
+                }
 
-                <table class="vims-table" *ngIf="transferPayments().length > 0">
+                @if (transferPayments().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Transaction ID</th>
@@ -745,7 +871,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let p of transferPayments()">
+                        @for (p of transferPayments(); track p.paymentId) {
+                        <tr>
                             <td>#{{ p.paymentId }}</td>
                             <td>{{ p.policyNumber || 'N/A' }}</td>
                             <td>{{ p.paymentDate | date:'mediumDate' }}</td>
@@ -753,17 +880,22 @@
                                     p.amount) | currency:'INR' }}</td>
                             <td>{{ p.transactionReference || 'Transfer Fee' }}</td>
                             <td>
-                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{
+                                    p.status
                                     }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
+        }
 
         <!-- ==================== TRANSFERS TAB ==================== -->
-        <div *ngIf="activeTab() === 'transfers'" class="tab-content fade-in">
+        @if (activeTab() === 'transfers') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Policy Transfers</h1>
                 <p class="page-subtitle">Manage incoming and outgoing policy transfer requests.</p>
@@ -774,22 +906,32 @@
                 <h2
                     style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-inbox"></i> Incoming Transfer Requests
-                    <span *ngIf="incomingTransfers().length > 0" class="transfer-badge" style="position: static;">{{
+                    @if (incomingTransfers().length > 0) {
+                    <span class="transfer-badge" style="position: static;">{{
                         incomingTransfers().length }}</span>
+                    }
                 </h2>
-                <p *ngIf="incomingTransfers().length === 0" style="color: var(--text-muted); font-style: italic;">No
+                @if (incomingTransfers().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No
                     incoming transfer requests.</p>
-                <div *ngFor="let t of incomingTransfers()" class="transfer-card">
+                }
+                @for (t of incomingTransfers(); track t.policyTransferId) {
+                <div class="transfer-card">
                     <div class="transfer-card-info">
                         <div class="transfer-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
                         <div>
                             <p class="transfer-policy-no">{{ t.policy?.policyNumber }}</p>
-                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }} ·
+                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }}
+                                ·
                                 {{ t.policy?.vehicle?.registrationNumber }}</p>
-                            <p class="transfer-meta">Plan: <strong>{{ t.policy?.planName }}</strong> · IDV: <strong>{{
-                                    t.policy?.idv | currency:'INR' }}</strong></p>
-                            <p class="transfer-meta">From: <strong>{{ t.senderName }}</strong> ({{ t.senderEmail }})</p>
-                            <p class="transfer-meta" style="color: var(--text-muted); font-size: 0.78rem;">Received: {{
+                            <p class="transfer-meta">Plan: <strong>{{ t.policy?.planName }}</strong> · IDV:
+                                <strong>{{
+                                    t.policy?.idv | currency:'INR' }}</strong>
+                            </p>
+                            <p class="transfer-meta">From: <strong>{{ t.senderName }}</strong> ({{ t.senderEmail }})
+                            </p>
+                            <p class="transfer-meta" style="color: var(--text-muted); font-size: 0.78rem;">Received:
+                                {{
                                 t.createdAt | date:'mediumDate' }}</p>
                         </div>
                     </div>
@@ -806,6 +948,7 @@
                         </button>
                     </div>
                 </div>
+                }
             </div>
 
             <!-- Outgoing Transfers -->
@@ -814,16 +957,21 @@
                     style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-paper-plane"></i> Outgoing Transfer Requests
                 </h2>
-                <p *ngIf="outgoingTransfers().length === 0" style="color: var(--text-muted); font-style: italic;">No
+                @if (outgoingTransfers().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No
                     outgoing transfer requests.</p>
-                <div *ngFor="let t of outgoingTransfers()" class="transfer-card">
+                }
+                @for (t of outgoingTransfers(); track t.policyTransferId) {
+                <div class="transfer-card">
                     <div class="transfer-card-info">
                         <div class="transfer-icon outgoing"><i class="fa-solid fa-right-from-bracket"></i></div>
                         <div>
                             <p class="transfer-policy-no">{{ t.policy?.policyNumber }}</p>
-                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }} ·
+                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }}
+                                ·
                                 {{ t.policy?.vehicle?.registrationNumber }}</p>
-                            <p class="transfer-meta">To: <strong>{{ t.recipientName }}</strong> ({{ t.recipientEmail }})
+                            <p class="transfer-meta">To: <strong>{{ t.recipientName }}</strong> ({{ t.recipientEmail
+                                }})
                             </p>
                             <p class="transfer-meta" style="color: var(--text-muted); font-size: 0.78rem;">Sent: {{
                                 t.createdAt | date:'mediumDate' }}</p>
@@ -834,14 +982,150 @@
                             style="font-size: 0.78rem;">{{ t.status }}</span>
                     </div>
                 </div>
+                }
             </div>
         </div>
+        }
+
+        <!-- ==================== SETTINGS TAB ==================== -->
+        @if (activeTab() === 'settings') {
+        <div class="tab-content fade-in" style="max-width: 640px; margin: 0 auto;">
+
+            <div class="page-header">
+                <h1 class="page-title">Settings</h1>
+                <p class="page-subtitle">Manage your account preferences and security.</p>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="glass-panel" style="padding: 32px;">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px;">
+                    <div
+                        style="width: 48px; height: 48px; border-radius: 14px; background: rgba(99,102,241,0.12); display: flex; align-items: center; justify-content: center; color: #818cf8; font-size: 1.2rem; flex-shrink: 0;">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 4px;">Change Password</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Keep your account secure
+                            with a strong password.</p>
+                    </div>
+                </div>
+
+                <div class="vims-form">
+                    <!-- Current Password -->
+                    <div class="form-group">
+                        <label
+                            style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Current
+                            Password</label>
+                        <div style="position: relative;">
+                            <input [type]="showCurrentPwd ? 'text' : 'password'" class="form-control"
+                                placeholder="Enter your current password"
+                                [(ngModel)]="changePasswordForm.currentPassword" style="padding-right: 48px;" />
+                            <button type="button" (click)="showCurrentPwd = !showCurrentPwd"
+                                style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0;">
+                                <i class="fa-solid" [class.fa-eye]="!showCurrentPwd"
+                                    [class.fa-eye-slash]="showCurrentPwd"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- New Password -->
+                    <div class="form-group">
+                        <label
+                            style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">New
+                            Password</label>
+                        <div style="position: relative;">
+                            <input [type]="showNewPwd ? 'text' : 'password'" class="form-control"
+                                placeholder="Minimum 6 characters" [(ngModel)]="changePasswordForm.newPassword"
+                                style="padding-right: 48px;" />
+                            <button type="button" (click)="showNewPwd = !showNewPwd"
+                                style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0;">
+                                <i class="fa-solid" [class.fa-eye]="!showNewPwd" [class.fa-eye-slash]="showNewPwd"></i>
+                            </button>
+                        </div>
+                        @if (changePasswordForm.newPassword.length > 0 && changePasswordForm.newPassword.length < 6) {
+                            <p style="font-size: 0.78rem; color: var(--error); margin-top: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Password must
+                            be
+                            at least 6 characters.
+                            </p>
+                            }
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group">
+                        <label
+                            style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Confirm
+                            New Password</label>
+                        <div style="position: relative;">
+                            <input [type]="showConfirmPwd ? 'text' : 'password'" class="form-control"
+                                placeholder="Re-enter your new password"
+                                [(ngModel)]="changePasswordForm.confirmPassword" style="padding-right: 48px;" />
+                            <button type="button" (click)="showConfirmPwd = !showConfirmPwd"
+                                style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0;">
+                                <i class="fa-solid" [class.fa-eye]="!showConfirmPwd"
+                                    [class.fa-eye-slash]="showConfirmPwd"></i>
+                            </button>
+                        </div>
+                        @if (changePasswordForm.confirmPassword.length > 0 && changePasswordForm.newPassword !==
+                        changePasswordForm.confirmPassword) {
+                        <p style="font-size: 0.78rem; color: var(--error); margin-top: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Passwords do
+                            not
+                            match.
+                        </p>
+                        }
+                        @if (changePasswordForm.confirmPassword.length > 0 && changePasswordForm.newPassword ===
+                        changePasswordForm.confirmPassword && changePasswordForm.newPassword.length >= 6) {
+                        <p style="font-size: 0.78rem; color: var(--success); margin-top: 6px;">
+                            <i class="fa-solid fa-check-circle" style="margin-right: 4px;"></i>Passwords match!
+                        </p>
+                        }
+                    </div>
+
+                    <button class="btn-primary full-width-btn" (click)="changePassword()"
+                        [disabled]="changePwdLoading()" style="margin-top: 8px;">
+                        @if (!changePwdLoading()) {
+                        <span>
+                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i>Update Password
+                        </span>
+                        }
+                        @if (changePwdLoading()) {
+                        <span>
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i>Updating...
+                        </span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- Session Card -->
+            <div class="glass-panel" style="padding: 24px; margin-top: 20px;">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+                    <div
+                        style="width: 48px; height: 48px; border-radius: 14px; background: rgba(91,192,190,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 1.2rem; flex-shrink: 0;">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 4px;">Session</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Signed in as <strong>{{
+                                customerName() }}</strong></p>
+                    </div>
+                </div>
+                <button class="btn-outline"
+                    style="width: 100%; padding: 12px; color: var(--error); border-color: rgba(220,38,38,0.3);"
+                    (click)="logout()">
+                    <i class="fa-solid fa-right-from-bracket" style="margin-right: 8px;"></i>Sign Out
+                </button>
+            </div>
+        </div>
+        }
 
     </main>
 </div>
 
 <!-- ==================== TRANSFER INITIATE MODAL ==================== -->
-<div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()">
+@if (showTransferModal()) {
+<div class="modal-overlay" (click)="closeTransferModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
             <div class="modal-icon-wrap" style="background: linear-gradient(135deg, #7c3aed22, #4f46e522);">
@@ -853,12 +1137,16 @@
             </div>
         </div>
 
-        <div *ngIf="transferError()" class="modal-error">
+        @if (transferError()) {
+        <div class="modal-error">
             <i class="fa-solid fa-circle-exclamation"></i> {{ transferError() }}
         </div>
-        <div *ngIf="transferSuccess()" class="modal-success">
+        }
+        @if (transferSuccess()) {
+        <div class="modal-success">
             <i class="fa-solid fa-circle-check"></i> {{ transferSuccess() }}
         </div>
+        }
 
         <div class="form-group" style="margin-top: 16px;">
             <label class="form-label">Recipient Customer Email</label>
@@ -876,9 +1164,11 @@
         </div>
     </div>
 </div>
+}
 
 <!-- ==================== ACCEPT TRANSFER MODAL (RC Upload) ==================== -->
-<div *ngIf="showAcceptModal()" class="modal-overlay" (click)="closeAcceptModal()">
+@if (showAcceptModal()) {
+<div class="modal-overlay" (click)="closeAcceptModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
             <div class="modal-icon-wrap" style="background: linear-gradient(135deg, #10b98122, #059e5222);">
@@ -890,7 +1180,8 @@
             </div>
         </div>
 
-        <div *ngIf="pendingAcceptTransfer()"
+        @if (pendingAcceptTransfer()) {
+        <div
             style="background: var(--card-inner-bg); border-radius: 10px; padding: 16px; margin: 16px 0; border: 1px solid var(--card-inner-border);">
             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px;">Policy being transferred:</p>
             <p style="font-weight: 600;">{{ pendingAcceptTransfer().policy?.policyNumber }}</p>
@@ -899,6 +1190,7 @@
             <p style="font-size: 0.85rem; margin-top: 8px;">From: <strong>{{ pendingAcceptTransfer().senderName
                     }}</strong></p>
         </div>
+        }
 
         <div class="form-group">
             <label class="form-label">RC Book / Registration Certificate (PDF or Image)</label>
@@ -916,8 +1208,9 @@
             <button class="btn-outline" style="padding: 10px 24px;" (click)="closeAcceptModal()">Cancel</button>
             <button class="btn-primary" style="padding: 10px 24px; background: var(--success);"
                 (click)="acceptTransfer()" [disabled]="!rcFile">
-                <i class="fa-solid fa-check" style="margin-right: 6px;"></i>Accept & Submit
+                <i class="fa-solid fa-check" style="margin-right: 6px;"></i>Accept &amp; Submit
             </button>
         </div>
     </div>
 </div>
+}

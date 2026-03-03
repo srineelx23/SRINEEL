@@ -1,11 +1,15 @@
 <div class="dashboard-layout">
     <!-- Display Error/Success Messages -->
-    <div *ngIf="errorMessage()" class="error-toast">
+    @if (errorMessage()) {
+    <div class="error-toast">
         {{ errorMessage() }}
     </div>
-    <div *ngIf="successMessage()" class="success-toast">
+    }
+    @if (successMessage()) {
+    <div class="success-toast">
         {{ successMessage() }}
     </div>
+    }
 
     <!-- Hovering Navbar -->
     <nav class="hover-navbar">
@@ -38,8 +42,8 @@
                 </div>
 
                 <!-- Dropdown Menu -->
-                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
-                    (mouseleave)="showUserDropdown.set(false)">
+                @if (showUserDropdown()) {
+                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
                     <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
                         <i class="fa-solid fa-gear"></i>
                         <span>Settings</span>
@@ -50,6 +54,7 @@
                         <span>Sign Out</span>
                     </div>
                 </div>
+                }
             </div>
         </div>
     </nav>
@@ -57,7 +62,8 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Overview Tab -->
-        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+        @if (activeTab() === 'overview') {
+        <div class="tab-content fade-in">
 
             <!-- Hero Greeting -->
             <div class="overview-hero">
@@ -117,13 +123,16 @@
                             style="color:var(--warning);margin-right:8px;"></i>Pending Applications Queue</h2>
                     <button class="btn-outline-sm" (click)="switchTab('applications')">View All →</button>
                 </div>
-                <div *ngIf="pendingApps().length === 0" class="empty-state-mini">
+                @if (pendingApps().length === 0) {
+                <div class="empty-state-mini">
                     <span>🎉</span>
                     <p>No pending applications. All caught up!</p>
                 </div>
-                <div class="overview-list" *ngIf="pendingApps().length > 0">
-                    <div class="overview-list-item" *ngFor="let a of pendingApps().slice(0,5)"
-                        (click)="switchTab('applications')">
+                }
+                @if (pendingApps().length > 0) {
+                <div class="overview-list">
+                    @for (a of pendingApps().slice(0,5); track a.applicationId) {
+                    <div class="overview-list-item" (click)="switchTab('applications')">
                         <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
                         <div class="oli-body">
                             <div class="oli-title">{{ a.ownerName || a.fullName || 'Applicant' }}</div>
@@ -132,22 +141,30 @@
                         </div>
                         <span class="status-badge pending">Pending</span>
                     </div>
+                    }
                 </div>
+                }
             </div>
         </div>
+        }
 
         <!-- Applications Tab -->
-        <div *ngIf="activeTab() === 'applications'" class="tab-content fade-in">
+        @if (activeTab() === 'applications') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Pending Applications</h1>
                 <p class="page-subtitle">Review vehicle insurance applications assigned to you.</p>
             </header>
 
-            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedApp()">
-                <p *ngIf="pendingApps().length === 0" style="color: var(--text-muted); padding: 16px;">No pending
+            @if (!selectedApp()) {
+            <div class="glass-panel" style="padding: 24px;">
+                @if (pendingApps().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No pending
                     applications in your queue.</p>
+                }
 
-                <table class="vims-table" *ngIf="pendingApps().length > 0">
+                @if (pendingApps().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Applicant</th>
@@ -158,19 +175,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let app of pendingApps()" (click)="openAppReview(app)" style="cursor: pointer;">
+                        @for (app of pendingApps(); track app.applicationId) {
+                        <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
                             <td>{{ app.registrationNumber }}</td>
                             <td>{{ app.createdAt | date }}</td>
                             <td><span class="status-badge pending">Pending Review</span></td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
+            }
 
             <!-- Detailed Application Review View -->
-            <div *ngIf="selectedApp()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+            @if (selectedApp()) {
+            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
                 <button class="btn-outline"
                     style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
                     (click)="closeAppReview()">← Back to List</button>
@@ -206,23 +228,26 @@
                     <div class="glass-panel"
                         style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
                         <h3 style="color: var(--accent); margin-bottom: 16px;">Application Documents</h3>
-                        <p *ngIf="!selectedApp().documents || selectedApp().documents.length === 0"
-                            style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+                        @if (!selectedApp().documents || selectedApp().documents.length === 0) {
+                        <p style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+                        }
 
-                        <div *ngIf="selectedApp().documents && selectedApp().documents.length > 0"
-                            style="display: flex; flex-direction: column; gap: 12px;">
-                            <ng-container *ngFor="let doc of selectedApp().documents">
-                                <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
-                                </a>
-                            </ng-container>
+                        @if (selectedApp().documents && selectedApp().documents.length > 0) {
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            @for (doc of selectedApp().documents; track doc.documentId) {
+                            <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
+                            </a>
+                            }
                         </div>
+                        }
                     </div>
                 </div>
 
                 <!-- Review Action Form (Only for Pending) -->
-                <div class="glass-panel" *ngIf="selectedApp().status === 'Pending'"
+                @if (selectedApp().status === 'Pending') {
+                <div class="glass-panel"
                     style="padding: 24px; border: 1px solid var(--accent); background: rgba(58, 80, 107, 0.1);">
                     <h3 style="margin-bottom: 24px;">Decision</h3>
                     <form class="vims-form" (ngSubmit)="submitReview()">
@@ -245,16 +270,19 @@
                         </div>
 
                         <!-- Approve Fields -->
-                        <div *ngIf="reviewAction.approved" class="form-group slide-in">
+                        @if (reviewAction.approved) {
+                        <div class="form-group slide-in">
                             <label for="invoiceAmt"
                                 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Determined
                                 Invoice Amount (from documents)</label>
                             <input type="number" id="invoiceAmt" name="invoiceAmt" class="form-control"
                                 [(ngModel)]="reviewAction.invoiceAmount" placeholder="e.g. 500000" required>
                         </div>
+                        }
 
                         <!-- Reject Fields -->
-                        <div *ngIf="!reviewAction.approved" class="form-group slide-in">
+                        @if (!reviewAction.approved) {
+                        <div class="form-group slide-in">
                             <label for="rejectReason"
                                 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Rejection
                                 Reason</label>
@@ -262,6 +290,7 @@
                                 [(ngModel)]="reviewAction.rejectionReason" rows="3"
                                 placeholder="Explain why this application is rejected..." required></textarea>
                         </div>
+                        }
 
                         <button type="submit" class="btn-primary" style="margin-top: 16px; padding: 12px 32px;"
                             [ngStyle]="{'background': reviewAction.approved ? 'var(--success)' : 'var(--error)'}">
@@ -269,9 +298,11 @@
                         </button>
                     </form>
                 </div>
+                }
 
                 <!-- Read-Only History View (For non-Pending) -->
-                <div class="glass-panel" *ngIf="selectedApp().status !== 'Pending'"
+                @if (selectedApp().status !== 'Pending') {
+                <div class="glass-panel"
                     style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
                     <h3 style="margin-bottom: 24px; color: var(--text-main);">Decision Record</h3>
 
@@ -282,36 +313,48 @@
                             style="display: inline-block;">{{ selectedApp().status }}</span>
                     </p>
 
-                    <p style="margin-bottom: 8px;" *ngIf="selectedApp().status === 'Approved'"><strong
+                    @if (selectedApp().status === 'Approved') {
+                    <p style="margin-bottom: 8px;"><strong
                             style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
                             Value:</strong>
                         <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
                             selectedApp().invoiceAmount | currency:'INR' }}</span>
                     </p>
+                    }
 
-                    <div *ngIf="selectedApp().status === 'Rejected'"
+                    @if (selectedApp().status === 'Rejected') {
+                    <div
                         style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
                         <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
                             Reason:</strong>
                         <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
                         </p>
                     </div>
+                    }
                 </div>
+                }
             </div>
+            }
         </div>
+        }
 
         <!-- History Tab -->
-        <div *ngIf="activeTab() === 'history'" class="tab-content fade-in">
+        @if (activeTab() === 'history') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Application History</h1>
                 <p class="page-subtitle">A record of vehicle applications you have approved or rejected.</p>
             </header>
 
-            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedApp()">
-                <p *ngIf="reviewedApps().length === 0" style="color: var(--text-muted); padding: 16px;">No applications
+            @if (!selectedApp()) {
+            <div class="glass-panel" style="padding: 24px;">
+                @if (reviewedApps().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No applications
                     have been reviewed yet.</p>
+                }
 
-                <table class="vims-table" *ngIf="reviewedApps().length > 0">
+                @if (reviewedApps().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Applicant</th>
@@ -322,7 +365,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let app of reviewedApps()" (click)="openAppReview(app)" style="cursor: pointer;">
+                        @for (app of reviewedApps(); track app.applicationId) {
+                        <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }}</td>
                             <td>{{ app.registrationNumber }}</td>
@@ -332,12 +376,16 @@
                                     style="display: inline-block;">{{ app.status }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
+            }
 
             <!-- Detailed Application History View (Re-using the same panel logic) -->
-            <div *ngIf="selectedApp()" class="glass-panel fade-in" style="padding: 32px; position: relative;">
+            @if (selectedApp()) {
+            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
                 <button class="btn-outline"
                     style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
                     (click)="closeAppReview()">← Back to History</button>
@@ -390,36 +438,47 @@
                             style="display: inline-block;">{{ selectedApp().status }}</span>
                     </p>
 
-                    <p style="margin-bottom: 8px;" *ngIf="selectedApp().status === 'Approved'"><strong
+                    @if (selectedApp().status === 'Approved') {
+                    <p style="margin-bottom: 8px;"><strong
                             style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
                             Value:</strong>
                         <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
                             selectedApp().invoiceAmount | currency:'INR' }}</span>
                     </p>
+                    }
 
-                    <div *ngIf="selectedApp().status === 'Rejected'"
+                    @if (selectedApp().status === 'Rejected') {
+                    <div
                         style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
                         <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
                             Reason:</strong>
                         <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
                         </p>
                     </div>
+                    }
                 </div>
             </div>
+            }
         </div>
+        }
 
         <!-- Customers Tab -->
-        <div *ngIf="activeTab() === 'customers'" class="tab-content fade-in">
+        @if (activeTab() === 'customers') {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Supervised Customers</h1>
                 <p class="page-subtitle">View your assigned customers and their active policies.</p>
             </header>
 
-            <div class="glass-panel" style="padding: 24px;" *ngIf="!selectedCustomerRecord()">
-                <p *ngIf="customers().length === 0" style="color: var(--text-muted); padding: 16px;">No customers
+            @if (!selectedCustomerRecord()) {
+            <div class="glass-panel" style="padding: 24px;">
+                @if (customers().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No customers
                     assigned yet.</p>
+                }
 
-                <table class="vims-table" *ngIf="customers().length > 0">
+                @if (customers().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Customer Name</th>
@@ -429,7 +488,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let c of customers()" (click)="openCustomerDetails(c)" style="cursor: pointer;">
+                        @for (c of customers(); track c.policyNumber) {
+                        <tr (click)="openCustomerDetails(c)" style="cursor: pointer;">
                             <td>{{ c.customerName }}</td>
                             <td>{{ c.registrationNumber }}</td>
                             <td>{{ c.policyNumber }}</td>
@@ -438,13 +498,16 @@
                                     style="display: inline-block;">{{ c.policyStatus }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
+            }
 
             <!-- Detailed Customer Policy View -->
-            <div *ngIf="selectedCustomerRecord()" class="glass-panel fade-in"
-                style="padding: 32px; position: relative;">
+            @if (selectedCustomerRecord()) {
+            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
                 <button class="btn-outline"
                     style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
                     (click)="closeCustomerDetails()">← Back to List</button>
@@ -486,21 +549,26 @@
                     <div class="glass-panel"
                         style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
                         <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Documents</h3>
-                        <p *ngIf="!selectedCustomerRecord().documents || selectedCustomerRecord().documents.length === 0"
-                            style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+                        @if (!selectedCustomerRecord().documents || selectedCustomerRecord().documents.length === 0) {
+                        <p style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+                        }
 
-                        <div *ngIf="selectedCustomerRecord().documents && selectedCustomerRecord().documents.length > 0"
-                            style="display: flex; flex-direction: column; gap: 12px;">
-                            <ng-container *ngFor="let doc of selectedCustomerRecord().documents; let i = index">
-                                <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View Document {{ i + 1 }}
-                                </a>
-                            </ng-container>
+                        @if (selectedCustomerRecord().documents && selectedCustomerRecord().documents.length > 0) {
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            @for (doc of selectedCustomerRecord().documents; track $index) {
+                            <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View Document {{ $index + 1 }}
+                            </a>
+                            }
                         </div>
+                        }
                     </div>
                 </div>
             </div>
+            }
         </div>
+        }
+
     </main>
 </div>

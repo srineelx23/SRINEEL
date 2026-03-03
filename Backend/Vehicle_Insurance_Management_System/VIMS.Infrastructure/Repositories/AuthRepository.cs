@@ -36,5 +36,16 @@ namespace VIMS.Infrastructure.Repositories
             _context.SaveChanges();
             return admin;
         }
+
+        public async Task<User> GetUserByIdAsync(int userId)
+        {
+            return await _context.Users.FindAsync(userId);
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

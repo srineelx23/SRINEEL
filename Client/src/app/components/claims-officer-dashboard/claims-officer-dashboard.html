@@ -1,11 +1,15 @@
 <div class="dashboard-layout">
     <!-- Display Error/Success Messages -->
-    <div *ngIf="errorMessage()" class="error-toast">
+    @if (errorMessage()) {
+    <div class="error-toast">
         {{ errorMessage() }}
     </div>
-    <div *ngIf="successMessage()" class="success-toast">
+    }
+    @if (successMessage()) {
+    <div class="success-toast">
         {{ successMessage() }}
     </div>
+    }
 
     <!-- Hovering Navbar -->
     <nav class="hover-navbar">
@@ -36,8 +40,8 @@
                 </div>
 
                 <!-- Dropdown Menu -->
-                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
-                    (mouseleave)="showUserDropdown.set(false)">
+                @if (showUserDropdown()) {
+                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
                     <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
                         <i class="fa-solid fa-gear"></i>
                         <span>Settings</span>
@@ -48,6 +52,7 @@
                         <span>Sign Out</span>
                     </div>
                 </div>
+                }
             </div>
         </div>
     </nav>
@@ -55,7 +60,8 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Overview Tab -->
-        <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
+        @if (activeTab() === 'overview') {
+        <div class="tab-content fade-in">
 
             <!-- Hero Greeting -->
             <div class="overview-hero">
@@ -104,13 +110,16 @@
                             style="color:var(--warning);margin-right:8px;"></i>Claims Requiring Attention</h2>
                     <button class="btn-outline-sm" (click)="switchTab('pending')">View All →</button>
                 </div>
-                <div *ngIf="pendingClaims().length === 0" class="empty-state-mini">
+                @if (pendingClaims().length === 0) {
+                <div class="empty-state-mini">
                     <span>🎉</span>
                     <p>All claims have been reviewed. Excellent work!</p>
                 </div>
-                <div class="overview-list" *ngIf="pendingClaims().length > 0">
-                    <div class="overview-list-item" *ngFor="let c of pendingClaims().slice(0,5)"
-                        (click)="openClaimReview(c)">
+                }
+                @if (pendingClaims().length > 0) {
+                <div class="overview-list">
+                    @for (c of pendingClaims().slice(0,5); track c.claimId) {
+                    <div class="overview-list-item" (click)="openClaimReview(c)">
                         <div class="oli-icon"><i class="fa-solid fa-file-shield"></i></div>
                         <div class="oli-body">
                             <div class="oli-title">{{ c.claimNumber }}</div>
@@ -118,22 +127,29 @@
                         </div>
                         <span class="status-badge pending">Under Review</span>
                     </div>
+                    }
                 </div>
+                }
             </div>
         </div>
+        }
 
         <!-- Pending Claims Tab -->
-        <div *ngIf="activeTab() === 'pending' && !selectedClaim()" class="tab-content fade-in">
+        @if (activeTab() === 'pending' && !selectedClaim()) {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Pending Claims</h1>
                 <p class="page-subtitle">Outstanding claims requiring investigation and settlement decisions.</p>
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
-                <p *ngIf="pendingClaims().length === 0" style="color: var(--text-muted); padding: 16px;">No pending
+                @if (pendingClaims().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No pending
                     claims at the moment. Great job!</p>
+                }
 
-                <table class="vims-table" *ngIf="pendingClaims().length > 0">
+                @if (pendingClaims().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Claim No.</th>
@@ -144,20 +160,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let c of pendingClaims()" (click)="openClaimReview(c)" style="cursor: pointer;">
+                        @for (c of pendingClaims(); track c.claimId) {
+                        <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
                             <td>{{ c.policy?.policyNumber }}</td>
                             <td>{{ c.claimType }}</td>
                             <td><span class="status-badge pending">Under Review</span></td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
+        }
 
         <!-- Detailed Claim Review Panel -->
-        <div *ngIf="selectedClaim()" class="tab-content fade-in">
+        @if (selectedClaim()) {
+        <div class="tab-content fade-in">
             <div class="glass-panel" style="padding: 32px; position: relative;">
                 <button class="btn-outline"
                     style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
@@ -190,30 +211,36 @@
                     <div class="glass-panel"
                         style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
                         <h3 style="color: var(--accent); margin-bottom: 16px;">Evidence & Documents</h3>
-                        <p *ngIf="!selectedClaim().documents || selectedClaim().documents.length === 0"
-                            style="color: var(--text-muted); font-style: italic;">No evidence uploaded.</p>
+                        @if (!selectedClaim().documents || selectedClaim().documents.length === 0) {
+                        <p style="color: var(--text-muted); font-style: italic;">No evidence uploaded.</p>
+                        }
 
-                        <div *ngIf="selectedClaim().documents && selectedClaim().documents.length > 0"
-                            style="display: flex; flex-direction: column; gap: 12px;">
-                            <ng-container *ngFor="let docPair of selectedClaim().documents">
-                                <a *ngIf="docPair.document1" [href]="'https://localhost:7257/' + docPair.document1"
-                                    target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View Primary Document
-                                </a>
-                                <a *ngIf="docPair.document2" [href]="'https://localhost:7257/' + docPair.document2"
-                                    target="_blank" class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                    <span style="font-size: 1.2rem;">📄</span> View Secondary Document
-                                </a>
-                            </ng-container>
+                        @if (selectedClaim().documents && selectedClaim().documents.length > 0) {
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            @for (docPair of selectedClaim().documents; track docPair.id) {
+                            @if (docPair.document1) {
+                            <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank"
+                                class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View Primary Document
+                            </a>
+                            }
+                            @if (docPair.document2) {
+                            <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank"
+                                class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                                <span style="font-size: 1.2rem;">📄</span> View Secondary Document
+                            </a>
+                            }
+                            }
                         </div>
+                        }
                     </div>
                 </div>
 
                 <!-- Review Action Form (Only for Pending) -->
+                @if (selectedClaim().status === 'Submitted' || selectedClaim().status === 'UnderReview') {
                 <div class="glass-panel"
-                    *ngIf="selectedClaim().status === 'Submitted' || selectedClaim().status === 'UnderReview'"
                     style="padding: 24px; border: 1px solid var(--accent); background: rgba(58, 80, 107, 0.1);">
                     <h3 style="margin-bottom: 24px;">Settlement Decision</h3>
                     <form class="vims-form" (ngSubmit)="submitDecision()">
@@ -236,64 +263,67 @@
                         </div>
 
                         <!-- dynamic fields based on claim type -->
-                        <div *ngIf="decisionForm.approved" class="form-group slide-in">
+                        @if (decisionForm.approved) {
+                        <div class="form-group slide-in">
                             <!-- Damage specific -->
-                            <ng-container
-                                *ngIf="selectedClaim().claimType === 'Damage' || selectedClaim().claimType === 'ThirdParty'">
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                    <div>
-                                        <label for="repairCost"
-                                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Authorized
-                                            Repair Cost</label>
-                                        <input type="number" id="repairCost" name="repairCost" class="form-control"
-                                            [(ngModel)]="decisionForm.repairCost"
-                                            placeholder="Verified repair cost amount" required>
-                                    </div>
-                                    <div *ngIf="selectedClaim().claimType === 'Damage'">
-                                        <label for="engineCost"
-                                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Engine
-                                            Parts Cost (Optional)</label>
-                                        <input type="number" id="engineCost" name="engineCost" class="form-control"
-                                            [(ngModel)]="decisionForm.engineCost" placeholder="If applicable">
-                                    </div>
+                            @if (selectedClaim().claimType === 'Damage' || selectedClaim().claimType === 'ThirdParty') {
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                                <div>
+                                    <label for="repairCost"
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Authorized
+                                        Repair Cost</label>
+                                    <input type="number" id="repairCost" name="repairCost" class="form-control"
+                                        [(ngModel)]="decisionForm.repairCost" placeholder="Verified repair cost amount"
+                                        required>
                                 </div>
-                            </ng-container>
+                                @if (selectedClaim().claimType === 'Damage') {
+                                <div>
+                                    <label for="engineCost"
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Engine
+                                        Parts Cost (Optional)</label>
+                                    <input type="number" id="engineCost" name="engineCost" class="form-control"
+                                        [(ngModel)]="decisionForm.engineCost" placeholder="If applicable">
+                                </div>
+                                }
+                            </div>
+                            }
 
                             <!-- Third Party specific -->
-                            <ng-container *ngIf="selectedClaim().claimType === 'ThirdParty'">
-                                <div
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                    <div>
-                                        <label for="invoiceAmount"
-                                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
-                                            Party Vehicle Invoice Amt.</label>
-                                        <input type="number" id="invoiceAmount" name="invoiceAmount"
-                                            class="form-control" [(ngModel)]="decisionForm.invoiceAmount"
-                                            placeholder="Invoice of the external vehicle" required>
-                                    </div>
-                                    <div>
-                                        <label for="manufactureYear"
-                                            style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
-                                            Party Manufacture Year</label>
-                                        <input type="number" id="manufactureYear" name="manufactureYear"
-                                            class="form-control" [(ngModel)]="decisionForm.manufactureYear"
-                                            placeholder="e.g. 2021" required>
-                                    </div>
+                            @if (selectedClaim().claimType === 'ThirdParty') {
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                                <div>
+                                    <label for="invoiceAmount"
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
+                                        Party Vehicle Invoice Amt.</label>
+                                    <input type="number" id="invoiceAmount" name="invoiceAmount" class="form-control"
+                                        [(ngModel)]="decisionForm.invoiceAmount"
+                                        placeholder="Invoice of the external vehicle" required>
                                 </div>
-                            </ng-container>
+                                <div>
+                                    <label for="manufactureYear"
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
+                                        Party Manufacture Year</label>
+                                    <input type="number" id="manufactureYear" name="manufactureYear"
+                                        class="form-control" [(ngModel)]="decisionForm.manufactureYear"
+                                        placeholder="e.g. 2021" required>
+                                </div>
+                            </div>
+                            }
 
                             <!-- Theft specific -->
-                            <ng-container *ngIf="selectedClaim().claimType === 'Theft'">
-                                <p style="color: var(--accent); font-style: italic; margin-bottom: 16px;">Payout will be
-                                    automatically calculated out to Full IDV value.</p>
-                            </ng-container>
+                            @if (selectedClaim().claimType === 'Theft') {
+                            <p style="color: var(--accent); font-style: italic; margin-bottom: 16px;">Payout will be
+                                automatically calculated out to Full IDV value.</p>
+                            }
                         </div>
+                        }
 
-                        <div *ngIf="!decisionForm.approved" class="form-group slide-in">
+                        @if (!decisionForm.approved) {
+                        <div class="form-group slide-in">
                             <p style="color: var(--error); font-style: italic; margin-bottom: 16px;">Warning: Rejecting
                                 this claim permanently closes the case.</p>
                         </div>
+                        }
 
                         <button type="submit" class="btn-primary" style="margin-top: 16px; padding: 12px 32px;"
                             [ngStyle]="{'background': decisionForm.approved ? 'var(--success)' : 'var(--error)'}">
@@ -301,10 +331,11 @@
                         </button>
                     </form>
                 </div>
+                }
 
                 <!-- Read-Only History View -->
+                @if (selectedClaim().status === 'Approved' || selectedClaim().status === 'Rejected') {
                 <div class="glass-panel"
-                    *ngIf="selectedClaim().status === 'Approved' || selectedClaim().status === 'Rejected'"
                     style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
                     <h3 style="margin-bottom: 24px; color: var(--text-main);">Final Resolution Record</h3>
 
@@ -315,20 +346,26 @@
                             style="display: inline-block;">{{ selectedClaim().status }}</span>
                     </p>
                 </div>
+                }
             </div>
         </div>
+        }
         <!-- History Tab -->
-        <div *ngIf="activeTab() === 'history' && !selectedClaim()" class="tab-content fade-in">
+        @if (activeTab() === 'history' && !selectedClaim()) {
+        <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Completed Settlements</h1>
                 <p class="page-subtitle">A historical record of claims you've processed.</p>
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
-                <p *ngIf="reviewedClaims().length === 0" style="color: var(--text-muted); padding: 16px;">No history
+                @if (reviewedClaims().length === 0) {
+                <p style="color: var(--text-muted); padding: 16px;">No history
                     records available.</p>
+                }
 
-                <table class="vims-table" *ngIf="reviewedClaims().length > 0">
+                @if (reviewedClaims().length > 0) {
+                <table class="vims-table">
                     <thead>
                         <tr>
                             <th>Claim No.</th>
@@ -338,7 +375,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let c of reviewedClaims()" (click)="openClaimReview(c)" style="cursor: pointer;">
+                        @for (c of reviewedClaims(); track c.claimId) {
+                        <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
                             <td>{{ c.claimType }}</td>
@@ -348,9 +386,12 @@
                                     c.status }}</span>
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
+        }
     </main>
 </div>

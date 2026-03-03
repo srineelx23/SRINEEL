@@ -15,6 +15,20 @@ import { AuthService } from '../../services/auth.service';
 export class ExplorePlans implements OnInit {
   // Data stores
   plans = signal<any[]>([]);
+  filteredPlans = signal<any[]>([]);
+
+  // Filter State
+  searchQuery = signal('');
+  filterVehicleType = signal('');
+  filterPolicyType = signal('');
+  filterMaxPremium = signal<number | null>(null);
+
+  // Feature filters
+  filterThirdParty = signal(false);
+  filterOwnDamage = signal(false);
+  filterTheft = signal(false);
+  filterZeroDep = signal(false);
+  filterRoadside = signal(false);
 
   // Quote State
   selectedPlanForQuote = signal<number | null>(null);
@@ -29,6 +43,10 @@ export class ExplorePlans implements OnInit {
   };
   calculatedQuote = signal<any>(null);
   isLoggedIn = signal(false);
+  userName = signal<string | null>(null);
+  showDropdown = false;
+  showVehicleDropdown = signal(false);
+  showPolicyDropdown = signal(false);
 
   // Application State
   isApplying = signal(false);
@@ -44,9 +62,9 @@ export class ExplorePlans implements OnInit {
   successMessage = signal('');
 
   private customerService = inject(CustomerService);
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  public authService = inject(AuthService);
+  public router = inject(Router);
+  public route = inject(ActivatedRoute);
 
   ngOnInit() {
     this.loadPlans();
@@ -62,14 +80,105 @@ export class ExplorePlans implements OnInit {
 
   loadPlans() {
     this.customerService.getAllPolicyPlans().subscribe({
-      next: (res) => this.plans.set(res),
+      next: (res) => {
+        this.plans.set(res);
+        this.applyFilters();
+      },
       error: (err) => console.error(err)
     });
     this.isLoggedIn.set(this.authService.isLoggedIn());
+    this.userName.set(this.authService.getUserName());
+  }
+
+  applyFilters() {
+    let results = this.plans();
+
+    // Text search
+    if (this.searchQuery()) {
+      results = results.filter(p =>
+        p.planName.toLowerCase().includes(this.searchQuery().toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(this.searchQuery().toLowerCase()))
+      );
+    }
+
+    // Vehicle Type
+    if (this.filterVehicleType()) {
+      results = results.filter(p => p.applicableVehicleType === this.filterVehicleType());
+    }
+
+    // Policy Type
+    if (this.filterPolicyType()) {
+      results = results.filter(p => p.policyType === this.filterPolicyType());
+    }
+
+    // Premium range
+    if (this.filterMaxPremium()) {
+      results = results.filter(p => p.basePremium <= (this.filterMaxPremium() || 0));
+    }
+
+    // Booleans
+    if (this.filterThirdParty()) results = results.filter(p => p.coversThirdParty);
+    if (this.filterOwnDamage()) results = results.filter(p => p.coversOwnDamage);
+    if (this.filterTheft()) results = results.filter(p => p.coversTheft);
+    if (this.filterZeroDep()) results = results.filter(p => p.zeroDepreciationAvailable);
+    if (this.filterRoadside()) results = results.filter(p => p.roadsideAssistanceAvailable);
+
+    this.filteredPlans.set(results);
+  }
+
+  updateFilter(event: any, type: string) {
+    const val = event.target.value;
+    if (type === 'search') this.searchQuery.set(val);
+    if (type === 'vehicle') this.filterVehicleType.set(val);
+    if (type === 'policy') this.filterPolicyType.set(val);
+    if (type === 'premium') this.filterMaxPremium.set(val ? Number(val) : null);
+    this.applyFilters();
+  }
+
+  setFilterDirect(val: string, type: string) {
+    if (type === 'vehicle') {
+      this.filterVehicleType.set(val);
+      this.showVehicleDropdown.set(false);
+    }
+    if (type === 'policy') {
+      this.filterPolicyType.set(val);
+      this.showPolicyDropdown.set(false);
+    }
+    this.applyFilters();
+  }
+
+  toggleFeatureFilter(feature: string) {
+    if (feature === 'thirdParty') this.filterThirdParty.set(!this.filterThirdParty());
+    if (feature === 'ownDamage') this.filterOwnDamage.set(!this.filterOwnDamage());
+    if (feature === 'theft') this.filterTheft.set(!this.filterTheft());
+    if (feature === 'zeroDep') this.filterZeroDep.set(!this.filterZeroDep());
+    if (feature === 'roadside') this.filterRoadside.set(!this.filterRoadside());
+    this.applyFilters();
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.filterVehicleType.set('');
+    this.filterPolicyType.set('');
+    this.filterMaxPremium.set(null);
+    this.filterThirdParty.set(false);
+    this.filterOwnDamage.set(false);
+    this.filterTheft.set(false);
+    this.filterZeroDep.set(false);
+    this.filterRoadside.set(false);
+    this.applyFilters();
   }
 
   goHome() {
     this.router.navigate(['/']);
+  }
+
+  goToDashboard() {
+    const role = this.authService.getRoleFromStoredToken();
+    if (role === 'Customer') this.router.navigate(['/customer-dashboard']);
+    else if (role === 'Admin') this.router.navigate(['/admin-dashboard']);
+    else if (role === 'Agent') this.router.navigate(['/agent-dashboard']);
+    else if (role === 'ClaimsOfficer' || role === 'Claims') this.router.navigate(['/claims-dashboard']);
   }
 
   // --- Quotes & Applications ---
@@ -78,6 +187,19 @@ export class ExplorePlans implements OnInit {
       this.router.navigate(['/login'], { queryParams: { quote_intent: planId } });
       return;
     }
+
+    const role = this.authService.getRoleFromStoredToken();
+    const restrictedRoles = ['Admin', 'Agent', 'ClaimsOfficer', 'Claims'];
+
+    if (restrictedRoles.includes(role || '')) {
+      this.errorMessage.set("Staff members (Admin/Agent/Claims) cannot purchase policies. Please register as a customer.");
+      this.autoHideToast();
+      setTimeout(() => {
+        this.router.navigate(['/register']);
+      }, 2000);
+      return;
+    }
+
     this.selectedPlanForQuote.set(planId);
     this.quoteForm.PlanId = planId;
   }
@@ -86,11 +208,6 @@ export class ExplorePlans implements OnInit {
     this.selectedPlanForQuote.set(null);
     this.calculatedQuote.set(null);
     this.isApplying.set(false);
-  }
-
-  markInterested(planId: number) {
-    this.successMessage.set("We've noted your interest in this plan! An agent may contact you soon.");
-    setTimeout(() => this.successMessage.set(''), 3000);
   }
 
   calculateQuote() {
@@ -189,5 +306,7 @@ export class ExplorePlans implements OnInit {
 
   logout() {
     this.authService.logout();
+    this.isLoggedIn.set(false);
+    this.userName.set(null);
   }
 }

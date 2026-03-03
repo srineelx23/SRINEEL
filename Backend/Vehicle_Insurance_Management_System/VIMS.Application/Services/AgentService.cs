@@ -20,8 +20,9 @@ namespace VIMS.Application.Services
         private readonly IPolicyRepository _policyRepository;
         private readonly IPricingService _pricingService;
         private readonly IPolicyTransferRepository _policyTransferRepository;
+        private readonly IAuditService _auditService;
 
-        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository)
+        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService)
         {
             _vehicleApplicationRepository = appRepo;
             _vehicleRepository = vehicleRepo;
@@ -29,6 +30,7 @@ namespace VIMS.Application.Services
             _policyRepository = policyRepository;
             _pricingService = pricingService;
             _policyTransferRepository = policyTransferRepository;
+            _auditService = auditService;
         }
 
         public async Task<List<VehicleApplication>> GetMyPendingApplicationsAsync(int agentId)
@@ -65,6 +67,7 @@ namespace VIMS.Application.Services
                 }
 
                 await _vehicleApplicationRepository.SaveChangesAsync();
+                await _auditService.LogActionAsync("PolicyApplicationRejected", "Policy", $"Agent rejected application: {app.RegistrationNumber}. Reason: {app.RejectionReason}", "VehicleApplication", app.VehicleApplicationId.ToString());
 
                 // If this was a transfer application, mark transfer as cancelled
                 if (app.IsTransfer)
@@ -175,6 +178,7 @@ namespace VIMS.Application.Services
 
                     app.Status = VehicleApplicationStatus.Approved;
                     await _vehicleApplicationRepository.SaveChangesAsync();
+                    await _auditService.LogActionAsync("PolicyApplicationApproved", "Policy", $"Agent approved transfer application: {app.RegistrationNumber}", "VehicleApplication", app.VehicleApplicationId.ToString());
                     return; // EXIT EARLY IF IT WAS A TRANSFER
                 } 
                 catch (Exception ex) 
@@ -241,6 +245,7 @@ namespace VIMS.Application.Services
 
             app.Status = VehicleApplicationStatus.Approved;
             await _vehicleApplicationRepository.SaveChangesAsync();
+            await _auditService.LogActionAsync("PolicyApplicationApproved", "Policy", $"Agent approved application: {app.RegistrationNumber}", "VehicleApplication", app.VehicleApplicationId.ToString());
         }
 
 

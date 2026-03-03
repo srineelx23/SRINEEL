@@ -52,4 +52,8 @@ export class AdminService {
     activatePlan(id: number): Observable<any> {
         return this.http.put(`${this.apiUrl}/activate/${id}`, {});
     }
+
+    getAuditLogs(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/audit-logs`);
+    }
 }

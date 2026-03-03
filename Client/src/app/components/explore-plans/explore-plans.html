@@ -2,23 +2,59 @@
     <nav class="navbar glass-panel">
         <div class="nav-container">
             <div class="logo" style="cursor: pointer;" (click)="goHome()">
-                <span class="logo-text" style="font-weight: 800; font-size: 1.5rem;">VIMS</span>
+                <span class="logo-text">VIMS</span>
             </div>
-            <div class="nav-actions" style="display: flex; gap: 12px; align-items: center;">
-                <a (click)="goHome()" class="btn-text" style="cursor: pointer; color: var(--text-main);">Home</a>
-                <button *ngIf="isLoggedIn()" (click)="logout()" class="btn-outline hero-btn"
-                    style="padding: 8px 16px;">Sign Out</button>
+            <nav class="nav-links">
+                <a (click)="goHome()" style="cursor: pointer;">Home</a>
+                <a (click)="goHome()" style="cursor: pointer;">Services</a>
+                <a (click)="goHome()" style="cursor: pointer;">Contact</a>
+            </nav>
+            <div class="nav-actions">
+                @if (userName()) {
+                <div class="nav-profile-container" style="position: relative;">
+                    <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown">
+                        <div class="profile-avatar">{{ userName()!.charAt(0) }}</div>
+                        <div class="profile-info">
+                            <span class="profile-meta">Account</span>
+                            <span class="profile-name">{{ userName() }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"
+                            [style.transform]="showDropdown ? 'rotate(180deg)' : 'none'"></i>
+                    </div>
+                    @if (showDropdown) {
+                    <div class="dropdown-menu fade-in" (mouseleave)="showDropdown = false">
+                        <div class="dropdown-item" (click)="goToDashboard(); showDropdown = false">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Dashboard</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-item danger" (click)="logout()">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>Sign Out</span>
+                        </div>
+                    </div>
+                    }
+                </div>
+                } @else {
+                <button (click)="router.navigate(['/login'])" class="btn-text">Sign In</button>
+                <button (click)="router.navigate(['/register'])" class="btn-primary" style="padding: 8px 16px;">Join
+                    Now</button>
+                }
             </div>
         </div>
     </nav>
 
     <!-- Display Error/Success Messages -->
-    <div *ngIf="errorMessage()" class="error-toast">
+    @if (errorMessage()) {
+    <div class="error-toast">
         {{ errorMessage() }}
     </div>
-    <div *ngIf="successMessage()" class="success-toast">
+    }
+    @if (successMessage()) {
+    <div class="success-toast">
         {{ successMessage() }}
     </div>
+    }
 
     <main class="container" style="padding-top: 100px; padding-bottom: 60px;">
         <header class="page-header" style="text-align: center; margin-bottom: 40px;">
@@ -27,27 +63,177 @@
                 vehicle insurance.</p>
         </header>
 
-        <!-- Available Plans Grid -->
-        <div *ngIf="!selectedPlanForQuote() && !isApplying()" class="plans-grid fade-in">
-            <div class="plan-card glass-panel" *ngFor="let plan of plans()">
-                <h3>{{ plan.planName }}</h3>
-                <p>{{ plan.description || 'Comprehensive coverage for your vehicle. Discover more protection features
-                    and affordable pricing specific to this tier.' }}</p>
-                <div class="plan-actions">
-                    <button class="btn-text" (click)="markInterested(plan.planId)">Interested</button>
-                    <button class="btn-primary" (click)="openQuoteForm(plan.planId)"
-                        style="padding: 10px 16px; font-size: 0.95rem;">Get a Quote</button>
+        <!-- Filters and Plans Section -->
+        @if (!selectedPlanForQuote() && !isApplying()) {
+        <div class="explore-layout">
+
+            <!-- Horizontal Filter Bar -->
+            <div class="filter-bar glass-panel fade-in">
+                <div class="filter-group-main">
+                    <div class="filter-item search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search plans..." [value]="searchQuery()"
+                            (input)="updateFilter($event, 'search')" class="filter-input-pill">
+                    </div>
+
+                    <div class="filter-item">
+                        <div class="custom-filter-dropdown" (click)="showVehicleDropdown.set(!showVehicleDropdown())">
+                            <div class="filter-trigger">
+                                <span>{{ filterVehicleType() || 'All Vehicles' }}</span>
+                                <i class="fas fa-chevron-down"
+                                    [style.transform]="showVehicleDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                            </div>
+                            @if (showVehicleDropdown()) {
+                            <div class="dropdown-options glass-panel fade-in"
+                                (mouseleave)="showVehicleDropdown.set(false)">
+                                <div class="option-item"
+                                    (click)="setFilterDirect('', 'vehicle'); $event.stopPropagation()">All Vehicles
+                                </div>
+                                <div class="option-item"
+                                    (click)="setFilterDirect('Private', 'vehicle'); $event.stopPropagation()">Private
+                                </div>
+                                <div class="option-item"
+                                    (click)="setFilterDirect('Commercial', 'vehicle'); $event.stopPropagation()">
+                                    Commercial</div>
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <div class="custom-filter-dropdown" (click)="showPolicyDropdown.set(!showPolicyDropdown())">
+                            <div class="filter-trigger">
+                                <span>{{ filterPolicyType() || 'All Policies' }}</span>
+                                <i class="fas fa-chevron-down"
+                                    [style.transform]="showPolicyDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                            </div>
+                            @if (showPolicyDropdown()) {
+                            <div class="dropdown-options glass-panel fade-in"
+                                (mouseleave)="showPolicyDropdown.set(false)">
+                                <div class="option-item"
+                                    (click)="setFilterDirect('', 'policy'); $event.stopPropagation()">All Policies</div>
+                                <div class="option-item"
+                                    (click)="setFilterDirect('Comprehensive', 'policy'); $event.stopPropagation()">
+                                    Comprehensive</div>
+                                <div class="option-item"
+                                    (click)="setFilterDirect('Third-Party', 'policy'); $event.stopPropagation()">
+                                    Third-Party</div>
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="filter-item premium-range">
+                        <span class="range-label">Max Premium:</span>
+                        <input type="range" min="0" max="50000" step="1000" [value]="filterMaxPremium() || 50000"
+                            (input)="updateFilter($event, 'premium')" class="filter-range">
+                        <span class="range-val">{{ filterMaxPremium() ? (filterMaxPremium() | currency:'INR') : 'Any'
+                            }}</span>
+                    </div>
+                </div>
+
+                <div class="filter-divider"></div>
+
+                <div class="filter-group-addons">
+                    <label class="addon-pill" [class.active]="filterThirdParty()">
+                        <input type="checkbox" [checked]="filterThirdParty()"
+                            (change)="toggleFeatureFilter('thirdParty')">
+                        <span>Third Party</span>
+                    </label>
+                    <label class="addon-pill" [class.active]="filterOwnDamage()">
+                        <input type="checkbox" [checked]="filterOwnDamage()"
+                            (change)="toggleFeatureFilter('ownDamage')">
+                        <span>Own Damage</span>
+                    </label>
+                    <label class="addon-pill" [class.active]="filterZeroDep()">
+                        <input type="checkbox" [checked]="filterZeroDep()" (change)="toggleFeatureFilter('zeroDep')">
+                        <span>Zero Dep</span>
+                    </label>
+                    <label class="addon-pill" [class.active]="filterRoadside()">
+                        <input type="checkbox" [checked]="filterRoadside()" (change)="toggleFeatureFilter('roadside')">
+                        <span>Roadside</span>
+                    </label>
+                    <button class="reset-pill" (click)="resetFilters()" title="Reset Filters">
+                        <i class="fas fa-undo"></i>
+                    </button>
                 </div>
             </div>
-            <p *ngIf="plans().length === 0"
-                style="color: var(--text-muted); padding: 16px; text-align: center; width: 100%;">Loading available
-                plans...</p>
-        </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;"
-            *ngIf="selectedPlanForQuote() || calculatedQuote()">
+            <!-- Plans Grid -->
+            <div class="plans-grid-container">
+                <div class="plans-grid fade-in">
+                    @for (plan of filteredPlans(); track plan.planId) {
+                    <div class="plan-card glass-panel">
+                        @if (plan.policyType === 'Comprehensive') {
+                        <div class="plan-badge">Popular</div>
+                        }
+                        <div class="plan-header">
+                            <h3>{{ plan.planName }}</h3>
+                            <div class="plan-price">
+                                <span class="price-val">{{ plan.basePremium | currency:'INR' }}</span>
+                                <span class="price-period">/ year</span>
+                            </div>
+                        </div>
+
+                        <p class="plan-desc">{{ plan.description || 'Premium protection coverage tier.' }}</p>
+
+                        <div class="plan-features">
+                            <h4 class="features-title">What's included:</h4>
+                            <ul>
+                                <li [class.active]="plan.coversThirdParty">
+                                    <i class="fas"
+                                        [ngClass]="plan.coversThirdParty ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Third Party Liability
+                                </li>
+                                <li [class.active]="plan.coversOwnDamage">
+                                    <i class="fas"
+                                        [ngClass]="plan.coversOwnDamage ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Own Damage Cover
+                                </li>
+                                <li [class.active]="plan.coversTheft">
+                                    <i class="fas"
+                                        [ngClass]="plan.coversTheft ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Theft Protection
+                                </li>
+                                <li [class.active]="plan.zeroDepreciationAvailable">
+                                    <i class="fas"
+                                        [ngClass]="plan.zeroDepreciationAvailable ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Zero Depreciation
+                                </li>
+                                <li [class.active]="plan.roadsideAssistanceAvailable">
+                                    <i class="fas"
+                                        [ngClass]="plan.roadsideAssistanceAvailable ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Roadside Assistance
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="plan-actions">
+                            <button class="btn-text" (click)="openQuoteForm(plan.planId)">Buy Now</button>
+                            <button class="btn-primary" (click)="openQuoteForm(plan.planId)">Select Plan</button>
+                        </div>
+                    </div>
+                    }
+                </div>
+
+                @if (filteredPlans().length === 0) {
+                <div class="empty-results glass-panel">
+                    <i class="fas fa-search-minus"></i>
+                    <h3>No plans match your criteria</h3>
+                    <p>Try adjusting your filters to find more coverage options.</p>
+                    <button class="btn-outline" (click)="resetFilters()" style="margin-top: 16px;">Reset All
+                        Filters</button>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+        @if (selectedPlanForQuote() || calculatedQuote()) {
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
             <!-- Quote Calculator Form -->
-            <div class="glass-panel" style="padding: 32px;" *ngIf="selectedPlanForQuote() && !isApplying()">
+            @if (selectedPlanForQuote() && !isApplying()) {
+            <div class="glass-panel" style="padding: 32px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 class="form-title" style="margin-bottom: 0;">Calculate Your Quote</h2>
                     <button class="btn-text" (click)="cancelQuoteProcess()">Cancel</button>
@@ -60,8 +246,10 @@
                         <div class="form-group" style="grid-column: span 2;">
                             <select id="plan" name="plan" [(ngModel)]="quoteForm.PlanId" class="form-control" required
                                 disabled style="padding-top: 16px; padding-bottom: 16px; opacity: 0.7;">
-                                <option *ngFor="let plan of plans()" [value]="plan.planId">{{ plan.planName }} - {{
+                                @for (plan of plans(); track plan.planId) {
+                                <option [value]="plan.planId">{{ plan.planName }} - {{
                                     plan.description }}</option>
+                                }
                             </select>
                         </div>
 
@@ -114,9 +302,11 @@
                         Quote</button>
                 </form>
             </div>
+            }
 
             <!-- Application Form (Shows after quote is calculated and user clicks proceed) -->
-            <div class="glass-panel" style="padding: 32px;" *ngIf="isApplying()">
+            @if (isApplying()) {
+            <div class="glass-panel" style="padding: 32px;">
                 <h2 class="form-title" style="margin-bottom: 24px;">Vehicle Documents</h2>
                 <form class="vims-form" (ngSubmit)="submitApplication()">
                     <div class="form-group">
@@ -159,9 +349,11 @@
                         (click)="isApplying.set(false); calculatedQuote.set(null);">Cancel</button>
                 </form>
             </div>
+            }
 
             <!-- Quote Output Side Panel -->
-            <div class="glass-panel" style="padding: 32px;" *ngIf="calculatedQuote() && !isApplying()">
+            @if (calculatedQuote() && !isApplying()) {
+            <div class="glass-panel" style="padding: 32px;">
                 <h3 style="font-size: 1.5rem; margin-bottom: 8px;">Your Official Quote</h3>
                 <p style="color: var(--text-muted); margin-bottom: 24px;">Estimated premium based on vehicle age, type,
                     and depreciation.</p>
@@ -177,9 +369,13 @@
                     <p style="font-size: 1.25rem; font-weight: 500;">{{ calculatedQuote().idv | currency:'INR' }}</p>
                 </div>
 
-                <button class="btn-primary full-width-btn" (click)="startApplication()" *ngIf="!isApplying()">Apply for
+                @if (!isApplying()) {
+                <button class="btn-primary full-width-btn" (click)="startApplication()">Apply for
                     this Policy</button>
+                }
             </div>
+            }
         </div>
+        }
     </main>
 </div>

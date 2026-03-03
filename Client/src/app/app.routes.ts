@@ -11,6 +11,8 @@ import { ClaimsOfficerDashboard } from './components/claims-officer-dashboard/cl
 import { CustomerDashboard } from './components/customer-dashboard/customer-dashboard';
 import { ExplorePlans } from './components/explore-plans/explore-plans';
 
+import { authGuard } from './guards/auth.guard';
+
 export const routes: Routes = [
   { path: '', component: Landing },
   { path: 'login', component: CustomerLogin },
@@ -18,10 +20,30 @@ export const routes: Routes = [
   { path: 'admin-login', component: AdminLogin },
   { path: 'agent-login', component: AgentLogin },
   { path: 'claims-login', component: ClaimsLogin },
-  { path: 'customer-dashboard', component: CustomerDashboard },
-  { path: 'admin-dashboard', component: AdminDashboard },
-  { path: 'agent-dashboard', component: AgentDashboard },
-  { path: 'claims-dashboard', component: ClaimsOfficerDashboard },
+  {
+    path: 'customer-dashboard',
+    component: CustomerDashboard,
+    canActivate: [authGuard],
+    data: { roles: ['Customer'] }
+  },
+  {
+    path: 'admin-dashboard',
+    component: AdminDashboard,
+    canActivate: [authGuard],
+    data: { roles: ['Admin'] }
+  },
+  {
+    path: 'agent-dashboard',
+    component: AgentDashboard,
+    canActivate: [authGuard],
+    data: { roles: ['Agent'] }
+  },
+  {
+    path: 'claims-dashboard',
+    component: ClaimsOfficerDashboard,
+    canActivate: [authGuard],
+    data: { roles: ['ClaimsOfficer', 'Claims'] }
+  },
   { path: 'explore-plans', component: ExplorePlans },
   { path: '**', redirectTo: '' }
 ];

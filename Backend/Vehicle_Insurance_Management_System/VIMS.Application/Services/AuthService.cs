@@ -21,11 +21,13 @@ namespace VIMS.Application.Services
         private readonly IMapper _mapper;
         private readonly PasswordHasher<User> _hasher;
         private readonly IJwtService _jwtService;
-        public AuthService(IAuthRepository authRepository,IMapper mapper,IJwtService service) {
+        private readonly IAuditService _auditService;
+        public AuthService(IAuthRepository authRepository, IMapper mapper, IJwtService service, IAuditService auditService) {
             _authRepository = authRepository;
             _mapper = mapper;
             _hasher = new PasswordHasher<User>();
             _jwtService = service;
+            _auditService = auditService;
         }
         public async Task<User> RegisterCustomerAsync(RegisterDTO registerDTO)
         {
@@ -36,7 +38,12 @@ namespace VIMS.Application.Services
             }
             var user = _mapper.Map<User>(registerDTO);
             user.PasswordHash = _hasher.HashPassword(user, registerDTO.Password);
-            return await _authRepository.RegisterCustomerAsync(user);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+                user.SecurityAnswerHash = _hasher.HashPassword(user, registerDTO.SecurityAnswer.Trim().ToLower());
+            }
+            var result = await _authRepository.RegisterCustomerAsync(user);
+            await _auditService.LogActionWithUserAsync("CustomerRegister", "Auth", $"Customer {user.FullName} registered.", user.UserId, user.Email, user.Role.ToString(), "User", user.UserId.ToString());
+            return result;
         }
 
         public async Task<User> RegisterAdminAsync(RegisterDTO registerDTO)
@@ -49,7 +56,12 @@ namespace VIMS.Application.Services
             var user= _mapper.Map<User>(registerDTO);
             user.Role = UserRole.Admin;
             user.PasswordHash= _hasher.HashPassword(user,registerDTO.Password);
-            return await _authRepository.RegisterAdminAsync(user);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+                user.SecurityAnswerHash = _hasher.HashPassword(user, registerDTO.SecurityAnswer.Trim().ToLower());
+            }
+            var result = await _authRepository.RegisterAdminAsync(user);
+            await _auditService.LogActionWithUserAsync("AdminRegister", "Auth", $"Admin {user.FullName} registered.", user.UserId, user.Email, user.Role.ToString(), "User", user.UserId.ToString());
+            return result;
         }
 
         public async Task<AuthResultDTO> UserLoginAsync(LoginDTO dto)
@@ -69,9 +81,69 @@ namespace VIMS.Application.Services
             {
                 token = token,
                 name = customer.FullName,
-                Role = customer.Role.ToString()
+                Role = customer.Role.ToString(),
+                IsSecurityQuestionSet = !string.IsNullOrEmpty(customer.SecurityQuestion)
             };
+
+            await _auditService.LogActionWithUserAsync("Login", "Auth", $"User logged in: {customer.Email}", customer.UserId, customer.Email, customer.Role.ToString());
+
             return authResult;
+        }
+
+        public async Task ChangePasswordAsync(int userId, ChangePasswordDTO dto)
+        {
+            var user = await _authRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                throw new NotFoundException("User not found.");
+
+            var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
+            if (result == PasswordVerificationResult.Failed)
+                throw new BadRequestException("Current password is incorrect.");
+
+            user.PasswordHash = _hasher.HashPassword(user, dto.NewPassword);
+            await _authRepository.UpdateUserAsync(user);
+            await _auditService.LogActionAsync("ChangePassword", "Auth", "User changed their password.");
+        }
+        public async Task<string> GetSecurityQuestionAsync(string email)
+        {
+            var user = await _authRepository.UserExistsAsync(email);
+            if (user == null)
+                throw new NotFoundException("Email not found");
+            
+            if (string.IsNullOrEmpty(user.SecurityQuestion))
+                throw new BadRequestException("No security question set for this account.");
+
+            return user.SecurityQuestion;
+        }
+
+        public async Task ResetPasswordAsync(ForgotPasswordDTO dto)
+        {
+            var user = await _authRepository.UserExistsAsync(dto.Email);
+            if (user == null)
+                throw new NotFoundException("Email not found");
+
+            if (string.IsNullOrEmpty(user.SecurityAnswerHash))
+                throw new BadRequestException("No security answer set for this account.");
+
+            var isAnswerValid = _hasher.VerifyHashedPassword(user, user.SecurityAnswerHash, dto.SecurityAnswer.Trim().ToLower());
+            if (isAnswerValid == PasswordVerificationResult.Failed)
+                throw new BadRequestException("Incorrect security answer.");
+
+            user.PasswordHash = _hasher.HashPassword(user, dto.NewPassword);
+            await _authRepository.UpdateUserAsync(user);
+            await _auditService.LogActionWithUserAsync("ResetPassword", "Auth", $"User reset password for: {user.Email}", user.UserId, user.Email, user.Role.ToString());
+        }
+
+        public async Task SetSecurityQuestionAsync(SetSecurityQuestionDTO dto)
+        {
+            var user = await _authRepository.UserExistsAsync(dto.Email);
+            if (user == null)
+                throw new NotFoundException("User not found");
+
+            user.SecurityQuestion = dto.SecurityQuestion;
+            user.SecurityAnswerHash = _hasher.HashPassword(user, dto.SecurityAnswer.Trim().ToLower());
+
+            await _authRepository.UpdateUserAsync(user);
         }
     }
 }

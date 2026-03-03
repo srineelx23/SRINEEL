@@ -19,14 +19,16 @@ namespace VIMS.API.Controllers
         private readonly IClaimsRepository _claimsRepository;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IPolicyRepository _policyRepository;
+        private readonly IAuditService _auditService;
 
-        public AdminController(IAdminService adminService, IPolicyPlanService service, IClaimsRepository claimsRepository, IPaymentRepository paymentRepository, IPolicyRepository policyRepository)
+        public AdminController(IAdminService adminService, IPolicyPlanService service, IClaimsRepository claimsRepository, IPaymentRepository paymentRepository, IPolicyRepository policyRepository, IAuditService auditService)
         {
             _adminService = adminService;
             _service = service;
             _claimsRepository = claimsRepository;
             _paymentRepository = paymentRepository;
             _policyRepository = policyRepository;
+            _auditService = auditService;
         }
         [HttpPost("createAgent")]
         public async Task<IActionResult> CreateAgentAsync(RegisterDTO registerDTO)
@@ -112,6 +114,7 @@ namespace VIMS.API.Controllers
             {
                 p.PolicyId,
                 p.PolicyNumber,
+                p.PlanId, // Added PlanId for frontend mapping
                 Status = p.Status.ToString(),
                 p.PremiumAmount,
                 p.InvoiceAmount,
@@ -147,6 +150,12 @@ namespace VIMS.API.Controllers
         {
             var result=await _service.ActivatePlanAsync(id);
             return Ok(new { message = result });
+        }
+        [HttpGet("audit-logs")]
+        public async Task<IActionResult> GetAuditLogs()
+        {
+            var logs = await _auditService.GetAuditLogsAsync();
+            return Ok(logs);
         }
     }
 }

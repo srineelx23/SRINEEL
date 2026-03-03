@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,14 +19,18 @@ namespace VIMS.Application.Services
         private readonly IPolicyRepository _policyRepository;
         private readonly IPricingService _pricingService;
         private readonly IPaymentRepository _paymentRepository;
+        private readonly IAuditService _auditService;
+        private readonly IFileStorageService _fileStorageService;
 
-        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository)
+        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository, IAuditService auditService, IFileStorageService fileStorageService)
         {
             _claimsRepository = claimsRepository;
             _userRepository = userRepository;
             _policyRepository = policyRepository;
             _pricingService = pricingService;
             _paymentRepository = paymentRepository;
+            _auditService = auditService;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<List<Claims>> GetAllClaimsAsync()
@@ -60,11 +65,6 @@ namespace VIMS.Application.Services
             if (parsedClaimType == VIMS.Domain.Enums.ClaimType.ThirdParty && !plan.CoversThirdParty)
                 throw new BadRequestException("This policy does not cover third-party claims");
 
-            // File system paths
-            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-            var userFolder = Path.Combine(basePath, $"user_{customerId}");
-            var claimsFolder = Path.Combine(userFolder, "claimsdocuments");
-            Directory.CreateDirectory(claimsFolder);
 
             var claim = new Claims
             {
@@ -83,64 +83,31 @@ namespace VIMS.Application.Services
             // create claim (this will generate ClaimId)
             var created = await _claimsRepository.AddAsync(claim);
 
-            // create a folder for this claim
-            var thisClaimFolder = Path.Combine(claimsFolder, $"claim_{created.ClaimId}");
-            Directory.CreateDirectory(thisClaimFolder);
-
-            // store documents according to claim type
+            // store documents according to claim type via FileStorageService
             string? doc1Path = null;
             string? doc2Path = null;
+            string claimIdentifier = $"claim_{created.ClaimId}";
 
             if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Theft)
             {
                 if (dto.Document1 == null)
                     throw new BadRequestException("FIR is required for theft claims");
 
-                var firFile = Guid.NewGuid() + "_" + dto.Document1.FileName;
-                var firFull = Path.Combine(thisClaimFolder, firFile);
-                using (var stream = new FileStream(firFull, FileMode.Create))
-                {
-                    await dto.Document1.CopyToAsync(stream);
-                }
-                doc1Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", firFile).Replace("\\", "/");
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
             }
             else if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Damage)
             {
-                // need repair bill and invoice (invoice can be taken from user's policy documents folder)
+                // need repair bill and invoice
                 if (dto.Document1 == null)
                     throw new BadRequestException("Repair bill is required for own damage claims");
 
-                var repairFile = Guid.NewGuid() + "_" + dto.Document1.FileName;
-                var repairFull = Path.Combine(thisClaimFolder, repairFile);
-                using (var stream = new FileStream(repairFull, FileMode.Create))
-                {
-                    await dto.Document1.CopyToAsync(stream);
-                }
-                doc1Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", repairFile).Replace("\\", "/");
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
 
-                // try to find invoice in user's policydocuments invoice folder
-                var invoiceFolder = Path.Combine(userFolder, "policydocuments", "invoice");
-                if (Directory.Exists(invoiceFolder))
-                {
-                    var files = Directory.GetFiles(invoiceFolder);
-                    if (files.Length > 0)
-                    {
-                        var chosen = files[0];
-                        var dest = Path.Combine(thisClaimFolder, Path.GetFileName(chosen));
-                        File.Copy(chosen, dest);
-                        doc2Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", Path.GetFileName(chosen)).Replace("\\", "/");
-                    }
-                }
-
+                // Assuming user has uploaded an invoice in policy documents,
+                // but for simplicity, we fallback to dto.Document2
                 if (doc2Path == null && dto.Document2 != null)
                 {
-                    var invoiceFile = Guid.NewGuid() + "_" + dto.Document2.FileName;
-                    var invoiceFull = Path.Combine(thisClaimFolder, invoiceFile);
-                    using (var stream = new FileStream(invoiceFull, FileMode.Create))
-                    {
-                        await dto.Document2.CopyToAsync(stream);
-                    }
-                    doc2Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", invoiceFile).Replace("\\", "/");
+                    doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
                 }
 
                 if (doc2Path == null)
@@ -152,21 +119,8 @@ namespace VIMS.Application.Services
                 if (dto.Document1 == null || dto.Document2 == null)
                     throw new BadRequestException("Both repair bill and vehicle invoice are required for third party claims");
 
-                var repairFile = Guid.NewGuid() + "_" + dto.Document1.FileName;
-                var repairFull = Path.Combine(thisClaimFolder, repairFile);
-                using (var stream = new FileStream(repairFull, FileMode.Create))
-                {
-                    await dto.Document1.CopyToAsync(stream);
-                }
-                doc1Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", repairFile).Replace("\\", "/");
-
-                var invoiceFile = Guid.NewGuid() + "_" + dto.Document2.FileName;
-                var invoiceFull = Path.Combine(thisClaimFolder, invoiceFile);
-                using (var stream = new FileStream(invoiceFull, FileMode.Create))
-                {
-                    await dto.Document2.CopyToAsync(stream);
-                }
-                doc2Path = Path.Combine("uploads", $"user_{customerId}", "claimsdocuments", $"claim_{created.ClaimId}", invoiceFile).Replace("\\", "/");
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
+                doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
             }
 
             var claimDoc = new ClaimDocument
@@ -177,8 +131,7 @@ namespace VIMS.Application.Services
             };
 
             await _claimsRepository.AddDocumentAsync(claimDoc);
-
-            // officer was assigned before creation
+            await _auditService.LogActionAsync("ClaimSubmitted", "Claim", $"User submitted claim: {created.ClaimNumber}", "Claim", created.ClaimId.ToString());
 
             return "Claim submitted";
         }
@@ -196,6 +149,7 @@ namespace VIMS.Application.Services
             {
                 claim.Status = ClaimStatus.Rejected;
                 await _claimsRepository.UpdateAsync(claim);
+                await _auditService.LogActionAsync("ClaimRejected", "Claim", $"Officer rejected claim: {claim.ClaimNumber}", "Claim", claim.ClaimId.ToString());
                 return "Claim rejected";
             }
 
@@ -320,6 +274,7 @@ namespace VIMS.Application.Services
             claim.DecisionType = decisionType;
 
             await _claimsRepository.UpdateAsync(claim);
+            await _auditService.LogActionAsync("ClaimApproved", "Claim", $"Officer approved claim: {claim.ClaimNumber} with amount {claim.ApprovedAmount}", "Claim", claim.ClaimId.ToString());
 
             // increment policy claim count and decide if policy should be Closed (constructive total loss)
             try
@@ -354,6 +309,7 @@ namespace VIMS.Application.Services
 
             // create payment via injected repository
             await _paymentRepository.AddAsync(payment);
+            await _auditService.LogActionAsync("PaymentSuccessful", "Payment", $"Claim payout paid for claim: {claim.ClaimNumber}", "Claim", claim.ClaimId.ToString());
 
             return "Claim approved";
         }

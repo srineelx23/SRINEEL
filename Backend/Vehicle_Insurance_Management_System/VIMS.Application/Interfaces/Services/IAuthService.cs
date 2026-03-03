@@ -13,5 +13,9 @@ namespace VIMS.Application.Interfaces.Services
         Task<User> RegisterCustomerAsync(RegisterDTO registerDTO);
         Task<AuthResultDTO> UserLoginAsync(LoginDTO dto);
         Task<User> RegisterAdminAsync(RegisterDTO registerDTO);
+        Task ChangePasswordAsync(int userId, ChangePasswordDTO dto);
+        Task<string> GetSecurityQuestionAsync(string email);
+        Task ResetPasswordAsync(ForgotPasswordDTO dto);
+        Task SetSecurityQuestionAsync(SetSecurityQuestionDTO dto);
     }
 }

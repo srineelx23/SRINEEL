@@ -1,0 +1,761 @@
+﻿<div class="dashboard-layout">
+    <!-- Notifications -->
+    @if (errorMessage()) {
+    <div class="error-toast">{{ errorMessage() }}</div>
+    }
+    @if (successMessage()) {
+    <div class="success-toast">{{ successMessage() }}</div>
+    }
+
+    <!-- Navigation Sidebar -->
+    <nav class="hover-navbar">
+        <div class="nav-brand">
+            <span class="logo-shield">ðŸ›¡ï¸</span>
+            <h2>VIMS Admin</h2>
+        </div>
+
+        <div class="sidebar-nav">
+            <a (click)="goHome()" class="nav-item">Home</a>
+            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+            <a (click)="switchTab('vehicles')" [class.active]="activeTab() === 'vehicles'" class="nav-item">Vehicles</a>
+            <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
+            <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
+            <a (click)="switchTab('users')" [class.active]="activeTab() === 'users'" class="nav-item">Users</a>
+            <a (click)="switchTab('plans')" [class.active]="activeTab() === 'plans'" class="nav-item">Plans</a>
+            <a (click)="switchTab('audit')" [class.active]="activeTab() === 'audit'" class="nav-item">Audit Logs</a>
+        </div>
+
+        <div class="sidebar-footer">
+            <!-- User Dropdown Component -->
+            <div class="nav-profile-container">
+                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                    <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
+                    <div class="profile-info">
+                        <span class="profile-role">Executive Admin</span>
+                        <span class="profile-name">{{ adminName() }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Dropdown Menu -->
+                @if (showUserDropdown()) {
+                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
+                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" (click)="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Overview Tab -->
+        @if (activeTab() === 'overview') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <p style="color: var(--accent); font-weight: 500; font-size: 1.1rem; margin-bottom: 8px;">Welcome back,
+                    {{ adminName() }}! ðŸ‘‹</p>
+                <h1 class="page-title">Executive Overview</h1>
+                <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
+            </header>
+
+            <div class="dashboard-cards" style="margin-bottom: 32px;">
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
+                    <h3>Gross Premiums (Revenue)</h3>
+                    <p class="stat-number" style="color: var(--accent);">+{{ totalRevenue() | currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+                    <h3>Claim Payouts (Losses)</h3>
+                    <p class="stat-number" style="color: var(--error);">-{{ totalPayoutAmount() | currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel"
+                    [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--success)' : '4px solid var(--error)'}">
+                    <h3>Net Profit / Reserve</h3>
+                    <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}">
+                        {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
+                            currency:'INR' }} </p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
+                    <h3>Policies & Claims</h3>
+                    <p class="stat-number" style="color: var(--warning); font-size: 1.5rem; margin-top: 10px;">{{
+                        totalActivePolicies() }} Active | {{ totalClaimsApproved() }} Resolved</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Charts -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Revenue History (Current Year)</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Monthly premium
+                        collections</p>
+                    <div style="height: 280px; width: 100%;">
+                        <canvas baseChart [data]="revenueChartData" [options]="revenueChartOptions()"
+                            [type]="revenueChartType"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
+                    <h3 style="margin-bottom: 4px;">Portfolio Health</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Claim status
+                        distribution</p>
+                    <div style="flex: 1; min-height: 340px;">
+                        <canvas baseChart [data]="claimsChartData" [options]="claimsChartOptions()"
+                            [type]="claimsChartType"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Performance by Policy Type</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial comparison
+                        by insurance category</p>
+                    <div style="height: 300px; width: 100%;">
+                        <canvas baseChart [data]="planPremiumsChartData" [options]="planAnalyticsOptions()"
+                            [type]="planBarChartType"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Claims by Policy Type</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume of claims
+                        handled per category</p>
+                    <div style="height: 300px; width: 100%;">
+                        <canvas baseChart [data]="planClaimsChartData" [options]="planClaimsCountOptions()"
+                            [type]="planBarChartType"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Performance by Vehicle Type</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial metrics by
+                        vehicle classification</p>
+                    <div style="height: 300px; width: 100%;">
+                        <canvas baseChart [data]="vehicleTypePremiumsChartData" [options]="planAnalyticsOptions()"
+                            [type]="planBarChartType"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 24px;">
+                    <h3 style="margin-bottom: 8px;">Claims by Vehicle Type</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume tracking by
+                        vehicle category</p>
+                    <div style="height: 300px; width: 100%;">
+                        <canvas baseChart [data]="vehicleTypeClaimsChartData" [options]="planClaimsCountOptions()"
+                            [type]="planBarChartType"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+
+        <!-- Vehicles Registry Tab -->
+        @if (activeTab() === 'vehicles') {
+        <div class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Vehicle Registry</h1>
+                    <p class="page-subtitle">Track and filter all high-value insulated assets currently protected.</p>
+                </div>
+                <div class="form-group" style="width: 300px;">
+                    <label
+                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Filter
+                        Minimum Assessed Value (INR)</label>
+                    <input type="number" class="form-control" [(ngModel)]="vehicleIdvFilter"
+                        placeholder="Filter by Assessed Value >=">
+                </div>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;">
+                @if (!selectedVehicle() && filteredVehicles().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No
+                    vehicles match the filter criteria.</p>
+                }
+
+                @if (!selectedVehicle() && filteredVehicles().length > 0) {
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>Reg. Number</th>
+                            <th>Manufacturer & Model</th>
+                            <th>Mfg. Year</th>
+                            <th>Current Assessed IDV</th>
+                            <th style="color: var(--success);">Premiums Collected</th>
+                            <th style="color: var(--error);">Claims Paid Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (v of filteredVehicles(); track v.vehicleId) {
+                        <tr (click)="viewVehicleDetails(v)" style="cursor: pointer;" title="Click for Insights">
+                            <td>{{ v.registrationNumber }}</td>
+                            <td>{{ v.make }} {{ v.model }}</td>
+                            <td>{{ v.year }}</td>
+                            <td style="color: var(--accent); font-weight: 500;">{{ v.currentIdv | currency:'INR' }}</td>
+                            <td style="color: var(--success); font-weight: 700;">
+                                {{ (vehiclePremiumsMap().get(v.vehicleId) || 0) | currency:'INR' }}
+                            </td>
+                            <td style="color: var(--error); font-weight: 700;">
+                                {{ (vehicleClaimsMap().get(v.vehicleId) || 0) | currency:'INR' }}
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+
+                <!-- Vehicle Details Overlay -->
+                @if (selectedVehicle()) {
+                <div class="fade-in">
+                    <button class="btn-outline" style="margin-bottom: 24px;" (click)="backToVehicles()">â† Back to
+                        Registry</button>
+
+                    <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
+                        selectedVehicle().registrationNumber }}</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                            <h3>Owner Profile</h3>
+                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                                selectedVehicle().customerName || 'N/A' }}</p>
+                        </div>
+                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                            <h3>Asset Value</h3>
+                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                                selectedVehicle().currentIdv
+                                | currency:'INR' }}</p>
+                        </div>
+                    </div>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Active & Past Policies</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Policy ID</th>
+                            <th>Plan</th>
+                            <th>Premium</th>
+                            <th>Status</th>
+                        </tr>
+                        @for (p of vehiclePolicies(); track p.policyId) {
+                        <tr>
+                            <td>{{ p.policyId }}</td>
+                            <td>{{ p.policyPlan?.planName || 'Standard' }}</td>
+                            <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                            <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status === 'Active'
+                                    || p.status === 0 ? 'Active' : p.status }}</span></td>
+                        </tr>
+                        }
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Payment Ledgers</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Txn ID</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                        @for (pmt of vehicleTransactions(); track pmt.id) {
+                        <tr>
+                            <td style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ pmt.id
+                                || 'N/A' }}</td>
+                            <td>{{ pmt.date ? (pmt.date | date:'mediumDate') : 'N/A' }}</td>
+                            <td>
+                                <span class="status-badge"
+                                    [style.background]="pmt.isCredit ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
+                                    [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                                    {{ pmt.isCredit ? 'â†‘ Premium' : 'â†“ Claim Payout' }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 700;"
+                                [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                                {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
+                            </td>
+                            <td><span class="status-badge"
+                                    [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' || pmt.status === 'Settled') ? 'paid' : 'pending'">
+                                    {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' ||
+                                    pmt.status === 'Settled') ? 'Settled' : 'Pending' }}</span>
+                            </td>
+                        </tr>
+                        }
+                        @if (vehicleTransactions().length === 0) {
+                        <tr>
+                            <td colspan="5"
+                                style="color: var(--text-muted); text-align: center; padding: 24px; font-style: italic;">
+                                No transactions found for this vehicle.</td>
+                        </tr>
+                        }
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Filed Claims</h3>
+                    <table class="vims-table">
+                        <tr>
+                            <th>Claim No.</th>
+                            <th>Incident Type</th>
+                            <th>Approved</th>
+                            <th>Status</th>
+                        </tr>
+                        @for (c of vehicleClaims(); track c.claimId) {
+                        <tr>
+                            <td>{{ c.claimNumber }}</td>
+                            <td>{{ c.claimType }}</td>
+                            <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
+                                : 'Pending' }}</td>
+                            <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status === 1 ||
+                                    c.status === 'Approved' ? 'Approved' : (c.status === 2 || c.status === 'Rejected' ?
+                                    'Rejected' : 'Under Review') }}</span></td>
+                        </tr>
+                        }
+                    </table>
+
+                    <h3
+                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                        Linked Documents</h3>
+                    <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        @for (doc of vehicleDocuments(); track doc.name) {
+                        <a [href]="doc.url" target="_blank"
+                            style="color: var(--accent); margin-right: 16px; text-decoration: underline; display: inline-block; margin-bottom: 8px;">ðŸ“„
+                            {{ doc.name }}</a>
+                        }
+                        @if (vehicleDocuments().length === 0) {
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">
+                            No documents attached to this vehicle or its claims.</p>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- ==================== ALL CLAIMS TAB ==================== -->
+        @if (activeTab() === 'claims') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">All Claims</h1>
+                <p class="page-subtitle">Platform-wide insurance claims and their resolution status.</p>
+            </header>
+            <div class="glass-panel" style="padding: 24px;">
+                @if (claims().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No claims found.
+                </p>
+                }
+                @if (claims().length > 0) {
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>Claim No.</th>
+                            <th>Policy ID</th>
+                            <th>Type</th>
+                            <th>Incident Date</th>
+                            <th>Approved Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (c of claims(); track c.claimId) {
+                        <tr>
+                            <td style="font-family: monospace; font-size: 0.9rem;">{{ c.claimNumber || '#' + c.claimId
+                                }}</td>
+                            <td style="color: var(--text-muted);">{{ c.policyId }}</td>
+                            <td>{{ c.claimType }}</td>
+                            <td>{{ c.incidentDate ? (c.incidentDate | date:'mediumDate') : 'N/A' }}</td>
+                            <td [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--error)' : 'var(--text-muted)'"
+                                style="font-weight: 700;">
+                                {{ (c.status === 'Approved' || c.status === 1) ? '-' : '' }}{{ c.approvedAmount ?
+                                (c.approvedAmount | currency:'INR') : 'â€”' }}
+                            </td>
+                            <td>
+                                <span class="status-badge"
+                                    [style.background]="(c.status === 'Approved' || c.status === 1) ? 'rgba(34,197,94,0.12)' : (c.status === 'Rejected' || c.status === 2) ? 'rgba(239,68,68,0.12)' : 'rgba(251,191,36,0.12)'"
+                                    [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--success)' : (c.status === 'Rejected' || c.status === 2) ? 'var(--error)' : 'var(--warning)'">
+                                    {{ (c.status === 'Approved' || c.status === 1) ? 'Approved' : (c.status ===
+                                    'Rejected' || c.status === 2) ? 'Rejected' : 'Under Review' }}
+                                </span>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- ==================== ALL PAYMENTS TAB ==================== -->
+        @if (activeTab() === 'payments') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">All Payment Transactions</h1>
+                <p class="page-subtitle">Complete ledger of premium collections and claim disbursements.</p>
+            </header>
+
+            <!-- Summary KPIs -->
+            <div class="dashboard-cards" style="margin-bottom: 28px;">
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
+                    <h3>Total Premium Collected</h3>
+                    <p class="stat-number" style="color: var(--success); font-size: 2rem;">+{{ totalRevenue() |
+                        currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+                    <h3>Total Claims Disbursed</h3>
+                    <p class="stat-number" style="color: var(--error); font-size: 2rem;">-{{ totalPayoutAmount() |
+                        currency:'INR' }}</p>
+                </div>
+                <div class="stat-card glass-panel"
+                    [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--accent)' : '4px solid var(--error)'}">
+                    <h3>Net Balance</h3>
+                    <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}"
+                        style="font-size: 2rem;">
+                        {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
+                            currency:'INR' }} </p>
+                </div>
+            </div>
+
+            <div class="glass-panel" style="padding: 24px;">
+                @if (allTransactions().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No
+                    transactions found.</p>
+                }
+                @if (allTransactions().length > 0) {
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>Txn ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Vehicle</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (t of allTransactions(); track t.id) {
+                        <tr>
+                            <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ t.id
+                                }}</td>
+                            <td>{{ t.date ? (t.date | date:'mediumDate') : 'N/A' }}</td>
+                            <td>{{ t.customer }}</td>
+                            <td style="font-size: 0.9rem; color: var(--text-muted);">{{ t.vehicle }}</td>
+                            <td>
+                                <span class="status-badge"
+                                    [style.background]="t.isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)'"
+                                    [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
+                                    {{ t.isCredit ? 'â†‘ Premium' : 'â†“ Claim Payout' }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 700;"
+                                [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
+                                {{ t.isCredit ? '+' : '-' }}{{ t.amount | currency:'INR' }}
+                            </td>
+                            <td>
+                                <span class="status-badge"
+                                    [ngClass]="(t.status === 'Paid' || t.status === 1) ? 'paid' : 'pending'">
+                                    {{ (t.status === 'Paid' || t.status === 1) ? 'Settled' : 'Pending' }}
+                                </span>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Users Management Tab -->
+        @if (activeTab() === 'users') {
+        <div class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Identity Access Management</h1>
+                    <p class="page-subtitle">Configure system users, support officers, and agents.</p>
+                </div>
+                <div style="display: flex; gap: 16px;">
+                    <select class="form-control" [(ngModel)]="userRoleFilter"
+                        style="width: 200px; background: rgba(58, 80, 107, 0.4);">
+                        @for (role of rolesList(); track role) {
+                        <option [value]="role">{{ role === 'All' ? 'All Roles' : role
+                            }}</option>
+                        }
+                    </select>
+                    <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
+                    <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
+                        style="background: var(--accent);">+ Provision Officer</button>
+                </div>
+            </header>
+
+            <!-- Creation Module -->
+            @if (isCreatingAgent() || isCreatingClaimsOfficer()) {
+            <div class="glass-panel slide-in"
+                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
+                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
+                    (click)="switchTab('users')">Cancel</button>
+                <h2 style="margin-bottom: 24px;">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New
+                    Claims Officer' }}</h2>
+                <form class="vims-form" (ngSubmit)="submitUserRegistration()">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div>
+                            <label>Full Assigned Name</label>
+                            <input type="text" name="fullName" class="form-control" [(ngModel)]="registerForm.fullName"
+                                required>
+                        </div>
+                        <div>
+                            <label>Secure Identifier (Email)</label>
+                            <input type="email" name="email" class="form-control" [(ngModel)]="registerForm.email"
+                                required>
+                        </div>
+                        <div>
+                            <label>Temporary Password</label>
+                            <input type="password" name="password" class="form-control"
+                                [(ngModel)]="registerForm.password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Provision Identity</button>
+                </form>
+            </div>
+            }
+
+            <!-- Users List -->
+            @if (!isCreatingAgent() && !isCreatingClaimsOfficer()) {
+            <div class="glass-panel" style="padding: 24px;">
+                @if (filteredUsers().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No users
+                    mapped to this filter.</p>
+                }
+                @if (filteredUsers().length > 0) {
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>Database ID</th>
+                            <th>Full Name</th>
+                            <th>Identifier (Email)</th>
+                            <th>Authorization Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (u of filteredUsers(); track u.userId) {
+                        <tr>
+                            <td>#{{ u.userId }}</td>
+                            <td>{{ u.fullName }}</td>
+                            <td>{{ u.email }}</td>
+                            <td><span class="status-badge"
+                                    style="background: var(--card-inner-border); color: var(--text-main);">{{
+                                    u.displayRole }}</span></td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+            }
+        </div>
+        }
+
+        <!-- Plans & Infrastructure Tab -->
+        @if (activeTab() === 'plans') {
+        <div class="tab-content fade-in">
+            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 class="page-title">Policy Architect</h1>
+                    <p class="page-subtitle">Deploy or modify underlying insurance products globally.</p>
+                </div>
+                <button class="btn-primary" (click)="openPlanForm()">+ Architect New Plan</button>
+            </header>
+
+            @if (isCreatingPlan()) {
+            <div class="glass-panel slide-in"
+                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
+                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
+                    (click)="switchTab('plans')">Cancel Module</button>
+                <h2 style="margin-bottom: 24px;">Architect Enterprise Coverage Plan</h2>
+                <form class="vims-form" (ngSubmit)="submitPlanRegistration()">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Plan Commercial Name</label>
+                            <input type="text" name="planName" class="form-control" [(ngModel)]="planForm.planName"
+                                required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Plan Underwriting Details</label>
+                            <textarea name="description" class="form-control" [(ngModel)]="planForm.description"
+                                rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Coverage Vector (%)</label>
+                            <input type="number" name="coveragePercent" class="form-control"
+                                [(ngModel)]="planForm.coveragePercent" required min="1" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Statutory Deductible (INR)</label>
+                            <input type="number" name="deductibleAmount" class="form-control"
+                                [(ngModel)]="planForm.deductibleAmount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Risk Constraint: Max Cap (INR) (Optional)</label>
+                            <input type="number" name="maxCoverageAmount" class="form-control"
+                                [(ngModel)]="planForm.maxCoverageAmount">
+                        </div>
+                    </div>
+                    <div
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--bg-dark); padding: 16px; border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversThirdParty" [(ngModel)]="planForm.coversThirdParty"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes 3rd Party
+                            Liability
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversOwnDamage" [(ngModel)]="planForm.coversOwnDamage"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes Personal
+                            Damage
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="coversTheft" [(ngModel)]="planForm.coversTheft"
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Insures Against Theft
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="isZeroDepreciationAvailable"
+                                [(ngModel)]="planForm.isZeroDepreciationAvailable"
+                                style="accent-color: var(--success); width: 18px; height: 18px;"> Offer
+                            Zero-Depreciation
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-primary" style="background: var(--success); border: none;">Deploy
+                        Plan To System</button>
+                </form>
+            </div>
+            }
+
+            @if (!isCreatingPlan()) {
+            <div class="glass-panel" style="padding: 24px;">
+                @if (orderedPlans().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No Plans
+                    deployed
+                    in system infrastructure.</p>
+                }
+                @if (orderedPlans().length > 0) {
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    @for (p of orderedPlans(); track p.planId) {
+                    <div class="glass-panel"
+                        style="background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); padding: 24px; box-shadow: none; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin-bottom: 8px; color: var(--text-main);">
+                                {{ p.planName }}
+                                <span class="status-badge"
+                                    [ngStyle]="{'background': p.status === 1 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(255, 90, 95, 0.2)', 'color': p.status === 1 ? 'var(--success)' : 'var(--error)'}">
+                                    {{ p.status === 1 ? 'Available Globally' : 'Deactivated' }}
+                                </span>
+                            </h3>
+                            <p
+                                style="color: var(--text-light); max-width: 600px; line-height: 1.5; margin-bottom: 12px;">
+                                {{ p.description }}</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
+                                <strong>Coverage:</strong> {{ p.coveragePercent }}%
+                                @if (p.maxCoverageAmount) {
+                                <span>&nbsp;|&nbsp; <strong>Max Cap:</strong> {{ p.maxCoverageAmount | currency:'INR'
+                                    }}</span>
+                                }
+                                &nbsp;|&nbsp; <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }}
+                                <br>
+                                <strong>Perks:</strong>
+                                @if (p.coversOwnDamage) {<span> Own Damage,</span>}
+                                @if (p.coversThirdParty) {<span> 3rd Party,</span>}
+                                @if (p.coversTheft) {<span> Theft,</span>}
+                                @if (p.isZeroDepreciationAvailable) {
+                                <span style="color: var(--success); font-weight: 600;"> âœ“ Zero-Dep</span>
+                                }
+                            </p>
+                        </div>
+                        <div>
+                            @if (p.status === 1) {
+                            <button class="btn-outline" style="color: var(--error); border-color: var(--error);"
+                                (click)="togglePlanStatus(p.planId, p.status)">Deprecate Plan</button>
+                            }
+                            @if (p.status !== 1) {
+                            <button class="btn-outline" style="color: var(--success); border-color: var(--success);"
+                                (click)="togglePlanStatus(p.planId, p.status || 0)">Restore Plan</button>
+                            }
+                        </div>
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+            }
+        </div>
+        }
+
+        <!-- Audit Logs Tab -->
+        @if (activeTab() === 'audit') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">System Audit Trail</h1>
+                <p class="page-subtitle">Track every critical action performed across the platform for accountability.
+                </p>
+            </header>
+
+            <div class="glass-panel" style="padding: 24px;">
+                @if (auditLogs().length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No audit logs
+                    recorded yet.</p>
+                }
+                @if (auditLogs().length > 0) {
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>User (Email)</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>Category</th>
+                            <th>Details</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (log of auditLogs(); track log.id) {
+                        <tr>
+                            <td>#{{ log.id }}</td>
+                            <td style="white-space: nowrap;">{{ log.timestamp | date:'short' }}</td>
+                            <td>
+                                <div>{{ log.email }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">ID: {{ log.userId || 'System'
+                                    }}</div>
+                            </td>
+                            <td><span class="status-badge" style="background: rgba(255,255,255,0.05);">{{ log.role
+                                    }}</span></td>
+                            <td><strong style="color: var(--accent);">{{ log.action }}</strong></td>
+                            <td>{{ log.category }}</td>
+                            <td style="font-size: 0.85rem; max-width: 300px;">{{ log.details }}</td>
+                            <td style="font-family: monospace; font-size: 0.8rem;">{{ log.ipAddress || 'Internal' }}
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+        </div>
+        }
+
+    </main>
+</div>

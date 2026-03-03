@@ -119,6 +119,17 @@ export class CustomerDashboard implements OnInit {
   errorMessage = signal('');
   successMessage = signal('');
 
+  // Settings - Change Password
+  changePasswordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+  changePwdLoading = signal(false);
+  showCurrentPwd = false;
+  showNewPwd = false;
+  showConfirmPwd = false;
+
   // Transfer state
   incomingTransfers = signal<any[]>([]);
   outgoingTransfers = signal<any[]>([]);
@@ -455,6 +466,41 @@ export class CustomerDashboard implements OnInit {
       },
       error: (err) => {
         this.errorMessage.set(err.error?.message || 'Reject failed.');
+        this.autoHideToast();
+      }
+    });
+  }
+
+  changePassword() {
+    const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      this.errorMessage.set('All password fields are required.');
+      this.autoHideToast();
+      return;
+    }
+    if (newPassword.length < 6) {
+      this.errorMessage.set('New password must be at least 6 characters.');
+      this.autoHideToast();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      this.errorMessage.set('New password and confirm password do not match.');
+      this.autoHideToast();
+      return;
+    }
+
+    this.changePwdLoading.set(true);
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: () => {
+        this.successMessage.set('Password changed successfully!');
+        this.changePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.changePwdLoading.set(false);
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: (err) => {
+        this.changePwdLoading.set(false);
+        this.errorMessage.set(err.error || 'Failed to change password. Please check your current password.');
         this.autoHideToast();
       }
     });

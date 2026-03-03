@@ -19,12 +19,14 @@ namespace VIMS.Application.Services
         private readonly IAdminRepository _adminRepository;
         private readonly IAuthRepository _authRepository;
         private readonly IMapper _mapper;
+        private readonly IAuditService _auditService;
         private readonly PasswordHasher<User> _passwordHasher;
-        public AdminService(IAdminRepository repository,IAuthRepository authRepository,IMapper mapper) {
+        public AdminService(IAdminRepository repository, IAuthRepository authRepository, IMapper mapper, IAuditService auditService) {
             _authRepository = authRepository;
             _adminRepository = repository;
             _mapper = mapper;
-            _passwordHasher= new PasswordHasher<User>();
+            _auditService = auditService;
+            _passwordHasher = new PasswordHasher<User>();
         }
 
         public async Task<User> CreateAgentAsync(RegisterDTO registerDTO)
@@ -37,7 +39,11 @@ namespace VIMS.Application.Services
             var createdAgent=_mapper.Map<User>(registerDTO);
             createdAgent.Role = UserRole.Agent;
             createdAgent.PasswordHash = _passwordHasher.HashPassword(createdAgent,registerDTO.Password);
-            var result=await _adminRepository.CreateAgentAsync(createdAgent);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+                createdAgent.SecurityAnswerHash = _passwordHasher.HashPassword(createdAgent, registerDTO.SecurityAnswer.Trim().ToLower());
+            }
+            var result = await _adminRepository.CreateAgentAsync(createdAgent);
+            await _auditService.LogActionAsync("AgentCreated", "Admin", $"Admin created agent: {result.Email}", "User", result.UserId.ToString());
             return result;
         }
         public async Task<User> CreateClaimsOfficerAsync(RegisterDTO registerDTO)
@@ -50,13 +56,18 @@ namespace VIMS.Application.Services
             var createdClaimsOfficer = _mapper.Map<User>(registerDTO);
             createdClaimsOfficer.Role = UserRole.ClaimsOfficer;
             createdClaimsOfficer.PasswordHash=_passwordHasher.HashPassword(createdClaimsOfficer,registerDTO.Password);
-            var result=await _adminRepository.CreateClaimsOfficerAsync(createdClaimsOfficer);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+                createdClaimsOfficer.SecurityAnswerHash = _passwordHasher.HashPassword(createdClaimsOfficer, registerDTO.SecurityAnswer.Trim().ToLower());
+            }
+            var result = await _adminRepository.CreateClaimsOfficerAsync(createdClaimsOfficer);
+            await _auditService.LogActionAsync("ClaimsOfficerCreated", "Admin", $"Admin created claims officer: {result.Email}", "User", result.UserId.ToString());
             return result;
         }
 
         public async Task<PolicyPlan> CreatePolicyPlanAsync(PolicyPlan policyPlan)
         {
-            var result=await _adminRepository.CreatePolicyPlanAsync(policyPlan);
+            var result = await _adminRepository.CreatePolicyPlanAsync(policyPlan);
+            await _auditService.LogActionAsync("PolicyPlanCreated", "Admin", $"Admin created policy plan: {result.PlanName}", "PolicyPlan", result.PlanId.ToString());
             return result;
         }
         public async Task<List<PolicyPlan>> GetAllPolicyPlansAsync()

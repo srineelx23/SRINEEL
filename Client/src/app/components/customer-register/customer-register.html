@@ -5,12 +5,16 @@
     </a>
 
     <!-- Error/Success Toast Components -->
-    <div *ngIf="errorMessage()" class="error-toast">
+    @if (errorMessage()) {
+    <div class="error-toast">
         ⚠️ {{ errorMessage() }}
     </div>
-    <div *ngIf="successMessage()" class="success-toast">
+    }
+    @if (successMessage()) {
+    <div class="success-toast">
         ✅ {{ successMessage() }}
     </div>
+    }
 
     <div class="login-wrapper container">
         <div class="login-card glass-panel" style="max-width: 1100px;">
@@ -58,7 +62,7 @@
                     </div>
 
                     <!-- Passwords Row -->
-                    <div style="display: flex; gap: 16px; width: 100%; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 16px; width: 100%;">
                         <div class="form-group" style="flex: 1;">
                             <input type="password" id="password" name="password" [(ngModel)]="password"
                                 class="form-control" placeholder="" required>
@@ -68,6 +72,26 @@
                             <input type="password" id="confirmPassword" name="confirmPassword"
                                 [(ngModel)]="confirmPassword" class="form-control" placeholder="" required>
                             <label for="confirmPassword" class="floating-label">Confirm Password</label>
+                        </div>
+                    </div>
+
+                    <!-- Security Question Row -->
+                    <div style="display: flex; gap: 16px; width: 100%; margin-bottom: 8px;">
+                        <div class="form-group" style="flex: 1;">
+                            <select id="securityQuestion" name="securityQuestion" [(ngModel)]="securityQuestion"
+                                class="form-control" required style="appearance: none;">
+                                <option value="" disabled selected>Select a Security Question</option>
+                                @for (q of securityQuestions; track q) {
+                                <option [value]="q">{{ q }}</option>
+                                }
+                            </select>
+                            <i class="fa-solid fa-chevron-down"
+                                style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <input type="text" id="securityAnswer" name="securityAnswer" [(ngModel)]="securityAnswer"
+                                class="form-control" placeholder="" required>
+                            <label for="securityAnswer" class="floating-label">Secret Answer</label>
                         </div>
                     </div>
 

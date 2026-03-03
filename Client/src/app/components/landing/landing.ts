@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { jwtDecode } from 'jwt-decode';
@@ -7,7 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
 })
@@ -16,6 +17,7 @@ export class Landing implements OnInit {
   private authService = inject(AuthService);
   userName = signal<string | null>(null);
   isLoggedIn = signal<boolean>(false);
+  showDropdown = false;
 
   ngOnInit() {
     this.isLoggedIn.set(this.authService.isLoggedIn());

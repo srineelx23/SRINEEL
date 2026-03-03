@@ -25,8 +25,10 @@ namespace VIMS.Application.Services
         private readonly IPricingService _pricingService;
         private readonly IPolicyPlanService _policyPlanService;
         private readonly IPolicyTransferRepository _policyTransferRepository;
-
-        public CustomerService(ICustomerRepository customerRepository,IVehicleApplicationRepository vehicleApplicationRepository,IUserRepository userRepository,IVehicleRepository vehicleRepository,IPolicyRepository policyRepository,IPaymentRepository paymentRepository,IPricingService pricingService,IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository)
+        private readonly IAuditService _auditService;
+        private readonly IFileStorageService _fileStorageService;
+ 
+        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService)
         {
             _customerRepository = customerRepository;
             _vehicleApplicationRepository = vehicleApplicationRepository;
@@ -37,6 +39,8 @@ namespace VIMS.Application.Services
             _pricingService = pricingService;
             _policyPlanService = policyPlanService;
             _policyTransferRepository = policyTransferRepository;
+            _auditService = auditService;
+            _fileStorageService = fileStorageService;
         }
         public async Task<List<PolicyPlan>> ViewAllPoliciesAsync()
         {
@@ -87,72 +91,36 @@ namespace VIMS.Application.Services
                 Status = VehicleApplicationStatus.UnderReview
             };
 
-            // Save Uploaded Files
-
-            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-            var userFolder = Path.Combine(basePath, $"user_{userId}");
-            var claimsFolder = Path.Combine(userFolder, "claimsdocuments");
-            var policyFolder = Path.Combine(userFolder, "policydocuments");
-
-            // New subfolders
-            var invoiceFolder = Path.Combine(policyFolder, "invoice");
-            var rcFolder = Path.Combine(policyFolder, "rc");
-
-            // ==========================
-            // Create Folders If Not Exists
-            // ==========================
-
-            Directory.CreateDirectory(userFolder);
-            Directory.CreateDirectory(claimsFolder);
-            Directory.CreateDirectory(policyFolder);
-            Directory.CreateDirectory(invoiceFolder);
-            Directory.CreateDirectory(rcFolder);
-
-            // ==========================
-            // Save Invoice File
-            // ==========================
-
+            // Save Uploaded Files via FileStorageService (Dependency Inversion Principle)
             if (dto.InvoiceDocument != null)
             {
-                var invoiceFileName = Guid.NewGuid() + "_" + dto.InvoiceDocument.FileName;
-                var invoiceFullPath = Path.Combine(invoiceFolder, invoiceFileName);
-
-                using (var stream = new FileStream(invoiceFullPath, FileMode.Create))
+                string invoicePath = await _fileStorageService.SaveFileAsync(dto.InvoiceDocument, "user", userId.ToString(), "invoice");
+                if (!string.IsNullOrEmpty(invoicePath))
                 {
-                    await dto.InvoiceDocument.CopyToAsync(stream);
+                    application.Documents.Add(new VehicleDocument
+                    {
+                        DocumentType = "Invoice",
+                        FilePath = invoicePath
+                    });
                 }
-
-                application.Documents.Add(new VehicleDocument
-                {
-                    DocumentType = "Invoice",
-                    FilePath = Path.Combine("uploads", $"user_{userId}", "policydocuments", "invoice", invoiceFileName).Replace("\\", "/")
-                });
             }
-
-            // ==========================
-            // Save RC File
-            // ==========================
 
             if (dto.RcDocument != null)
             {
-                var rcFileName = Guid.NewGuid() + "_" + dto.RcDocument.FileName;
-                var rcFullPath = Path.Combine(rcFolder, rcFileName);
-
-                using (var stream = new FileStream(rcFullPath, FileMode.Create))
+                string rcPath = await _fileStorageService.SaveFileAsync(dto.RcDocument, "user", userId.ToString(), "rc");
+                if (!string.IsNullOrEmpty(rcPath))
                 {
-                    await dto.RcDocument.CopyToAsync(stream);
+                    application.Documents.Add(new VehicleDocument
+                    {
+                        DocumentType = "RC",
+                        FilePath = rcPath
+                    });
                 }
-
-                application.Documents.Add(new VehicleDocument
-                {
-                    DocumentType = "RC",
-                    FilePath = Path.Combine("uploads", $"user_{userId}", "policydocuments", "rc", rcFileName).Replace("\\", "/")
-                });
             }
 
             await _vehicleApplicationRepository.AddAsync(application);
             await _vehicleApplicationRepository.SaveChangesAsync();
+            await _auditService.LogActionAsync("PolicyApplicationCreated", "Policy", $"Customer created a policy application for {application.Make} {application.Model}", "VehicleApplication", application.VehicleApplicationId.ToString());
         }
 
         public async Task<List<CustomerApplicationDTO>> GetMyApplicationsAsync(int customerId)
@@ -268,13 +236,13 @@ namespace VIMS.Application.Services
                 
                 await _paymentRepository.AddAsync(feePayment);
                 await _policyRepository.UpdateAsync(policy);
-
+                await _auditService.LogActionAsync("PaymentSuccessful", "Payment", $"Transfer fee paid for policy: {policy.PolicyNumber}", "Policy", policy.PolicyId.ToString());
+ 
                 return "Transfer fee paid successfully. Policy activated in your name.";
             }
 
             // ==========================
             // NORMAL PREMIUM PAYMENTS
-            // ==========================
             // FIRST PAYMENT CASE (NON-TRANSFER)
             if (policy.CurrentYearNumber == 0)
             {
@@ -311,7 +279,8 @@ namespace VIMS.Application.Services
                 await _paymentRepository.AddAsync(payment);
 
                 await _policyRepository.UpdateAsync(policy);
-
+                await _auditService.LogActionAsync("PaymentSuccessful", "Payment", $"First premium paid for policy: {policy.PolicyNumber}", "Policy", policy.PolicyId.ToString());
+ 
                 return "First payment successful. Policy activated.";
             }
 
@@ -322,7 +291,8 @@ namespace VIMS.Application.Services
                 policy.Status = PolicyStatus.Cancelled;
                 policy.CancellationDate = DateTime.UtcNow;
                 await _policyRepository.UpdateAsync(policy);
-
+                await _auditService.LogActionAsync("PolicyCancelled", "Policy", $"Policy {policy.PolicyNumber} cancelled due to non-payment.", "Policy", policy.PolicyId.ToString());
+ 
                 throw new BadRequestException("Policy cancelled due to non-payment");
             }
 
@@ -372,7 +342,8 @@ namespace VIMS.Application.Services
             await _paymentRepository.AddAsync(newPayment);
 
             await _policyRepository.UpdateAsync(policy);
-
+            await _auditService.LogActionAsync("PaymentSuccessful", "Payment", $"Annual premium paid for policy: {policy.PolicyNumber}", "Policy", policy.PolicyId.ToString());
+ 
             return "Annual payment successful.";
         }
 
@@ -435,7 +406,8 @@ namespace VIMS.Application.Services
 
             // Add new policy and mark old policy expired transactionally
             await _policyRepository.AddAndExpireAsync(newPolicy, policy);
-
+            await _auditService.LogActionAsync("PolicyRenewed", "Policy", $"Policy {policy.PolicyNumber} renewed to {newPolicy.PolicyNumber}", "Policy", newPolicy.PolicyId.ToString());
+ 
             return "Policy renewed successfully.";
         }
 
@@ -478,7 +450,8 @@ namespace VIMS.Application.Services
 
             await _policyTransferRepository.AddAsync(transfer);
             await _policyTransferRepository.SaveChangesAsync();
-
+            await _auditService.LogActionAsync("PolicyTransferInitiated", "Policy", $"Transfer initiated for policy {policy.PolicyNumber} to {dto.RecipientEmail}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
+ 
             return "TRANSFER_INITIATED";
         }
 
@@ -546,14 +519,8 @@ namespace VIMS.Application.Services
             var vehicle = policy.Vehicle;
             var oldApp = vehicle.VehicleApplication;
 
-            // Save RC document
-            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents");
-            Directory.CreateDirectory(uploads);
-            var rcFileName = $"RC_Transfer_{transferId}_{Guid.NewGuid():N}{Path.GetExtension(rcDocument.FileName)}";
-            var rcPath = Path.Combine(uploads, rcFileName);
-            using (var stream = new FileStream(rcPath, FileMode.Create))
-                await rcDocument.CopyToAsync(stream);
-            var rcRelative = Path.Combine("uploads", "documents", rcFileName).Replace("\\", "/");
+            // Save RC document via FileStorageService
+            var rcRelative = await _fileStorageService.SaveFileAsync(rcDocument, "transfer", transferId.ToString(), "rc");
 
             // Find the oldest document (InvoiceDoc) from original application to copy its path
             var invoicePath = oldApp?.Documents?.FirstOrDefault(d => d.DocumentType == "Invoice")?.FilePath ?? string.Empty;
@@ -602,7 +569,8 @@ namespace VIMS.Application.Services
             transfer.NewVehicleApplicationId = newApp.VehicleApplicationId;
             transfer.UpdatedAt = DateTime.UtcNow;
             await _policyTransferRepository.SaveChangesAsync();
-
+            await _auditService.LogActionAsync("PolicyTransferAccepted", "Policy", $"Recipient accepted transfer for policy {policy.PolicyNumber}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
+ 
             return "TRANSFER_ACCEPTED";
         }
 
@@ -617,7 +585,8 @@ namespace VIMS.Application.Services
             transfer.Status = PolicyTransferStatus.RejectedByRecipient;
             transfer.UpdatedAt = DateTime.UtcNow;
             await _policyTransferRepository.SaveChangesAsync();
-
+            await _auditService.LogActionAsync("PolicyTransferRejected", "Policy", $"Recipient rejected transfer for policy {transfer.PolicyId}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
+ 
             return "TRANSFER_REJECTED";
         }
     }

@@ -14,6 +14,8 @@ namespace VIMS.Domain.Entities
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public UserRole Role { get; set; }
+        public string? SecurityQuestion { get; set; }
+        public string? SecurityAnswerHash { get; set; }
         //public string? LicenseNumber { get; set; }
         //public string? AgentCode { get; set; }
         public bool IsActive { get; set; } = true;
