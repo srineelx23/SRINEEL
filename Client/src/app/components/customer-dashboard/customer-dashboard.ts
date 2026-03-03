@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
 import { AuthService } from '../../services/auth.service';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -16,11 +17,13 @@ export class CustomerDashboard implements OnInit {
   activeTab = signal('overview');
 
   // Data stores
+  customerName = signal('Customer');
   policies = signal<any[]>([]);
   claims = signal<any[]>([]);
   applications = signal<any[]>([]);
   payments = signal<any[]>([]);
   plans = signal<any[]>([]); // needed for renewing policies
+  showUserDropdown = signal(false);
 
   // Categorization
   policyFilter = signal('Active');
@@ -30,7 +33,15 @@ export class CustomerDashboard implements OnInit {
   );
 
   pendingPolicies = computed(() =>
-    this.policies().filter(p => !['Active', 'Cancelled', 'Expired'].includes(p.status))
+    this.policies().filter(p => !['Active', 'Cancelled', 'Expired', 'PendingPayment'].includes(p.status))
+  );
+
+  pendingPaymentPolicies = computed(() =>
+    this.policies().filter(p => p.status === 'PendingPayment')
+  );
+
+  pendingApplicationsCount = computed(() =>
+    this.applications().filter(a => a.status === 'UnderReview' || a.status === 0).length
   );
 
   inactivePolicies = computed(() =>
@@ -43,6 +54,51 @@ export class CustomerDashboard implements OnInit {
   approvedClaims = computed(() => this.claims().filter(c => c.status === 'Approved' || c.status === 1));
   rejectedClaims = computed(() => this.claims().filter(c => c.status === 'Rejected' || c.status === 2));
   pendingClaimsList = computed(() => this.claims().filter(c => c.status === 'Submitted' || c.status === 'UnderReview' || c.status === 0));
+  // Payments & Claims
+  premiumPayments = computed(() =>
+    this.payments().filter((p: any) =>
+      !p.transactionReference ||
+      (!p.transactionReference.toLowerCase().includes('claim') && !p.transactionReference.toLowerCase().includes('transfer'))
+    )
+  );
+
+  claimPayments = computed(() =>
+    this.payments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('claim'))
+  );
+
+  transferPayments = computed(() =>
+    this.payments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('transfer'))
+  );
+
+  totalPremiumPaid = computed(() =>
+    this.premiumPayments()
+      .filter((p: any) => p.status === 'Paid' || p.status === 1)
+      .reduce((sum: number, p: any) => sum + (Math.abs(p.amount) || 0), 0)
+  );
+
+  totalClaimPayouts = computed(() =>
+    this.claimPayments()
+      .filter((p: any) => p.status === 'Paid' || p.status === 1)
+      .reduce((sum: number, p: any) => sum + (Math.abs(p.amount) || 0), 0)
+  );
+
+  // Unique vehicles derived from policies — for the overview vehicles section
+  myVehicles = computed(() => {
+    const map = new Map<string, any>();
+    this.policies().forEach((p: any) => {
+      const reg = p.vehicleRegistrationNumber || p.registrationNumber;
+      if (reg && !map.has(reg)) {
+        map.set(reg, {
+          reg,
+          vehicleName: p.vehicleMake ? `${p.vehicleMake} ${p.vehicleModel}` : (p.vehicleName || reg),
+          idv: p.idv || p.invoiceAmount || 0,
+          planName: p.planName || 'Standard',
+          status: p.status
+        });
+      }
+    });
+    return Array.from(map.values());
+  });
 
   selectedClaim = signal<any>(null);
   isFilingClaim = signal(false);
@@ -63,12 +119,42 @@ export class CustomerDashboard implements OnInit {
   errorMessage = signal('');
   successMessage = signal('');
 
+  // Transfer state
+  incomingTransfers = signal<any[]>([]);
+  outgoingTransfers = signal<any[]>([]);
+  showTransferModal = signal(false);
+  showAcceptModal = signal(false);
+  transferPolicyId = signal<number | null>(null);
+  transferRecipientEmail = signal('');
+  transferError = signal('');
+  transferSuccess = signal('');
+  pendingAcceptTransfer = signal<any>(null);
+  rcFile: File | null = null;
+
   private customerService = inject(CustomerService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
   ngOnInit() {
+    this.extractName();
     this.loadOverviewData();
+  }
+
+  private extractName() {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken: any = jwtDecode(token);
+        const name =
+          decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+          decodedToken.name ||
+          decodedToken.Name ||
+          'Customer';
+        this.customerName.set(name);
+      } catch (error) {
+        console.error('Failed to parse token for name', error);
+      }
+    }
   }
 
   switchTab(tab: string) {
@@ -83,6 +169,7 @@ export class CustomerDashboard implements OnInit {
     if (tab === 'claims') this.loadClaims();
     if (tab === 'applied') this.loadApplications();
     if (tab === 'payments') this.loadPayments();
+    if (tab === 'transfers') { this.loadIncomingTransfers(); this.loadOutgoingTransfers(); }
   }
 
   loadOverviewData() {
@@ -90,6 +177,8 @@ export class CustomerDashboard implements OnInit {
     this.loadClaims();
     this.loadApplications();
     this.loadPayments();
+    this.loadIncomingTransfers();
+    this.loadOutgoingTransfers();
   }
 
   loadPayments() {
@@ -264,5 +353,110 @@ export class CustomerDashboard implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  // ===================== POLICY TRANSFER =====================
+
+  openTransferModal(policyId: number) {
+    this.transferPolicyId.set(policyId);
+    this.transferRecipientEmail.set('');
+    this.transferError.set('');
+    this.transferSuccess.set('');
+    this.showTransferModal.set(true);
+  }
+
+  closeTransferModal() {
+    this.showTransferModal.set(false);
+    this.transferPolicyId.set(null);
+  }
+
+  initiateTransfer() {
+    const email = this.transferRecipientEmail().trim();
+    const policyId = this.transferPolicyId();
+    if (!email || !policyId) return;
+
+    this.transferError.set('');
+    this.customerService.initiateTransfer(policyId, email).subscribe({
+      next: () => {
+        this.transferSuccess.set('Transfer request sent successfully.');
+        this.loadOutgoingTransfers();
+        setTimeout(() => this.closeTransferModal(), 2000);
+      },
+      error: (err) => {
+        if (err.status === 404)
+          this.transferError.set('No customer found with that email address.');
+        else
+          this.transferError.set(err.error?.message || 'Transfer failed. Try again.');
+      }
+    });
+  }
+
+  loadIncomingTransfers() {
+    this.customerService.getIncomingTransfers().subscribe({
+      next: (res) => this.incomingTransfers.set(res),
+      error: () => { }
+    });
+  }
+
+  loadOutgoingTransfers() {
+    this.customerService.getOutgoingTransfers().subscribe({
+      next: (res) => this.outgoingTransfers.set(res),
+      error: () => { }
+    });
+  }
+
+  openAcceptModal(transfer: any) {
+    this.pendingAcceptTransfer.set(transfer);
+    this.rcFile = null;
+    this.showAcceptModal.set(true);
+  }
+
+  closeAcceptModal() {
+    this.showAcceptModal.set(false);
+    this.pendingAcceptTransfer.set(null);
+    this.rcFile = null;
+  }
+
+  onRcFileChange(event: any) {
+    this.rcFile = event.target.files[0] || null;
+  }
+
+  acceptTransfer() {
+    const transfer = this.pendingAcceptTransfer();
+    if (!transfer || !this.rcFile) {
+      this.errorMessage.set('Please upload your RC document.');
+      this.autoHideToast();
+      return;
+    }
+
+    this.customerService.acceptTransfer(transfer.policyTransferId, this.rcFile).subscribe({
+      next: () => {
+        this.successMessage.set('Transfer accepted! The application is now pending agent approval.');
+        this.closeAcceptModal();
+        this.loadIncomingTransfers();
+        this.loadPolicies();
+        setTimeout(() => this.successMessage.set(''), 5000);
+      },
+      error: (err) => {
+        this.errorMessage.set(err.error?.message || 'Accept failed.');
+        this.autoHideToast();
+      }
+    });
+  }
+
+  rejectTransfer(transferId: number) {
+    if (!confirm('Are you sure you want to reject this policy transfer?')) return;
+
+    this.customerService.rejectTransfer(transferId).subscribe({
+      next: () => {
+        this.successMessage.set('Transfer request rejected.');
+        this.loadIncomingTransfers();
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err) => {
+        this.errorMessage.set(err.error?.message || 'Reject failed.');
+        this.autoHideToast();
+      }
+    });
   }
 }

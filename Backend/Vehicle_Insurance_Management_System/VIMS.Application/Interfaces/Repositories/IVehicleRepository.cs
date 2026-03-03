@@ -12,5 +12,6 @@ namespace VIMS.Application.Interfaces.Repositories
         public Task AddAsync(Vehicle vehicle);
         Task<Vehicle?> GetByRegistrationNumberAsync(string registrationNumber);
         public Task<List<Vehicle>> GetVehiclesByAgentIdAsync(int agentId);
+        void Update(Vehicle vehicle);
     }
 }

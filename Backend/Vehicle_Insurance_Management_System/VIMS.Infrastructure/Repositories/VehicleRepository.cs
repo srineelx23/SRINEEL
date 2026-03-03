@@ -38,5 +38,10 @@ namespace VIMS.Infrastructure.Repositories
        .Where(v => v.VehicleApplication.AssignedAgentId == agentId)
        .ToListAsync();
         }
+
+        public void Update(Vehicle vehicle)
+        {
+            _context.Vehicles.Update(vehicle);
+        }
     }
 }

@@ -25,9 +25,32 @@
         </div>
 
         <div class="sidebar-footer">
-            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
-                Sign Out
-            </button>
+            <div class="nav-profile-container">
+                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                    <div class="profile-avatar">{{ agentName().charAt(0) }}</div>
+                    <div class="profile-info">
+                        <span class="profile-role">Agent</span>
+                        <span class="profile-name">{{ agentName() }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Dropdown Menu -->
+                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
+                    (mouseleave)="showUserDropdown.set(false)">
+                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" (click)="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -35,23 +58,80 @@
     <main class="main-content">
         <!-- Overview Tab -->
         <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Agent Overview</h1>
-                <p class="page-subtitle">Welcome back. Here is a summary of your assigned tasks.</p>
-            </header>
 
-            <div class="dashboard-cards">
-                <div class="stat-card glass-panel" style="cursor: pointer;" (click)="switchTab('applications')">
-                    <h3>Pending Applications</h3>
-                    <p class="stat-number" style="color: var(--error);">{{ pendingApps().length }}</p>
+            <!-- Hero Greeting -->
+            <div class="overview-hero">
+                <div class="overview-hero-text">
+                    <p class="overview-greeting">Welcome back 👋</p>
+                    <h1 class="overview-title">Welcome, {{ agentName() }}!</h1>
+                    <p class="overview-sub">Review applications, manage customers, and track your performance.</p>
                 </div>
-                <div class="stat-card glass-panel" style="cursor: pointer;" (click)="switchTab('customers')">
-                    <h3>Supervised Customers</h3>
-                    <p class="stat-number">{{ customers().length }}</p>
+                <div class="overview-hero-badge">
+                    <span class="hero-shield"><i class="fa-solid fa-user-tie"></i></span>
+                    <span class="hero-badge-label">Agent</span>
                 </div>
-                <div class="stat-card glass-panel">
-                    <h3>Reviewed Applications</h3>
-                    <p class="stat-number" style="color: var(--success);">{{ reviewedApps().length }}</p>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="overview-kpi-grid">
+                <div class="kpi-card kpi-warning" (click)="switchTab('applications')">
+                    <div class="kpi-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ pendingApps().length }}</div>
+                        <div class="kpi-label">Pending Approval</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-info" (click)="switchTab('customers')"
+                    style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(6, 182, 212, 0.2);">
+                    <div class="kpi-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;"><i
+                            class="fa-solid fa-credit-card"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value" style="color: #06b6d4;">{{ pendingPaymentCount() }}</div>
+                        <div class="kpi-label">Awaiting Payment</div>
+                    </div>
+                    <div class="kpi-arrow" style="color: #06b6d4;">→</div>
+                </div>
+                <div class="kpi-card kpi-success" (click)="switchTab('history')">
+                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ reviewedApps().length }}</div>
+                        <div class="kpi-label">Reviewed Applications</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-accent" (click)="switchTab('customers')">
+                    <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ customers().length }}</div>
+                        <div class="kpi-label">Supervised Customers</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+            </div>
+
+            <!-- Recent Pending Applications -->
+            <div class="overview-section">
+                <div class="overview-section-header">
+                    <h2 class="overview-section-title"><i class="fa-solid fa-inbox"
+                            style="color:var(--warning);margin-right:8px;"></i>Pending Applications Queue</h2>
+                    <button class="btn-outline-sm" (click)="switchTab('applications')">View All →</button>
+                </div>
+                <div *ngIf="pendingApps().length === 0" class="empty-state-mini">
+                    <span>🎉</span>
+                    <p>No pending applications. All caught up!</p>
+                </div>
+                <div class="overview-list" *ngIf="pendingApps().length > 0">
+                    <div class="overview-list-item" *ngFor="let a of pendingApps().slice(0,5)"
+                        (click)="switchTab('applications')">
+                        <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
+                        <div class="oli-body">
+                            <div class="oli-title">{{ a.ownerName || a.fullName || 'Applicant' }}</div>
+                            <div class="oli-sub">{{ a.vehicleRegistrationNumber || a.registrationNumber || 'Vehicle' }}
+                                &bull; {{ a.vehicleMake }} {{ a.vehicleModel }}</div>
+                        </div>
+                        <span class="status-badge pending">Pending</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -12,5 +12,6 @@ namespace VIMS.Application.Interfaces.Repositories
         public Task<User?> GetLeastLoadedAgentAsync();
         public Task<User?> GetLeastLoadedClaimsOfficerAsync();
         public Task<User?> GetByIdAsync(int id);
+        public Task<User?> GetByEmailAsync(string email);
     }
 }

@@ -27,19 +27,52 @@ namespace VIMS.Infrastructure.Repositories
 
         public async Task<VehicleApplication?> GetByIdAsync(int id)
         {
-            return await _context.VehicleApplications
+            var app = await _context.VehicleApplications
+                .Include(a => a.Customer)
+                .Include(a => a.AssignedAgent)
                 .Include(a => a.Documents)
                 .FirstOrDefaultAsync(a => a.VehicleApplicationId == id);
+
+            return app;
         }
+
         public async Task<List<VehicleApplication>> GetPendingByAgentIdAsync(int agentId)
         {
-            return await _context.VehicleApplications
+            var apps = await _context.VehicleApplications
                 .Where(a =>
                     a.AssignedAgentId == agentId &&
                     a.Status == VehicleApplicationStatus.UnderReview)
-                .Include(a => a.Documents)   // optional if agent needs document info
                 .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new VehicleApplication
+                {
+                    VehicleApplicationId = a.VehicleApplicationId,
+                    AssignedAgentId = a.AssignedAgentId,
+                    CreatedAt = a.CreatedAt,
+                    CustomerId = a.CustomerId,
+                    FuelType = a.FuelType,
+                    InvoiceAmount = a.InvoiceAmount,
+                    KilometersDriven = a.KilometersDriven,
+                    Make = a.Make,
+                    Model = a.Model,
+                    PlanId = a.PlanId,
+                    PolicyYears = a.PolicyYears,
+                    RegistrationNumber = a.RegistrationNumber,
+                    RejectionReason = a.RejectionReason,
+                    Status = a.Status,
+                    VehicleType = a.VehicleType,
+                    Year = a.Year,
+                    IsTransfer = a.IsTransfer,
+                    Customer = new User { FullName = a.Customer.FullName, Email = a.Customer.Email }
+                })
                 .ToListAsync();
+
+            // load documents for each app
+            var appIds = apps.Select(a => a.VehicleApplicationId).ToList();
+            var docs = await _context.VehicleDocuments.Where(d => appIds.Contains(d.VehicleApplicationId)).ToListAsync();
+            foreach (var a in apps)
+                a.Documents = docs.Where(d => d.VehicleApplicationId == a.VehicleApplicationId).ToList();
+
+            return apps;
         }
 
         public async Task<List<Vehicle>> GetVehiclesByAgentIdAsync(int agentId)
@@ -52,20 +85,77 @@ namespace VIMS.Infrastructure.Repositories
         }
         public async Task<List<VehicleApplication>> GetByCustomerIdAsync(int customerId)
         {
-            return await _context.VehicleApplications
+            var apps = await _context.VehicleApplications
                 .Where(a => a.CustomerId == customerId)
-                  // optional if you want document info
                 .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new VehicleApplication
+                {
+                    VehicleApplicationId = a.VehicleApplicationId,
+                    AssignedAgentId = a.AssignedAgentId,
+                    CreatedAt = a.CreatedAt,
+                    CustomerId = a.CustomerId,
+                    FuelType = a.FuelType,
+                    InvoiceAmount = a.InvoiceAmount,
+                    KilometersDriven = a.KilometersDriven,
+                    Make = a.Make,
+                    Model = a.Model,
+                    PlanId = a.PlanId,
+                    PolicyYears = a.PolicyYears,
+                    RegistrationNumber = a.RegistrationNumber,
+                    RejectionReason = a.RejectionReason,
+                    Status = a.Status,
+                    VehicleType = a.VehicleType,
+                    Year = a.Year
+                })
                 .ToListAsync();
+
+            var appIds = apps.Select(a => a.VehicleApplicationId).ToList();
+            var docs = await _context.VehicleDocuments.Where(d => appIds.Contains(d.VehicleApplicationId)).ToListAsync();
+            foreach (var a in apps)
+                a.Documents = docs.Where(d => d.VehicleApplicationId == a.VehicleApplicationId).ToList();
+
+            return apps;
         }
         public async Task<List<VehicleApplication>> GetAllByAgentIdAsync(int agentId)
         {
-            return await _context.VehicleApplications
+            var apps = await _context.VehicleApplications
                 .Where(a => a.AssignedAgentId == agentId)
-                .Include(a => a.Customer)
-                .Include(a => a.Documents)
                 .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new VehicleApplication
+                {
+                    VehicleApplicationId = a.VehicleApplicationId,
+                    AssignedAgentId = a.AssignedAgentId,
+                    CreatedAt = a.CreatedAt,
+                    CustomerId = a.CustomerId,
+                    FuelType = a.FuelType,
+                    InvoiceAmount = a.InvoiceAmount,
+                    KilometersDriven = a.KilometersDriven,
+                    Make = a.Make,
+                    Model = a.Model,
+                    PlanId = a.PlanId,
+                    PolicyYears = a.PolicyYears,
+                    RegistrationNumber = a.RegistrationNumber,
+                    RejectionReason = a.RejectionReason,
+                    Status = a.Status,
+                    VehicleType = a.VehicleType,
+                    Year = a.Year
+                })
                 .ToListAsync();
+
+            var appIds = apps.Select(a => a.VehicleApplicationId).ToList();
+            var docs = await _context.VehicleDocuments.Where(d => appIds.Contains(d.VehicleApplicationId)).ToListAsync();
+            foreach (var a in apps)
+                a.Documents = docs.Where(d => d.VehicleApplicationId == a.VehicleApplicationId).ToList();
+
+            // load customers separately and attach minimal customer info if needed
+            var customerIds = apps.Select(a => a.CustomerId).Distinct().ToList();
+            var customers = await _context.Users.Where(u => customerIds.Contains(u.UserId)).ToListAsync();
+            foreach (var a in apps)
+            {
+                a.Customer = customers.FirstOrDefault(c => c.UserId == a.CustomerId);
+            }
+
+            return apps;
         }
         public async Task SaveChangesAsync()
         {

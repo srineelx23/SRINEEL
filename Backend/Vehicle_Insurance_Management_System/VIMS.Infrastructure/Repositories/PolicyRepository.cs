@@ -43,6 +43,7 @@ namespace VIMS.Infrastructure.Repositories
             return await _vehicleInsuranceContext.Policies
                 .Where(p => p.CustomerId == customerId)
                 .Include(p => p.Vehicle)
+                    .ThenInclude(v => v.VehicleApplication)
                 .Include(p => p.Plan)
                 .ToListAsync();
         }

@@ -48,6 +48,7 @@ namespace VIMS.API
             builder.Services.AddScoped<VIMS.Application.Interfaces.Repositories.IPaymentRepository, VIMS.Infrastructure.Repositories.PaymentRepository>();
             builder.Services.AddScoped<IPolicyPlanService, PolicyPlanService>();
             builder.Services.AddScoped<IPricingService, PricingService>();
+            builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();

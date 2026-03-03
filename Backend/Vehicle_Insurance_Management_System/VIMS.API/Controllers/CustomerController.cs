@@ -47,21 +47,22 @@ namespace VIMS.API.Controllers
 
             var result = new
             {
-                policy.PolicyId,
-                policy.PolicyNumber,
-                Status = policy.Status.ToString(),
-                policy.PremiumAmount,
-                policy.InvoiceAmount,
-                policy.StartDate,
-                policy.EndDate,
-                Vehicle = policy.Vehicle == null ? null : new {
-                    policy.Vehicle.VehicleId,
-                    policy.Vehicle.Make,
-                    policy.Vehicle.Model,
-                    policy.Vehicle.Year,
-                    Documents = policy.Vehicle.VehicleApplication?.Documents?.Select(d => new { d.DocumentType, d.FilePath })
+                policyId = policy.PolicyId,
+                policyNumber = policy.PolicyNumber,
+                status = policy.Status.ToString(),
+                premiumAmount = policy.PremiumAmount,
+                invoiceAmount = policy.InvoiceAmount,
+                startDate = policy.StartDate,
+                endDate = policy.EndDate,
+                vehicle = policy.Vehicle == null ? null : new { 
+                    vehicleId = policy.Vehicle.VehicleId, 
+                    make = policy.Vehicle.Make, 
+                    model = policy.Vehicle.Model, 
+                    year = policy.Vehicle.Year,
+                    registrationNumber = policy.Vehicle.RegistrationNumber,
+                    documents = policy.Vehicle.VehicleApplication?.Documents?.Select(d => new { documentType = d.DocumentType, filePath = d.FilePath })
                 },
-                Plan = policy.Plan == null ? null : new { policy.Plan.PlanId, policy.Plan.PlanName }
+                plan = policy.Plan == null ? null : new { planId = policy.Plan.PlanId, planName = policy.Plan.PlanName }
             };
 
             return Ok(result);
@@ -315,6 +316,58 @@ public async Task<IActionResult> GetMyApplications()
 
             return Ok(myPayments);
         }
+
+        // =====================================================
+        // POLICY TRANSFER ENDPOINTS
+        // =====================================================
+
+        [HttpPost("transfer/initiate")]
+        public async Task<IActionResult> InitiateTransfer([FromBody] InitiateTransferDTO dto)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _customerService.InitiateTransferAsync(dto, userId);
+
+            if (result == "RECIPIENT_NOT_FOUND")
+                return NotFound(new { message = "No customer account found with that email address." });
+
+            return Ok(new { message = "Transfer request sent successfully." });
+        }
+
+        [HttpGet("transfer/incoming")]
+        public async Task<IActionResult> GetIncomingTransfers()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _customerService.GetMyIncomingTransfersAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpGet("transfer/outgoing")]
+        public async Task<IActionResult> GetOutgoingTransfers()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _customerService.GetMyOutgoingTransfersAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("transfer/{transferId}/accept")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AcceptTransfer(int transferId, [FromForm] VIMS.Application.DTOs.AcceptTransferDTO dto)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var rcDocument = dto?.RcDocument;
+            if (rcDocument == null || rcDocument.Length == 0)
+                return BadRequest(new { message = "RC document is required." });
+
+            await _customerService.AcceptTransferAsync(transferId, rcDocument, userId);
+            return Ok(new { message = "Transfer accepted. A new application has been sent to the agent for approval." });
+        }
+
+        [HttpPost("transfer/{transferId}/reject")]
+        public async Task<IActionResult> RejectTransfer(int transferId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            await _customerService.RejectTransferAsync(transferId, userId);
+            return Ok(new { message = "Transfer request rejected." });
+        }
     }
 }
-

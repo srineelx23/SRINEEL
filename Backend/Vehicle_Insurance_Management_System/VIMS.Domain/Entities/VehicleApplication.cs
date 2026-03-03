@@ -29,6 +29,7 @@ namespace VIMS.Domain.Entities
         public decimal InvoiceAmount { get; set; }
         public VehicleApplicationStatus Status { get; set; }
         public string? RejectionReason { get; set; }
+        public bool IsTransfer { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<VehicleDocument> Documents { get; set; } = new List<VehicleDocument>();
     }

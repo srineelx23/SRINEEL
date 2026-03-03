@@ -23,9 +23,32 @@
         </div>
 
         <div class="sidebar-footer">
-            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
-                Sign Out
-            </button>
+            <div class="nav-profile-container">
+                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                    <div class="profile-avatar">{{ officerName().charAt(0) }}</div>
+                    <div class="profile-info">
+                        <span class="profile-role">Claims Officer</span>
+                        <span class="profile-name">{{ officerName() }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Dropdown Menu -->
+                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
+                    (mouseleave)="showUserDropdown.set(false)">
+                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" (click)="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -33,19 +56,68 @@
     <main class="main-content">
         <!-- Overview Tab -->
         <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Claims Officer Portal</h1>
-                <p class="page-subtitle">Welcome back. Manage and resolve incoming vehicle insurance claims.</p>
-            </header>
 
-            <div class="dashboard-cards">
-                <div class="stat-card glass-panel">
-                    <h3>Pending Claims</h3>
-                    <p class="stat-number">{{ totalPending() }}</p>
+            <!-- Hero Greeting -->
+            <div class="overview-hero">
+                <div class="overview-hero-text">
+                    <p class="overview-greeting">Welcome back 👋</p>
+                    <h1 class="overview-title">Welcome, {{ officerName() }}!</h1>
+                    <p class="overview-sub">Investigate, evaluate, and resolve vehicle insurance claims.</p>
                 </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
-                    <h3>Reviewed Claims</h3>
-                    <p class="stat-number" style="color: var(--success);">{{ totalReviewed() }}</p>
+                <div class="overview-hero-badge">
+                    <span class="hero-shield"><i class="fa-solid fa-scale-balanced"></i></span>
+                    <span class="hero-badge-label">Claims Officer</span>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="overview-kpi-grid">
+                <div class="kpi-card kpi-warning" (click)="switchTab('pending')">
+                    <div class="kpi-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ totalPending() }}</div>
+                        <div class="kpi-label">Pending Claims</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-success" (click)="switchTab('history')">
+                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ totalReviewed() }}</div>
+                        <div class="kpi-label">Reviewed Claims</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-accent">
+                    <div class="kpi-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ totalPending() + totalReviewed() }}</div>
+                        <div class="kpi-label">Total Assigned</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Pending Claims -->
+            <div class="overview-section">
+                <div class="overview-section-header">
+                    <h2 class="overview-section-title"><i class="fa-solid fa-magnifying-glass"
+                            style="color:var(--warning);margin-right:8px;"></i>Claims Requiring Attention</h2>
+                    <button class="btn-outline-sm" (click)="switchTab('pending')">View All →</button>
+                </div>
+                <div *ngIf="pendingClaims().length === 0" class="empty-state-mini">
+                    <span>🎉</span>
+                    <p>All claims have been reviewed. Excellent work!</p>
+                </div>
+                <div class="overview-list" *ngIf="pendingClaims().length > 0">
+                    <div class="overview-list-item" *ngFor="let c of pendingClaims().slice(0,5)"
+                        (click)="openClaimReview(c)">
+                        <div class="oli-icon"><i class="fa-solid fa-file-shield"></i></div>
+                        <div class="oli-body">
+                            <div class="oli-title">{{ c.claimNumber }}</div>
+                            <div class="oli-sub">{{ c.customer?.fullName || 'Customer' }} &bull; {{ c.claimType }}</div>
+                        </div>
+                        <span class="status-badge pending">Under Review</span>
+                    </div>
                 </div>
             </div>
         </div>

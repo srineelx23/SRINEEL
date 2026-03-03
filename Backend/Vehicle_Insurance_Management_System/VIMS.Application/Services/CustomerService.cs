@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using VIMS.Application.DTOs;
 using VIMS.Application.Exceptions;
 using VIMS.Application.Interfaces.Repositories;
@@ -23,8 +24,9 @@ namespace VIMS.Application.Services
         private readonly IPaymentRepository _paymentRepository;
         private readonly IPricingService _pricingService;
         private readonly IPolicyPlanService _policyPlanService;
+        private readonly IPolicyTransferRepository _policyTransferRepository;
 
-        public CustomerService(ICustomerRepository customerRepository,IVehicleApplicationRepository vehicleApplicationRepository,IUserRepository userRepository,IVehicleRepository vehicleRepository,IPolicyRepository policyRepository,IPaymentRepository paymentRepository,IPricingService pricingService,IPolicyPlanService policyPlanService)
+        public CustomerService(ICustomerRepository customerRepository,IVehicleApplicationRepository vehicleApplicationRepository,IUserRepository userRepository,IVehicleRepository vehicleRepository,IPolicyRepository policyRepository,IPaymentRepository paymentRepository,IPricingService pricingService,IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository)
         {
             _customerRepository = customerRepository;
             _vehicleApplicationRepository = vehicleApplicationRepository;
@@ -34,6 +36,7 @@ namespace VIMS.Application.Services
             _paymentRepository = paymentRepository;
             _pricingService = pricingService;
             _policyPlanService = policyPlanService;
+            _policyTransferRepository = policyTransferRepository;
         }
         public async Task<List<PolicyPlan>> ViewAllPoliciesAsync()
         {
@@ -199,21 +202,34 @@ namespace VIMS.Application.Services
                 }
             }
 
-            return policies.Select(p => new CustomerPolicyDTO
+            var result = new List<CustomerPolicyDTO>();
+            foreach (var p in policies)
             {
-                PolicyId = p.PolicyId,
-                PolicyNumber = p.PolicyNumber,
-                PlanName = p.Plan?.PlanName ?? "N/A",
-                VehicleRegistrationNumber = p.Vehicle?.RegistrationNumber ?? "N/A",
-                VehicleModel = p.Vehicle != null
-          ? p.Vehicle.Make + " " + p.Vehicle.Model
-          : "N/A",
-                PremiumAmount = p.PremiumAmount,
-                IDV = p.IDV,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-                Status = p.Status.ToString()
-            }).ToList();
+                var isTransfer = p.Vehicle?.VehicleApplication?.IsTransfer == true;
+                bool isFeePending = false;
+
+                if (isTransfer && p.Status == PolicyStatus.PendingPayment)
+                {
+                    var payments = await _paymentRepository.GetByPolicyIdAsync(p.PolicyId);
+                    isFeePending = payments == null || !payments.Any();
+                }
+
+                result.Add(new CustomerPolicyDTO
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    PlanName = p.Plan?.PlanName ?? "N/A",
+                    VehicleRegistrationNumber = p.Vehicle?.RegistrationNumber ?? "N/A",
+                    VehicleModel = p.Vehicle != null ? p.Vehicle.Make + " " + p.Vehicle.Model : "N/A",
+                    PremiumAmount = isFeePending ? 500 : p.PremiumAmount,
+                    IDV = p.IDV,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    Status = p.Status.ToString()
+                });
+            }
+
+            return result;
         }
 
         public async Task<string> PayAnnualPremiumAsync(int policyId, int customerId)
@@ -226,7 +242,40 @@ namespace VIMS.Application.Services
             if (policy.Status == PolicyStatus.Cancelled)
                 throw new BadRequestException("Policy is cancelled");
 
-            // FIRST PAYMENT CASE
+            // ==========================
+            // DETECT TRANSFER FEE PAYMENT
+            // ==========================
+            var payments = await _paymentRepository.GetByPolicyIdAsync(policyId);
+            bool isTransferFee = policy.Vehicle?.VehicleApplication?.IsTransfer == true && (payments == null || !payments.Any());
+
+            if (isTransferFee)
+            {
+                var feePayment = new Payment
+                {
+                    PolicyId = policy.PolicyId,
+                    Amount = 500, // Fixed Transfer Fee
+                    PaymentDate = DateTime.UtcNow,
+                    Status = PaymentStatus.Paid,
+                    TransactionReference = "Transfer Fees"
+                };
+
+                // After paying the fee, if the current year was already paid by the old owner, 
+                // the policy becomes Active. Otherwise, it stays PendingPayment for the premium.
+                if (policy.IsCurrentYearPaid)
+                {
+                    policy.Status = PolicyStatus.Active;
+                }
+                
+                await _paymentRepository.AddAsync(feePayment);
+                await _policyRepository.UpdateAsync(policy);
+
+                return "Transfer fee paid successfully. Policy activated in your name.";
+            }
+
+            // ==========================
+            // NORMAL PREMIUM PAYMENTS
+            // ==========================
+            // FIRST PAYMENT CASE (NON-TRANSFER)
             if (policy.CurrentYearNumber == 0)
             {
                 var firstPaymentPricingDto = new CalculateQuoteDTO
@@ -388,6 +437,188 @@ namespace VIMS.Application.Services
             await _policyRepository.AddAndExpireAsync(newPolicy, policy);
 
             return "Policy renewed successfully.";
+        }
+
+        // ============================================================
+        // POLICY TRANSFER
+        // ============================================================
+
+        public async Task<string> InitiateTransferAsync(InitiateTransferDTO dto, int senderCustomerId)
+        {
+            // Validate policy belongs to sender and is Active
+            var policy = await _policyRepository.GetByIdAsync(dto.PolicyId);
+            if (policy == null || policy.CustomerId != senderCustomerId)
+                throw new NotFoundException("Policy not found.");
+            if (policy.Status != PolicyStatus.Active)
+                throw new BadRequestException("Only active policies can be transferred.");
+
+            // Check there is no existing pending transfer for this policy
+            var existingTransfers = await _policyTransferRepository.GetBySenderIdAsync(senderCustomerId);
+            if (existingTransfers.Any(t => t.PolicyId == dto.PolicyId
+                && (t.Status == PolicyTransferStatus.PendingRecipientAcceptance
+                 || t.Status == PolicyTransferStatus.PendingAgentApproval)))
+                throw new BadRequestException("A transfer request is already in progress for this policy.");
+
+            // Validate recipient exists and is a Customer
+            var recipient = await _userRepository.GetByEmailAsync(dto.RecipientEmail);
+            if (recipient == null || recipient.Role != UserRole.Customer)
+                return "RECIPIENT_NOT_FOUND";
+
+            if (recipient.UserId == senderCustomerId)
+                throw new BadRequestException("You cannot transfer a policy to yourself.");
+
+            var transfer = new PolicyTransfer
+            {
+                PolicyId = dto.PolicyId,
+                SenderCustomerId = senderCustomerId,
+                RecipientCustomerId = recipient.UserId,
+                Status = PolicyTransferStatus.PendingRecipientAcceptance,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _policyTransferRepository.AddAsync(transfer);
+            await _policyTransferRepository.SaveChangesAsync();
+
+            return "TRANSFER_INITIATED";
+        }
+
+        public async Task<List<object>> GetMyIncomingTransfersAsync(int recipientCustomerId)
+        {
+            var transfers = await _policyTransferRepository.GetByRecipientIdAsync(recipientCustomerId);
+            return transfers.Select(t => (object)new
+            {
+                t.PolicyTransferId,
+                Status = t.Status.ToString(),
+                t.CreatedAt,
+                SenderName = t.SenderCustomer?.FullName,
+                SenderEmail = t.SenderCustomer?.Email,
+                Policy = t.Policy == null ? null : new
+                {
+                    t.Policy.PolicyId,
+                    t.Policy.PolicyNumber,
+                    t.Policy.PremiumAmount,
+                    t.Policy.IDV,
+                    PlanName = t.Policy.Plan?.PlanName,
+                    Vehicle = t.Policy.Vehicle == null ? null : new
+                    {
+                        t.Policy.Vehicle.RegistrationNumber,
+                        t.Policy.Vehicle.Make,
+                        t.Policy.Vehicle.Model,
+                        t.Policy.Vehicle.Year
+                    }
+                }
+            }).ToList();
+        }
+
+        public async Task<List<object>> GetMyOutgoingTransfersAsync(int senderCustomerId)
+        {
+            var transfers = await _policyTransferRepository.GetBySenderIdAsync(senderCustomerId);
+            return transfers.Select(t => (object)new
+            {
+                t.PolicyTransferId,
+                Status = t.Status.ToString(),
+                t.CreatedAt,
+                RecipientName = t.RecipientCustomer?.FullName,
+                RecipientEmail = t.RecipientCustomer?.Email,
+                Policy = t.Policy == null ? null : new
+                {
+                    t.Policy.PolicyId,
+                    t.Policy.PolicyNumber,
+                    Vehicle = t.Policy.Vehicle == null ? null : new
+                    {
+                        t.Policy.Vehicle.RegistrationNumber,
+                        t.Policy.Vehicle.Make,
+                        t.Policy.Vehicle.Model
+                    }
+                }
+            }).ToList();
+        }
+
+        public async Task<string> AcceptTransferAsync(int transferId, IFormFile rcDocument, int recipientCustomerId)
+        {
+            var transfer = await _policyTransferRepository.GetByIdAsync(transferId);
+            if (transfer == null || transfer.RecipientCustomerId != recipientCustomerId)
+                throw new NotFoundException("Transfer request not found.");
+            if (transfer.Status != PolicyTransferStatus.PendingRecipientAcceptance)
+                throw new BadRequestException("This transfer is no longer awaiting your acceptance.");
+
+            var policy = transfer.Policy;
+            var vehicle = policy.Vehicle;
+            var oldApp = vehicle.VehicleApplication;
+
+            // Save RC document
+            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents");
+            Directory.CreateDirectory(uploads);
+            var rcFileName = $"RC_Transfer_{transferId}_{Guid.NewGuid():N}{Path.GetExtension(rcDocument.FileName)}";
+            var rcPath = Path.Combine(uploads, rcFileName);
+            using (var stream = new FileStream(rcPath, FileMode.Create))
+                await rcDocument.CopyToAsync(stream);
+            var rcRelative = Path.Combine("uploads", "documents", rcFileName).Replace("\\", "/");
+
+            // Find the oldest document (InvoiceDoc) from original application to copy its path
+            var invoicePath = oldApp?.Documents?.FirstOrDefault(d => d.DocumentType == "Invoice")?.FilePath ?? string.Empty;
+
+            // Determine assigned agent (reuse same agent if possible)
+            int? agentId = policy.AgentId;
+            if (agentId == null)
+            {
+                var agent = await _userRepository.GetLeastLoadedAgentAsync();
+                agentId = agent?.UserId;
+            }
+
+            // Create new VehicleApplication for recipient
+            var newApp = new VehicleApplication
+            {
+                CustomerId = recipientCustomerId,
+                AssignedAgentId = agentId,
+                PlanId = policy.PlanId,
+                RegistrationNumber = vehicle.RegistrationNumber,
+                Make = vehicle.Make,
+                Model = vehicle.Model,
+                Year = vehicle.Year,
+                FuelType = vehicle.FuelType,
+                VehicleType = vehicle.VehicleType,
+                KilometersDriven = oldApp?.KilometersDriven ?? 0,
+                PolicyYears = policy.SelectedYears,
+                InvoiceAmount = policy.InvoiceAmount,
+                Status = VehicleApplicationStatus.UnderReview,
+                IsTransfer = true,
+                CreatedAt = DateTime.UtcNow,
+                Documents = new List<VehicleDocument>
+                {
+                    new VehicleDocument { DocumentType = "RC", FilePath = rcRelative, UploadedAt = DateTime.UtcNow }
+                }
+            };
+
+            // Copy invoice document if it exists
+            if (!string.IsNullOrEmpty(invoicePath))
+                newApp.Documents.Add(new VehicleDocument { DocumentType = "Invoice", FilePath = invoicePath, UploadedAt = DateTime.UtcNow });
+
+            await _vehicleApplicationRepository.AddAsync(newApp);
+            await _vehicleApplicationRepository.SaveChangesAsync();
+
+            // Advance transfer status
+            transfer.Status = PolicyTransferStatus.PendingAgentApproval;
+            transfer.NewVehicleApplicationId = newApp.VehicleApplicationId;
+            transfer.UpdatedAt = DateTime.UtcNow;
+            await _policyTransferRepository.SaveChangesAsync();
+
+            return "TRANSFER_ACCEPTED";
+        }
+
+        public async Task<string> RejectTransferAsync(int transferId, int recipientCustomerId)
+        {
+            var transfer = await _policyTransferRepository.GetByIdAsync(transferId);
+            if (transfer == null || transfer.RecipientCustomerId != recipientCustomerId)
+                throw new NotFoundException("Transfer request not found.");
+            if (transfer.Status != PolicyTransferStatus.PendingRecipientAcceptance)
+                throw new BadRequestException("This transfer is not awaiting your response.");
+
+            transfer.Status = PolicyTransferStatus.RejectedByRecipient;
+            transfer.UpdatedAt = DateTime.UtcNow;
+            await _policyTransferRepository.SaveChangesAsync();
+
+            return "TRANSFER_REJECTED";
         }
     }
 }

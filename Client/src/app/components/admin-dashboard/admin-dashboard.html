@@ -19,9 +19,33 @@
         </div>
 
         <div class="sidebar-footer">
-            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
-                Sign Out
-            </button>
+            <!-- User Dropdown Component -->
+            <div class="nav-profile-container">
+                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                    <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
+                    <div class="profile-info">
+                        <span class="profile-role">Executive Admin</span>
+                        <span class="profile-name">{{ adminName() }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Dropdown Menu -->
+                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
+                    (mouseleave)="showUserDropdown.set(false)">
+                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" (click)="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -31,6 +55,8 @@
         <!-- Overview Tab -->
         <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
             <header class="page-header">
+                <p style="color: var(--accent); font-weight: 500; font-size: 1.1rem; margin-bottom: 8px;">Welcome back,
+                    {{ adminName() }}! 👋</p>
                 <h1 class="page-title">Executive Overview</h1>
                 <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
             </header>

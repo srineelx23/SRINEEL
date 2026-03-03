@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../../services/admin.service';
+import { jwtDecode } from 'jwt-decode';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 
@@ -23,11 +24,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
   private router = inject(Router);
 
   // Data Stores
+  adminName = signal('Admin');
   users = signal<any[]>([]);
   policies = signal<any[]>([]);
   claims = signal<any[]>([]);
   payments = signal<any[]>([]);
   plans = signal<any[]>([]);
+  showUserDropdown = signal(false);
 
   // Aggregate Computations
 
@@ -326,8 +329,26 @@ export class AdminDashboard implements OnInit, OnDestroy {
   successMessage = signal('');
 
   ngOnInit() {
+    this.extractName();
     this.checkTheme();
     this.loadAllData();
+  }
+
+  private extractName() {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken: any = jwtDecode(token);
+        const name =
+          decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+          decodedToken.name ||
+          decodedToken.Name ||
+          'Admin';
+        this.adminName.set(name);
+      } catch (error) {
+        console.error('Failed to parse token for name', error);
+      }
+    }
   }
 
   private themeObserver?: MutationObserver;

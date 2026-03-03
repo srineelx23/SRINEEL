@@ -20,12 +20,41 @@
             <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
             <a (click)="switchTab('applied')" [class.active]="activeTab() === 'applied'" class="nav-item">Applied</a>
             <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
+            <a (click)="switchTab('transfers')" [class.active]="activeTab() === 'transfers'" class="nav-item"
+                style="position:relative">
+                Transfers
+                <span *ngIf="incomingTransfers().length > 0" class="transfer-badge">{{ incomingTransfers().length
+                    }}</span>
+            </a>
         </div>
 
         <div class="sidebar-footer">
-            <button (click)="logout()" class="btn-logout" style="padding: 10px 20px;">
-                Sign Out
-            </button>
+            <div class="nav-profile-container">
+                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                    <div class="profile-avatar">{{ customerName().charAt(0) }}</div>
+                    <div class="profile-info">
+                        <span class="profile-role">Customer</span>
+                        <span class="profile-name">{{ customerName() }}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Dropdown Menu -->
+                <div *ngIf="showUserDropdown()" class="dropdown-menu fade-in"
+                    (mouseleave)="showUserDropdown.set(false)">
+                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger" (click)="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -33,40 +62,126 @@
     <main class="main-content">
         <!-- Overview Tab -->
         <div *ngIf="activeTab() === 'overview'" class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Dashboard Overview</h1>
-                <p class="page-subtitle">Welcome back. Here is a summary of your account.</p>
-            </header>
 
-            <div class="dashboard-cards"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
-                    <h3>Total Policies</h3>
-                    <p class="stat-number">{{ policies().length }}</p>
+            <!-- Hero Greeting -->
+            <div class="overview-hero">
+                <div class="overview-hero-text">
+                    <p class="overview-greeting">Welcome back 👋</p>
+                    <h1 class="overview-title">Welcome, {{ customerName() }}!</h1>
+                    <p class="overview-sub">All your policies, claims, and vehicles — at a glance.</p>
                 </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
-                    <h3>Active Policies</h3>
-                    <p class="stat-number">{{ activePolicies().length }}</p>
-                </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
-                    <h3>Pending Policies</h3>
-                    <p class="stat-number">{{ pendingPolicies().length }}</p>
+                <div class="overview-hero-badge">
+                    <span class="hero-shield"><i class="fa-solid fa-shield-halved"></i></span>
+                    <span class="hero-badge-label">Protected</span>
                 </div>
             </div>
 
-            <div class="dashboard-cards"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
-                    <h3>Pending Claims</h3>
-                    <p class="stat-number">{{ pendingClaimsList().length }}</p>
+            <!-- KPI Cards -->
+            <div class="overview-kpi-grid">
+                <div class="kpi-card kpi-accent" (click)="switchTab('policies')">
+                    <div class="kpi-icon"><i class="fa-solid fa-file-contract"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ policies().length }}</div>
+                        <div class="kpi-label">Total Policies</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
                 </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
-                    <h3>Approved Claims</h3>
-                    <p class="stat-number">{{ approvedClaims().length }}</p>
+                <div class="kpi-card kpi-success" (click)="switchTab('policies')">
+                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ activePolicies().length }}</div>
+                        <div class="kpi-label">Active Policies</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
                 </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
-                    <h3>Rejected Claims</h3>
-                    <p class="stat-number">{{ rejectedClaims().length }}</p>
+                <div class="kpi-card kpi-warning" (click)="switchTab('applied')">
+                    <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ pendingApplicationsCount() }}</div>
+                        <div class="kpi-label">Pending Approval</div>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-danger" (click)="switchTab('policies'); policyFilter.set('PendingPayment')"
+                    style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <div class="kpi-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;"><i
+                            class="fa-solid fa-credit-card"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value" style="color: #ef4444;">{{ pendingPaymentPolicies().length }}</div>
+                        <div class="kpi-label">Pending Payment</div>
+                    </div>
+                    <div class="kpi-arrow" style="color: #ef4444;">→</div>
+                </div>
+                <div class="kpi-card kpi-info" (click)="switchTab('claims')">
+                    <div class="kpi-icon"><i class="fa-solid fa-inbox"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ pendingClaimsList().length }}</div>
+                        <div class="kpi-label">Pending Claims</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-success" (click)="switchTab('claims')">
+                    <div class="kpi-icon"><i class="fa-solid fa-thumbs-up"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ approvedClaims().length }}</div>
+                        <div class="kpi-label">Approved Claims</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-payments" (click)="switchTab('payments')">
+                    <div class="kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ totalPremiumPaid() | currency:'INR':'symbol':'1.0-0' }}</div>
+                        <div class="kpi-label">Total Premiums Paid</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+                <div class="kpi-card kpi-success" (click)="switchTab('payments')"
+                    style="border-left: 4px solid var(--success);">
+                    <div class="kpi-icon" style="color: var(--success);"><i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">{{ totalClaimPayouts() | currency:'INR':'symbol':'1.0-0' }}</div>
+                        <div class="kpi-label">Total Claim Payouts</div>
+                    </div>
+                    <div class="kpi-arrow">→</div>
+                </div>
+            </div>
+
+            <!-- Insured Vehicles Section -->
+            <div class="overview-section">
+                <div class="overview-section-header">
+                    <h2 class="overview-section-title"><i class="fa-solid fa-car"
+                            style="color:var(--accent);margin-right:8px;"></i>Your Insured Vehicles</h2>
+                    <button class="btn-outline-sm" (click)="switchTab('policies')">View All Policies →</button>
+                </div>
+
+                <div *ngIf="myVehicles().length === 0" class="empty-state-mini">
+                    <span>🚘</span>
+                    <p>No insured vehicles yet. <a (click)="switchTab('applied')"
+                            style="color:var(--accent);cursor:pointer;">Apply for a policy</a> to get started.</p>
+                </div>
+
+                <div class="vehicle-cards-grid" *ngIf="myVehicles().length > 0">
+                    <div class="vehicle-card glass-panel" *ngFor="let v of myVehicles()">
+                        <div class="vehicle-card-top">
+                            <div class="vehicle-icon-wrap"><i class="fa-solid fa-car"></i></div>
+                            <span class="status-badge" [ngClass]="v.status?.toLowerCase()">{{ v.status }}</span>
+                        </div>
+                        <div class="vehicle-card-body">
+                            <div class="vehicle-reg">{{ v.reg }}</div>
+                            <div class="vehicle-name">{{ v.vehicleName }}</div>
+                            <div class="vehicle-meta">
+                                <div class="vehicle-meta-item">
+                                    <span class="meta-label">IDV</span>
+                                    <span class="meta-value">{{ v.idv | currency:'INR':'symbol':'1.0-0' }}</span>
+                                </div>
+                                <div class="vehicle-meta-item">
+                                    <span class="meta-label">Plan</span>
+                                    <span class="meta-value plan-name">{{ v.planName }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,6 +199,10 @@
                     <button class="filter-pill" [class.active]="policyFilter() === 'Pending'"
                         (click)="policyFilter.set('Pending'); selectedPolicy.set(null); renewingPolicyId.set(null);">Pending
                         ({{pendingPolicies().length}})</button>
+                    <button class="filter-pill" [class.active]="policyFilter() === 'PendingPayment'"
+                        (click)="policyFilter.set('PendingPayment'); selectedPolicy.set(null); renewingPolicyId.set(null);">Pending
+                        Payment
+                        ({{pendingPaymentPolicies().length}})</button>
                     <button class="filter-pill" [class.active]="policyFilter() === 'History'"
                         (click)="policyFilter.set('History'); selectedPolicy.set(null); renewingPolicyId.set(null);">History
                         ({{inactivePolicies().length}})</button>
@@ -118,10 +237,10 @@
                     </table>
                 </div>
 
-                <!-- Pending Policies -->
+                <!-- Pending Policies (Applications) -->
                 <div *ngIf="policyFilter() === 'Pending'">
                     <p *ngIf="pendingPolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
-                        pending applications found.</p>
+                        pending applications awaiting review.</p>
                     <table class="vims-table" *ngIf="pendingPolicies().length > 0">
                         <thead>
                             <tr>
@@ -140,6 +259,45 @@
                                 <td>{{ p.premiumAmount | currency:'INR' }}</td>
                                 <td>{{ p.idv | currency:'INR' }}</td>
                                 <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Policies Awaiting Payment -->
+                <div *ngIf="policyFilter() === 'PendingPayment'">
+                    <p *ngIf="pendingPaymentPolicies().length === 0" style="color: var(--text-muted); padding: 16px;">No
+                        policies found with pending payment.</p>
+                    <table class="vims-table" *ngIf="pendingPaymentPolicies().length > 0">
+                        <thead>
+                            <tr>
+                                <th>Policy No.</th>
+                                <th>Plan Name</th>
+                                <th>Vehicle Detail</th>
+                                <th>Premium Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of pendingPaymentPolicies()" style="cursor: pointer;">
+                                <td (click)="viewPolicyDetails(p.policyId)">{{ p.policyNumber }}</td>
+                                <td (click)="viewPolicyDetails(p.policyId)">{{ p.planName }}</td>
+                                <td (click)="viewPolicyDetails(p.policyId)">{{ p.vehicleRegistrationNumber }}
+                                    ({{p.vehicleModel}})</td>
+                                <td (click)="viewPolicyDetails(p.policyId)"
+                                    style="font-weight: 600; color: var(--error);">{{ p.premiumAmount | currency:'INR'
+                                    }}</td>
+                                <td (click)="viewPolicyDetails(p.policyId)">
+                                    <span class="status-badge pendingpayment">Awaiting Payment</span>
+                                </td>
+                                <td>
+                                    <button class="btn-primary"
+                                        style="padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(135deg, #ef4444, #dc2626);"
+                                        (click)="payPremium(p.policyId); $event.stopPropagation()">
+                                        <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> Pay Now
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -244,7 +402,7 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div style="display: flex; gap: 16px; margin-top: 16px;">
+                <div style="display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;">
                     <button
                         *ngIf="selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
                         class="btn-primary" style="padding: 10px 24px;"
@@ -253,6 +411,11 @@
                         class="btn-primary"
                         style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
                         (click)="startRenew(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
+                    <button *ngIf="selectedPolicy().status === 'Active'" class="btn-primary"
+                        style="padding: 10px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5);"
+                        (click)="openTransferModal(selectedPolicy().policyId)">
+                        <i class="fa-solid fa-right-left" style="margin-right: 8px;"></i>Transfer Policy
+                    </button>
                     <button *ngIf="selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired'"
                         class="btn-outline" style="color: var(--error); border-color: var(--error);"
                         (click)="cancelPolicy(selectedPolicy().policyId)">Cancel Policy</button>
@@ -487,14 +650,18 @@
         <div *ngIf="activeTab() === 'payments'" class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Transaction History</h1>
-                <p class="page-subtitle">A comprehensive record of your premium payments.</p>
+                <p class="page-subtitle">A comprehensive record of your premium payments and claim payouts.</p>
             </header>
 
-            <div class="glass-panel" style="padding: 24px;">
-                <p *ngIf="payments().length === 0" style="color: var(--text-muted); padding: 16px;">No transactions
-                    recorded.</p>
+            <div class="glass-panel" style="padding: 24px; margin-bottom: 24px;">
+                <h2
+                    style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-credit-card"></i> Premium Payments
+                </h2>
+                <p *ngIf="premiumPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No premium
+                    payments recorded.</p>
 
-                <table class="vims-table" *ngIf="payments().length > 0">
+                <table class="vims-table" *ngIf="premiumPayments().length > 0">
                     <thead>
                         <tr>
                             <th>Transaction ID</th>
@@ -506,19 +673,251 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let p of payments()">
+                        <tr *ngFor="let p of premiumPayments()">
                             <td>#{{ p.paymentId }}</td>
                             <td>{{ p.policyNumber || 'N/A' }}</td>
                             <td>{{ p.paymentDate | date:'mediumDate' }}</td>
-                            <td style="font-weight: 500;">{{ p.amount | currency:'INR' }}</td>
+                            <td style="font-weight: 500;">{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR'
+                                    }}</td>
                             <td>{{ p.transactionReference || 'Auto' }}</td>
                             <td>
-                                <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                    }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-panel" style="padding: 24px; margin-bottom: 24px;">
+                <h2
+                    style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--success); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> Claim Payouts
+                </h2>
+                <p *ngIf="claimPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No claim
+                    payouts recorded.</p>
+
+                <table class="vims-table" *ngIf="claimPayments().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Policy No.</th>
+                            <th>Date</th>
+                            <th>Payout Amount</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of claimPayments()">
+                            <td>#{{ p.paymentId }}</td>
+                            <td>{{ p.policyNumber || 'N/A' }}</td>
+                            <td>{{ p.paymentDate | date:'mediumDate' }}</td>
+                            <td style="font-weight: 500; color: var(--success);">+ {{ (p.amount < 0 ? -p.amount :
+                                    p.amount) | currency:'INR' }}</td>
+                            <td>{{ p.transactionReference || 'Auto' }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                    }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-panel" style="padding: 24px;">
+                <h2
+                    style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--warning); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-money-bill-transfer"></i> Transfer Payments
+                </h2>
+                <p *ngIf="transferPayments().length === 0" style="color: var(--text-muted); padding: 16px;">No transfer
+                    payments recorded.</p>
+
+                <table class="vims-table" *ngIf="transferPayments().length > 0">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Policy No.</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of transferPayments()">
+                            <td>#{{ p.paymentId }}</td>
+                            <td>{{ p.policyNumber || 'N/A' }}</td>
+                            <td>{{ p.paymentDate | date:'mediumDate' }}</td>
+                            <td style="font-weight: 500; color: var(--warning);">{{ (p.amount < 0 ? -p.amount :
+                                    p.amount) | currency:'INR' }}</td>
+                            <td>{{ p.transactionReference || 'Transfer Fee' }}</td>
+                            <td>
+                                <span class="status-badge" [ngClass]="p.status?.toString().toLowerCase()">{{ p.status
+                                    }}</span>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- ==================== TRANSFERS TAB ==================== -->
+        <div *ngIf="activeTab() === 'transfers'" class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Policy Transfers</h1>
+                <p class="page-subtitle">Manage incoming and outgoing policy transfer requests.</p>
+            </header>
+
+            <!-- Incoming Transfers -->
+            <div class="glass-panel" style="padding: 24px; margin-bottom: 24px;">
+                <h2
+                    style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-inbox"></i> Incoming Transfer Requests
+                    <span *ngIf="incomingTransfers().length > 0" class="transfer-badge" style="position: static;">{{
+                        incomingTransfers().length }}</span>
+                </h2>
+                <p *ngIf="incomingTransfers().length === 0" style="color: var(--text-muted); font-style: italic;">No
+                    incoming transfer requests.</p>
+                <div *ngFor="let t of incomingTransfers()" class="transfer-card">
+                    <div class="transfer-card-info">
+                        <div class="transfer-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+                        <div>
+                            <p class="transfer-policy-no">{{ t.policy?.policyNumber }}</p>
+                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }} ·
+                                {{ t.policy?.vehicle?.registrationNumber }}</p>
+                            <p class="transfer-meta">Plan: <strong>{{ t.policy?.planName }}</strong> · IDV: <strong>{{
+                                    t.policy?.idv | currency:'INR' }}</strong></p>
+                            <p class="transfer-meta">From: <strong>{{ t.senderName }}</strong> ({{ t.senderEmail }})</p>
+                            <p class="transfer-meta" style="color: var(--text-muted); font-size: 0.78rem;">Received: {{
+                                t.createdAt | date:'mediumDate' }}</p>
+                        </div>
+                    </div>
+                    <div class="transfer-card-actions">
+                        <button class="btn-primary"
+                            style="padding: 8px 20px; font-size: 0.85rem; background: var(--success);"
+                            (click)="openAcceptModal(t)">
+                            <i class="fa-solid fa-check"></i> Accept
+                        </button>
+                        <button class="btn-outline"
+                            style="padding: 8px 20px; font-size: 0.85rem; color: var(--error); border-color: var(--error);"
+                            (click)="rejectTransfer(t.policyTransferId)">
+                            <i class="fa-solid fa-xmark"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outgoing Transfers -->
+            <div class="glass-panel" style="padding: 24px;">
+                <h2
+                    style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: var(--accent); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-paper-plane"></i> Outgoing Transfer Requests
+                </h2>
+                <p *ngIf="outgoingTransfers().length === 0" style="color: var(--text-muted); font-style: italic;">No
+                    outgoing transfer requests.</p>
+                <div *ngFor="let t of outgoingTransfers()" class="transfer-card">
+                    <div class="transfer-card-info">
+                        <div class="transfer-icon outgoing"><i class="fa-solid fa-right-from-bracket"></i></div>
+                        <div>
+                            <p class="transfer-policy-no">{{ t.policy?.policyNumber }}</p>
+                            <p class="transfer-vehicle">{{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }} ·
+                                {{ t.policy?.vehicle?.registrationNumber }}</p>
+                            <p class="transfer-meta">To: <strong>{{ t.recipientName }}</strong> ({{ t.recipientEmail }})
+                            </p>
+                            <p class="transfer-meta" style="color: var(--text-muted); font-size: 0.78rem;">Sent: {{
+                                t.createdAt | date:'mediumDate' }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="status-badge" [ngClass]="t.status.toLowerCase().replace(' ','')"
+                            style="font-size: 0.78rem;">{{ t.status }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
+</div>
+
+<!-- ==================== TRANSFER INITIATE MODAL ==================== -->
+<div *ngIf="showTransferModal()" class="modal-overlay" (click)="closeTransferModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-icon-wrap" style="background: linear-gradient(135deg, #7c3aed22, #4f46e522);">
+                <i class="fa-solid fa-right-left" style="color: #7c3aed; font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <h2 class="modal-title">Transfer Policy</h2>
+                <p class="modal-subtitle">Enter the email of the customer to transfer this policy to.</p>
+            </div>
+        </div>
+
+        <div *ngIf="transferError()" class="modal-error">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ transferError() }}
+        </div>
+        <div *ngIf="transferSuccess()" class="modal-success">
+            <i class="fa-solid fa-circle-check"></i> {{ transferSuccess() }}
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label">Recipient Customer Email</label>
+            <input type="email" class="form-control" placeholder="recipient@example.com"
+                [ngModel]="transferRecipientEmail()" (ngModelChange)="transferRecipientEmail.set($event)" />
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+            <button class="btn-outline" style="padding: 10px 24px;" (click)="closeTransferModal()">Cancel</button>
+            <button class="btn-primary"
+                style="padding: 10px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5);"
+                (click)="initiateTransfer()" [disabled]="!transferRecipientEmail().trim()">
+                <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>Send Request
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ACCEPT TRANSFER MODAL (RC Upload) ==================== -->
+<div *ngIf="showAcceptModal()" class="modal-overlay" (click)="closeAcceptModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <div class="modal-icon-wrap" style="background: linear-gradient(135deg, #10b98122, #059e5222);">
+                <i class="fa-solid fa-file-arrow-up" style="color: #10b981; font-size: 1.5rem;"></i>
+            </div>
+            <div>
+                <h2 class="modal-title">Accept Transfer</h2>
+                <p class="modal-subtitle">Upload your RC book document to proceed with the transfer.</p>
+            </div>
+        </div>
+
+        <div *ngIf="pendingAcceptTransfer()"
+            style="background: var(--card-inner-bg); border-radius: 10px; padding: 16px; margin: 16px 0; border: 1px solid var(--card-inner-border);">
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px;">Policy being transferred:</p>
+            <p style="font-weight: 600;">{{ pendingAcceptTransfer().policy?.policyNumber }}</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">{{ pendingAcceptTransfer().policy?.vehicle?.make }}
+                {{ pendingAcceptTransfer().policy?.vehicle?.model }}</p>
+            <p style="font-size: 0.85rem; margin-top: 8px;">From: <strong>{{ pendingAcceptTransfer().senderName
+                    }}</strong></p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">RC Book / Registration Certificate (PDF or Image)</label>
+            <div class="file-upload-area">
+                <i class="fa-solid fa-cloud-arrow-up"
+                    style="font-size: 2rem; color: var(--text-muted); margin-bottom: 8px;"></i>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">{{ rcFile ? rcFile.name : 'Click to select or
+                    drag & drop your RC document' }}</p>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onRcFileChange($event)"
+                    style="position: absolute; inset: 0; opacity: 0; cursor: pointer;" />
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end;">
+            <button class="btn-outline" style="padding: 10px 24px;" (click)="closeAcceptModal()">Cancel</button>
+            <button class="btn-primary" style="padding: 10px 24px; background: var(--success);"
+                (click)="acceptTransfer()" [disabled]="!rcFile">
+                <i class="fa-solid fa-check" style="margin-right: 6px;"></i>Accept & Submit
+            </button>
+        </div>
+    </div>
 </div>

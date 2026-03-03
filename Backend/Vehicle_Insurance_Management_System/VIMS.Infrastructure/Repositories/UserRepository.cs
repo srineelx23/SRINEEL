@@ -52,5 +52,11 @@ namespace VIMS.Infrastructure.Repositories
         {
             return await _context.Users.FindAsync(id);
         }
+
+        public async Task<User?> GetByEmailAsync(string email)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+        }
     }
 }

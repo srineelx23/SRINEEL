@@ -22,6 +22,7 @@ namespace VIMS.Infrastructure.Persistence
         public DbSet<ClaimDocument> ClaimDocuments => Set<ClaimDocument>();
         public DbSet<VehicleApplication> VehicleApplications => Set<VehicleApplication>();
         public DbSet<VehicleDocument> VehicleDocuments => Set<VehicleDocument>();
+        public DbSet<PolicyTransfer> PolicyTransfers => Set<PolicyTransfer>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -170,6 +171,31 @@ namespace VIMS.Infrastructure.Persistence
             modelBuilder.Entity<VehicleApplication>()
                 .Property(v => v.InvoiceAmount)
                 .HasPrecision(18, 2);
+
+            // ================= POLICY TRANSFER =================
+            modelBuilder.Entity<PolicyTransfer>()
+                .HasOne(t => t.SenderCustomer)
+                .WithMany()
+                .HasForeignKey(t => t.SenderCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PolicyTransfer>()
+                .HasOne(t => t.RecipientCustomer)
+                .WithMany()
+                .HasForeignKey(t => t.RecipientCustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PolicyTransfer>()
+                .HasOne(t => t.Policy)
+                .WithMany()
+                .HasForeignKey(t => t.PolicyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PolicyTransfer>()
+                .HasOne(t => t.NewVehicleApplication)
+                .WithMany()
+                .HasForeignKey(t => t.NewVehicleApplicationId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ClaimsOfficerService } from '../../services/claims-officer.service';
+import { jwtDecode } from 'jwt-decode';
 
 @Component({
     selector: 'app-claims-officer-dashboard',
@@ -21,6 +22,7 @@ export class ClaimsOfficerDashboard implements OnInit {
     private router = inject(Router);
 
     // Data
+    officerName = signal('Officer');
     pendingClaims = signal<any[]>([]);
     reviewedClaims = signal<any[]>([]);
 
@@ -30,6 +32,7 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     // UI State
     selectedClaim = signal<any>(null);
+    showUserDropdown = signal(false);
 
     // DTO logic for form
     decisionForm = {
@@ -44,7 +47,25 @@ export class ClaimsOfficerDashboard implements OnInit {
     successMessage = signal('');
 
     ngOnInit() {
+        this.extractName();
         this.loadDashboardData();
+    }
+
+    private extractName() {
+        const token = sessionStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken: any = jwtDecode(token);
+                const name =
+                    decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+                    decodedToken.name ||
+                    decodedToken.Name ||
+                    'Officer';
+                this.officerName.set(name);
+            } catch (error) {
+                console.error('Failed to parse token for name', error);
+            }
+        }
     }
 
     loadDashboardData() {

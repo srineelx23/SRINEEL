@@ -92,4 +92,27 @@ export class CustomerService {
     submitClaim(formData: FormData): Observable<any> {
         return this.http.post(`${this.backendUrl}/claim/submit`, formData);
     }
+
+    // Policy Transfer
+    initiateTransfer(policyId: number, recipientEmail: string): Observable<any> {
+        return this.http.post(`${this.backendUrl}/transfer/initiate`, { policyId, recipientEmail });
+    }
+
+    getIncomingTransfers(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.backendUrl}/transfer/incoming`);
+    }
+
+    getOutgoingTransfers(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.backendUrl}/transfer/outgoing`);
+    }
+
+    acceptTransfer(transferId: number, rcFile: File): Observable<any> {
+        const fd = new FormData();
+        fd.append('rcDocument', rcFile);
+        return this.http.post(`${this.backendUrl}/transfer/${transferId}/accept`, fd);
+    }
+
+    rejectTransfer(transferId: number): Observable<any> {
+        return this.http.post(`${this.backendUrl}/transfer/${transferId}/reject`, {});
+    }
 }
