@@ -15,14 +15,14 @@ namespace VIMS.Domain.Entities
         public string PlanName { get; set; } = string.Empty;
         public string PolicyType { get; set; } = string.Empty;
         public decimal BasePremium { get; set; }
-        public decimal? MaxCoverageAmount { get; set; }
+
         public int PolicyDurationMonths { get; set; }
         public decimal DeductibleAmount { get; set; }
         // Coverage
         public bool CoversThirdParty { get; set; }
         public bool CoversOwnDamage { get; set; }
         public bool CoversTheft { get; set; }
-        public bool CoversNaturalDisaster { get; set; }
+
         // Add-ons
         public bool ZeroDepreciationAvailable { get; set; }
         public bool EngineProtectionAvailable { get; set; }

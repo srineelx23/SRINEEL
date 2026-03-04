@@ -36,15 +36,19 @@ namespace VIMS.Application.Services
         {
             decimal idv = CalculateIDV(dto.InvoiceAmount, dto.ManufactureYear);
 
-            decimal annualPremium = CalculatePremium(
+            // Get base components from premium calculation
+            var (tpComp, odComp, riskL) = CalculatePremiumComponents(
                 plan,
                 idv,
                 dto.VehicleType,
                 dto.KilometersDriven
             );
 
+            decimal annualPremium = tpComp + odComp + riskL;
+            decimal preDiscountPremium = annualPremium;
+
             // Commitment Discount
-            decimal commitmentDiscount = dto.PolicyYears switch
+            decimal commitmentDiscountRate = dto.PolicyYears switch
             {
                 2 => 0.05m,
                 3 => 0.08m,
@@ -52,56 +56,78 @@ namespace VIMS.Application.Services
                 _ => 0m
             };
 
-            annualPremium -= annualPremium * commitmentDiscount;
+            decimal discount = annualPremium * commitmentDiscountRate;
+            annualPremium -= discount;
 
             // Loyalty Discount
             if (isRenewal)
-                annualPremium -= annualPremium * 0.05m;
+            {
+                decimal loyaltyDiscount = annualPremium * 0.05m;
+                discount += loyaltyDiscount;
+                annualPremium -= loyaltyDiscount;
+            }
+
+            // GST / Tax (Assume 18% standard for insurance in India)
+            decimal taxRate = 0.18m;
+            decimal taxAmount = annualPremium * taxRate;
+            decimal finalPremium = annualPremium + taxAmount;
 
             return new PricingResultDTO
             {
                 IDV = Math.Round(idv, 0),
-                Premium = Math.Round(annualPremium, 0)
+                Premium = Math.Round(finalPremium, 0),
+                TPComponent = Math.Round(tpComp, 2),
+                ODComponent = Math.Round(odComp, 2),
+                BasePremium = Math.Round(tpComp + odComp, 2),
+                RiskLoadingAmount = Math.Round(riskL, 2),
+                DiscountAmount = Math.Round(discount, 2),
+                TaxAmount = Math.Round(taxAmount, 2)
             };
         }
 
-        private decimal CalculatePremium(
+        private (decimal tp, decimal od, decimal risk) CalculatePremiumComponents(
             PolicyPlan plan,
             decimal idv,
             string vehicleType,
             int kilometersDriven)
         {
             string policyType = plan.PolicyType?.ToLower() ?? "";
-
-            decimal annualPremium;
+            
+            decimal tpPart = 0;
+            decimal odPart = 0;
+            decimal riskPart = 0;
 
             if (policyType == "thirdparty")
             {
-                annualPremium = plan.BasePremium;
+                tpPart = plan.BasePremium;
 
                 if (vehicleType == "HeavyVehicle")
-                    annualPremium *= 1.10m;
+                    tpPart *= 1.10m;
 
                 if (vehicleType.Contains("EV"))
-                    annualPremium *= 0.95m;
+                    tpPart *= 0.95m;
             }
             else
             {
-                decimal tpComponent = plan.BasePremium * 0.40m;
-                decimal odComponent = idv * 0.022m;
+                tpPart = plan.BasePremium * 0.40m;
+                odPart = idv * 0.022m;
 
-                decimal riskLoading = 1.0m;
-
+                decimal riskFactor = 1.0m;
                 if (kilometersDriven > 50000)
-                    riskLoading += 0.05m;
-
-                annualPremium = (tpComponent + odComponent) * riskLoading;
+                    riskFactor += 0.05m;
 
                 if (policyType == "zerodepreciation")
-                    annualPremium *= 1.20m;
+                    riskFactor *= 1.20m;
+                
+                decimal combined = tpPart + odPart;
+                riskPart = (combined * riskFactor) - combined;
             }
 
-            return annualPremium;
+            return (tpPart, odPart, riskPart);
         }
+
+        // Backward compatibility if needed by interface
+        public PricingResultDTO CalculateAnnualPremium(CalculateQuoteDTO dto, PolicyPlan plan) 
+            => CalculateAnnualPremium(dto, plan, false);
     }
 }

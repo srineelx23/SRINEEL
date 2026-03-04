@@ -147,13 +147,18 @@ namespace VIMS.Application.Services
 
             if (!approve)
             {
+                if (string.IsNullOrWhiteSpace(dto.RejectionReason))
+                    throw new BadRequestException("Please provide a reason for rejecting this claim.");
+
                 claim.Status = ClaimStatus.Rejected;
+                claim.RejectionReason = dto.RejectionReason;
                 await _claimsRepository.UpdateAsync(claim);
-                await _auditService.LogActionAsync("ClaimRejected", "Claim", $"Officer rejected claim: {claim.ClaimNumber}", "Claim", claim.ClaimId.ToString());
+                await _auditService.LogActionAsync("ClaimRejected", "Claim", $"Officer rejected claim: {claim.ClaimNumber}. Reason: {dto.RejectionReason}", "Claim", claim.ClaimId.ToString());
                 return "Claim rejected";
             }
 
-            // Approval flow
+            // Approval flow: add the reason if provided even on approval
+            claim.RejectionReason = dto.RejectionReason; 
             // ensure navigation properties are loaded
             var policy = claim.Policy ?? await _policyRepository.GetByIdAsync(claim.PolicyId);
             if (policy == null)
@@ -220,11 +225,8 @@ namespace VIMS.Application.Services
 
                 if (repair > idv * 0.75m)
                 {
-                    // large repair - pay up to max coverage
-                    if (idv > (plan.MaxCoverageAmount ?? decimal.MaxValue))
-                        payout = plan.MaxCoverageAmount ?? 0m;
-                    else
-                        payout = idv;
+                    // large repair - pay up to IDV
+                    payout = idv;
                 }
                 else
                 {
@@ -276,7 +278,7 @@ namespace VIMS.Application.Services
             await _claimsRepository.UpdateAsync(claim);
             await _auditService.LogActionAsync("ClaimApproved", "Claim", $"Officer approved claim: {claim.ClaimNumber} with amount {claim.ApprovedAmount}", "Claim", claim.ClaimId.ToString());
 
-            // increment policy claim count and decide if policy should be Closed (constructive total loss)
+            // increment policy claim count and decide if policy should be Claimed (constructive total loss)
             try
             {
                 policy.ClaimCount += 1;
@@ -284,10 +286,10 @@ namespace VIMS.Application.Services
                 // Recalculate IDV at claim time
                 var currentIdv = _pricingService.CalculateIDV(policy.InvoiceAmount, policy.Vehicle?.Year ?? insuredVehicle.Year);
 
-                // If approved amount >= IDV or approved >= 75% of IDV then close policy
+                // If approved amount >= IDV or approved >= 75% of IDV then set status to Claimed
                 if ((claim.ApprovedAmount ?? 0m) >= currentIdv || (claim.ApprovedAmount ?? 0m) >= (currentIdv * 0.75m))
                 {
-                    policy.Status = PolicyStatus.Closed;
+                    policy.Status = PolicyStatus.Claimed;
                 }
 
                 await _policyRepository.UpdateAsync(policy);

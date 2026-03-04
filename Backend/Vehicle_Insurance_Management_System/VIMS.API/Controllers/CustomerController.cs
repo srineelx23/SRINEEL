@@ -98,6 +98,7 @@ namespace VIMS.API.Controllers
                 ClaimType = claim.claimType.ToString(),
                 Status = claim.Status.ToString(),
                 ApprovedAmount = claim.ApprovedAmount,
+                claim.RejectionReason,
                 DecisionType = claim.DecisionType,
                 Documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
                 Policy = claim.Policy == null ? null : new { claim.Policy.PolicyId, claim.Policy.PolicyNumber, claim.Policy.InvoiceAmount }
@@ -273,6 +274,8 @@ public async Task<IActionResult> GetMyApplications()
                 ClaimType = c.claimType.ToString(),
                 Status = c.Status.ToString(),
                 ApprovedAmount = c.ApprovedAmount,
+                c.RejectionReason,
+                c.CreatedAt,
                 Documents = c.Documents == null ? null : c.Documents.Select(d => new { d.Document1, d.Document2 }),
                 Policy = c.Policy == null ? null : new
                 {

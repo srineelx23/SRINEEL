@@ -22,6 +22,8 @@ namespace VIMS.Domain.Entities
         public decimal? ApprovedAmount { get; set; }
         // Computed classification after decision: Partial | TotalLoss | ConstructiveTotalLoss
         public string? DecisionType { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         // Navigation
         public Policy Policy { get; set; } = null!;
         public User Customer { get; set; } = null!;

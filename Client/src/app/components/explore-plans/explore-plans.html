@@ -6,8 +6,6 @@
             </div>
             <nav class="nav-links">
                 <a (click)="goHome()" style="cursor: pointer;">Home</a>
-                <a (click)="goHome()" style="cursor: pointer;">Services</a>
-                <a (click)="goHome()" style="cursor: pointer;">Contact</a>
             </nav>
             <div class="nav-actions">
                 @if (userName()) {
@@ -84,39 +82,18 @@
                                 <div class="option-item"
                                     (click)="setFilterDirect('', 'vehicle'); $event.stopPropagation()">All Vehicles
                                 </div>
+                                @for (cat of vehicleCategories; track cat) {
                                 <div class="option-item"
-                                    (click)="setFilterDirect('Private', 'vehicle'); $event.stopPropagation()">Private
+                                    (click)="setFilterDirect(cat, 'vehicle'); $event.stopPropagation()">
+                                    {{ cat }}
                                 </div>
-                                <div class="option-item"
-                                    (click)="setFilterDirect('Commercial', 'vehicle'); $event.stopPropagation()">
-                                    Commercial</div>
+                                }
                             </div>
                             }
                         </div>
                     </div>
 
-                    <div class="filter-item">
-                        <div class="custom-filter-dropdown" (click)="showPolicyDropdown.set(!showPolicyDropdown())">
-                            <div class="filter-trigger">
-                                <span>{{ filterPolicyType() || 'All Policies' }}</span>
-                                <i class="fas fa-chevron-down"
-                                    [style.transform]="showPolicyDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                            </div>
-                            @if (showPolicyDropdown()) {
-                            <div class="dropdown-options glass-panel fade-in"
-                                (mouseleave)="showPolicyDropdown.set(false)">
-                                <div class="option-item"
-                                    (click)="setFilterDirect('', 'policy'); $event.stopPropagation()">All Policies</div>
-                                <div class="option-item"
-                                    (click)="setFilterDirect('Comprehensive', 'policy'); $event.stopPropagation()">
-                                    Comprehensive</div>
-                                <div class="option-item"
-                                    (click)="setFilterDirect('Third-Party', 'policy'); $event.stopPropagation()">
-                                    Third-Party</div>
-                            </div>
-                            }
-                        </div>
-                    </div>
+
 
                     <div class="filter-item premium-range">
                         <span class="range-label">Max Premium:</span>
@@ -133,12 +110,16 @@
                     <label class="addon-pill" [class.active]="filterThirdParty()">
                         <input type="checkbox" [checked]="filterThirdParty()"
                             (change)="toggleFeatureFilter('thirdParty')">
-                        <span>Third Party</span>
+                        <span>Third Party Liability</span>
                     </label>
                     <label class="addon-pill" [class.active]="filterOwnDamage()">
                         <input type="checkbox" [checked]="filterOwnDamage()"
                             (change)="toggleFeatureFilter('ownDamage')">
-                        <span>Own Damage</span>
+                        <span>Personal Damage</span>
+                    </label>
+                    <label class="addon-pill" [class.active]="filterTheft()">
+                        <input type="checkbox" [checked]="filterTheft()" (change)="toggleFeatureFilter('theft')">
+                        <span>Theft Protection</span>
                     </label>
                     <label class="addon-pill" [class.active]="filterZeroDep()">
                         <input type="checkbox" [checked]="filterZeroDep()" (change)="toggleFeatureFilter('zeroDep')">
@@ -146,7 +127,7 @@
                     </label>
                     <label class="addon-pill" [class.active]="filterRoadside()">
                         <input type="checkbox" [checked]="filterRoadside()" (change)="toggleFeatureFilter('roadside')">
-                        <span>Roadside</span>
+                        <span>Roadside Assistance</span>
                     </label>
                     <button class="reset-pill" (click)="resetFilters()" title="Reset Filters">
                         <i class="fas fa-undo"></i>
@@ -252,15 +233,9 @@
                 </div>
                 }
 
-                <form class="vims-form" (ngSubmit)="calculateQuote()" style="margin-top: 16px;">
+                <form class="vims-form" (ngSubmit)="calculateQuote()">
                     <!-- Grid Layout for Inputs -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                        <div class="form-group">
-                            <input type="number" id="invoiceAmount" name="invoiceAmount"
-                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " required>
-                            <label for="invoiceAmount" class="floating-label">Current Vehicle Value (₹)</label>
-                        </div>
-
                         <div class="form-group">
                             <input type="number" id="manufactureYear" name="manufactureYear"
                                 [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" " required>
@@ -278,6 +253,12 @@
                         </div>
 
                         <div class="form-group">
+                            <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven"
+                                class="form-control" placeholder=" " required>
+                            <label for="kms" class="floating-label">KMs Driven (Cumulative)</label>
+                        </div>
+
+                        <div class="form-group">
                             <select id="vehicleType" name="vehicleType" [(ngModel)]="quoteForm.VehicleType"
                                 class="form-control">
                                 <option value="Private">Private / Personal</option>
@@ -287,17 +268,19 @@
                         </div>
 
                         <div class="form-group">
-                            <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven"
-                                class="form-control" placeholder=" " required>
-                            <label for="kms" class="floating-label">KMs Driven (Cumulative)</label>
+                            <input type="number" id="invoiceAmount" name="invoiceAmount"
+                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " required>
+                            <label for="invoiceAmount" class="floating-label">Current Vehicle Value (₹)</label>
                         </div>
 
                         <div class="form-group">
                             <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
                                 class="form-control">
                                 <option value="1">1 Year Protection</option>
-                                <option value="2">2 Years Protection</option>
-                                <option value="3">3 Years Protection (10% Discount)</option>
+                                <option value="2">2 Years Protection (5% Discount)</option>
+                                <option value="3">3 Years Protection (8% Discount)</option>
+                                <option value="4">4 Years Protection (10% Discount)</option>
+                                <option value="5">5 Years Protection (10% Discount)</option>
                             </select>
                             <label class="floating-label">Coverage Duration</label>
                         </div>
@@ -320,22 +303,7 @@
                 <form class="vims-form" (ngSubmit)="submitApplication()">
                     <!-- Show Calculator fields if user clicked Buy Now directly -->
                     @if (!calculatedQuote()) {
-                    <div
-                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed var(--border-light); margin-bottom: 8px;">
-                        <div class="form-group">
-                            <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
-                                class="form-control">
-                                <option value="1">1 Year Protection</option>
-                                <option value="2">2 Years Protection</option>
-                                <option value="3">3 Years Protection</option>
-                            </select>
-                            <label class="floating-label">Duration</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="number" name="invoiceAmount" [(ngModel)]="quoteForm.InvoiceAmount"
-                                class="form-control" placeholder=" " required>
-                            <label class="floating-label">Vehicle Value (₹)</label>
-                        </div>
+                    <div class="direct-apply-preview">
                         <div class="form-group">
                             <input type="number" name="manufactureYear" [(ngModel)]="quoteForm.ManufactureYear"
                                 class="form-control" placeholder=" " required>
@@ -348,6 +316,32 @@
                                 <option value="EV">Electric</option>
                             </select>
                             <label class="floating-label">Fuel Type</label>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" name="kilometersDriven" [(ngModel)]="quoteForm.KilometersDriven"
+                                class="form-control" placeholder=" " required>
+                            <label class="floating-label">KMs Driven</label>
+                        </div>
+                        <div class="form-group">
+                            <select name="vehicleType" [(ngModel)]="quoteForm.VehicleType" class="form-control">
+                                <option value="Private">Private / Family</option>
+                                <option value="Commercial">Commercial</option>
+                            </select>
+                            <label class="floating-label">Usage Type</label>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" name="invoiceAmount" [(ngModel)]="quoteForm.InvoiceAmount"
+                                class="form-control" placeholder=" " required>
+                            <label class="floating-label">Vehicle Value (₹)</label>
+                        </div>
+                        <div class="form-group">
+                            <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
+                                class="form-control">
+                                <option value="1">1 Year</option>
+                                <option value="2">2 Years</option>
+                                <option value="3">3 Years</option>
+                            </select>
+                            <label class="floating-label">Duration</label>
                         </div>
                     </div>
                     }
@@ -414,13 +408,13 @@
             }
 
             <!-- Quote Output Side Panel -->
-            @if (calculatedQuote() && !isApplying()) {
+            @if (calculatedQuote()) {
             <div class="glass-panel slide-in"
                 style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); height: fit-content;">
                 <div style="text-align: center; margin-bottom: 24px;">
                     <div
                         style="width: 60px; height: 60px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--bg-dark); font-size: 1.5rem;">
-                        <i class="fas fa-file-invoice-dollar"></i>
+                        <i class="fas fa-indian-rupee-sign"></i>
                     </div>
                     <h3 style="font-size: 1.5rem; margin-bottom: 4px;">Premium Summary</h3>
                     <p style="color: var(--text-muted); font-size: 0.9rem;">Validated and ready for application.</p>
@@ -436,14 +430,39 @@
                             calculatedQuote().idv | currency:'INR' }}</p>
                     </div>
 
-                    <div style="padding-top: 16px; border-top: 1px dashed var(--card-inner-border);">
+                    <div class="breakdown-list"
+                        style="padding-top: 16px; border-top: 1px dashed var(--card-inner-border);">
                         <p
-                            style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-                            Calculated Premium</p>
-                        <p style="font-size: 2.2rem; color: var(--accent); font-weight: 800;">{{
-                            calculatedQuote().premium | currency:'INR' }}</p>
-                        <p style="font-size: 0.75rem; color: var(--success); font-weight: 500; margin-top: 4px;">
-                            Includes all taxes & adjustments</p>
+                            style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                            Premium Breakdown</p>
+
+                        <div class="breakdown-row" *ngIf="calculatedQuote().tpComponent">
+                            <span class="breakdown-label">Third Party liability</span>
+                            <span class="breakdown-value">{{ calculatedQuote().tpComponent | currency:'INR' }}</span>
+                        </div>
+                        <div class="breakdown-row" *ngIf="calculatedQuote().odComponent">
+                            <span class="breakdown-label">Own Damage (OD)</span>
+                            <span class="breakdown-value">{{ calculatedQuote().odComponent | currency:'INR' }}</span>
+                        </div>
+                        <div class="breakdown-row" *ngIf="calculatedQuote().riskLoadingAmount">
+                            <span class="breakdown-label">Risk Loading</span>
+                            <span class="breakdown-value">{{ calculatedQuote().riskLoadingAmount | currency:'INR'
+                                }}</span>
+                        </div>
+                        <div class="breakdown-row" *ngIf="calculatedQuote().discountAmount">
+                            <span class="breakdown-label">Applied Discounts</span>
+                            <span class="breakdown-value discount">- {{ calculatedQuote().discountAmount |
+                                currency:'INR' }}</span>
+                        </div>
+                        <div class="breakdown-row" *ngIf="calculatedQuote().taxAmount">
+                            <span class="breakdown-label">GST (18%)</span>
+                            <span class="breakdown-value">{{ calculatedQuote().taxAmount | currency:'INR' }}</span>
+                        </div>
+
+                        <div class="breakdown-row total-net">
+                            <span class="breakdown-label">Final Premium</span>
+                            <span class="breakdown-value">{{ calculatedQuote().premium | currency:'INR' }}</span>
+                        </div>
                     </div>
                 </div>
 

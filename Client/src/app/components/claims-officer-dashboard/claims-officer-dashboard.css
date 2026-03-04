@@ -405,11 +405,4 @@
     border-radius: 4px;
 }
 
-select.form-control {
-    appearance: none;
-}
-
-select.form-control option {
-    background: var(--bg-card);
-    color: var(--text-main);
-}
+/* Form Control select styles removed to use global design in styles.css */

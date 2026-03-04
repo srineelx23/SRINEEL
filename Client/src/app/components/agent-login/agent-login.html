@@ -67,12 +67,7 @@
                         </div>
                     </div>
 
-                    <div class="form-options">
-                        <label class="checkbox-container">
-                            <input type="checkbox">
-                            <span class="checkmark"></span>
-                            Remember device
-                        </label>
+                    <div class="form-options" style="justify-content: flex-end;">
                         <a href="javascript:void(0)" class="forgot-link" (click)="openForgotPassword()">Forgot
                             password?</a>
                     </div>
@@ -164,11 +159,9 @@
 
                 <form class="vims-form" (ngSubmit)="submitSecurityQuestion()">
                     <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="floating-label"
-                            style="position: static; font-weight: 500; font-size: 0.95rem; display: block; margin-bottom: 8px;">Security
-                            Question</label>
+                        <label class="static-label">Security Question</label>
                         <select name="newSecurityQuestion" class="form-control" [(ngModel)]="newSecurityQuestion"
-                            required style="appearance: none;">
+                            required>
                             <option value="" disabled selected>Select a Security Question</option>
                             @for (q of securityQuestions; track q) {
                             <option [value]="q">{{ q }}</option>

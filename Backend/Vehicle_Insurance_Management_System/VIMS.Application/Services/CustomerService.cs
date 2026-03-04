@@ -193,7 +193,8 @@ namespace VIMS.Application.Services
                     IDV = p.IDV,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
-                    Status = p.Status.ToString()
+                    Status = p.Status.ToString(),
+                    IsRenewed = p.IsRenewed
                 });
             }
 

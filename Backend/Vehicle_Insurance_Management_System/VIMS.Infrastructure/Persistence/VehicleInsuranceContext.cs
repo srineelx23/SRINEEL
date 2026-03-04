@@ -123,9 +123,7 @@ namespace VIMS.Infrastructure.Persistence
                 .Property(p => p.BasePremium)
                 .HasPrecision(18, 2);
 
-            modelBuilder.Entity<PolicyPlan>()
-                .Property(p => p.MaxCoverageAmount)
-                .HasPrecision(18, 2);
+
             // ================= COMMISSION =================
 
             // ================= DEDUCTIBLE =================

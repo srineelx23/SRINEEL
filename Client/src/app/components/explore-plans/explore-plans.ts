@@ -26,8 +26,9 @@ export class ExplorePlans implements OnInit {
   // Filter State
   searchQuery = signal('');
   filterVehicleType = signal('');
-  filterPolicyType = signal('');
   filterMaxPremium = signal<number | null>(null);
+
+  vehicleCategories = ['Car', 'TwoWheeler', 'EVCar', 'EVTwoWheeler', 'HeavyVehicle', 'ThreeWheeler', 'EVThreeWheeler'];
 
   // Feature filters
   filterThirdParty = signal(false);
@@ -52,7 +53,6 @@ export class ExplorePlans implements OnInit {
   userName = signal<string | null>(null);
   showDropdown = false;
   showVehicleDropdown = signal(false);
-  showPolicyDropdown = signal(false);
 
   // Application State
   isApplying = signal(false);
@@ -112,11 +112,6 @@ export class ExplorePlans implements OnInit {
       results = results.filter(p => p.applicableVehicleType === this.filterVehicleType());
     }
 
-    // Policy Type
-    if (this.filterPolicyType()) {
-      results = results.filter(p => p.policyType === this.filterPolicyType());
-    }
-
     // Premium range
     if (this.filterMaxPremium()) {
       results = results.filter(p => p.basePremium <= (this.filterMaxPremium() || 0));
@@ -136,7 +131,6 @@ export class ExplorePlans implements OnInit {
     const val = event.target.value;
     if (type === 'search') this.searchQuery.set(val);
     if (type === 'vehicle') this.filterVehicleType.set(val);
-    if (type === 'policy') this.filterPolicyType.set(val);
     if (type === 'premium') this.filterMaxPremium.set(val ? Number(val) : null);
     this.applyFilters();
   }
@@ -145,10 +139,6 @@ export class ExplorePlans implements OnInit {
     if (type === 'vehicle') {
       this.filterVehicleType.set(val);
       this.showVehicleDropdown.set(false);
-    }
-    if (type === 'policy') {
-      this.filterPolicyType.set(val);
-      this.showPolicyDropdown.set(false);
     }
     this.applyFilters();
   }
@@ -165,7 +155,6 @@ export class ExplorePlans implements OnInit {
   resetFilters() {
     this.searchQuery.set('');
     this.filterVehicleType.set('');
-    this.filterPolicyType.set('');
     this.filterMaxPremium.set(null);
     this.filterThirdParty.set(false);
     this.filterOwnDamage.set(false);

@@ -28,7 +28,7 @@ namespace VIMS.Infrastructure.Services
             int? userId = null;
             string email = "System";
             string role = "System";
-            string? ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
+
 
             if (httpContext?.User?.Identity?.IsAuthenticated == true)
             {
@@ -56,7 +56,6 @@ namespace VIMS.Infrastructure.Services
                 EntityId = entityId,
                 Details = details,
                 Timestamp = DateTime.UtcNow,
-                IPAddress = ipAddress
             };
 
             await _context.AuditLogs.AddAsync(auditLog);
@@ -66,7 +65,7 @@ namespace VIMS.Infrastructure.Services
         public async Task LogActionWithUserAsync(string action, string category, string details, int? userId, string email, string role, string? entityName = null, string? entityId = null)
         {
             var httpContext = _httpContextAccessor.HttpContext;
-            string? ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
+
 
             var auditLog = new AuditLog
             {
@@ -79,7 +78,6 @@ namespace VIMS.Infrastructure.Services
                 EntityId = entityId,
                 Details = details,
                 Timestamp = DateTime.UtcNow,
-                IPAddress = ipAddress
             };
 
             await _context.AuditLogs.AddAsync(auditLog);

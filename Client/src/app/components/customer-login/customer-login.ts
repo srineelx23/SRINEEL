@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CaptchaService } from '../../services/captcha.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 
 @Component({
   selector: 'app-customer-login',
@@ -61,24 +62,14 @@ export class CustomerLogin implements OnInit {
           sessionStorage.setItem('token', response.token);
 
           const role = this.authService.getRoleFromToken(response.token);
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
-          if (returnUrl) {
-            this.router.navigateByUrl(returnUrl);
-          } else if (role === 'Admin') {
-            this.router.navigate(['/admin-dashboard']);
-          } else if (role === 'Agent') {
-            this.router.navigate(['/agent-dashboard']);
-          } else if (role === 'ClaimsOfficer' || role === 'Claims') {
-            this.router.navigate(['/claims-dashboard']);
-          } else {
-            const hasIntent = this.route.snapshot.queryParamMap.get('quote_intent');
-            if (hasIntent) {
-              this.router.navigate(['/explore-plans'], { queryParams: { open_quote: hasIntent } });
-            } else {
-              this.router.navigate(['/customer-dashboard']);
-            }
+          if (response.isSecurityQuestionSet === false) {
+            this.isSettingSecurityQuestion.set(true);
+            this.pendingRole = role || '';
+            return;
           }
+
+          this.routeToDashboard(role);
         }
       },
       error: (err: any) => {
@@ -96,6 +87,57 @@ export class CustomerLogin implements OnInit {
     });
   }
 
+  private routeToDashboard(role: string | null) {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+    } else if (role === 'Admin') {
+      this.router.navigate(['/admin-dashboard']);
+    } else if (role === 'Agent') {
+      this.router.navigate(['/agent-dashboard']);
+    } else if (role === 'ClaimsOfficer' || role === 'Claims') {
+      this.router.navigate(['/claims-dashboard']);
+    } else {
+      const hasIntent = this.route.snapshot.queryParamMap.get('quote_intent');
+      if (hasIntent) {
+        this.router.navigate(['/explore-plans'], { queryParams: { open_quote: hasIntent } });
+      } else {
+        this.router.navigate(['/customer-dashboard']);
+      }
+    }
+  }
+
+  submitSecurityQuestion() {
+    this.errorMessage.set('');
+    if (!this.newSecurityQuestion || !this.newSecurityAnswer) {
+      this.errorMessage.set('Please select a question and provide an answer.');
+      this.autoHideToast();
+      return;
+    }
+
+    const payload = {
+      Email: this.email,
+      SecurityQuestion: this.newSecurityQuestion,
+      SecurityAnswer: this.newSecurityAnswer
+    };
+
+    this.authService.setSecurityQuestion(payload).subscribe({
+      next: () => {
+        this.successMessage.set('Security capability enabled successfully.');
+        setTimeout(() => {
+          this.successMessage.set('');
+          this.isSettingSecurityQuestion.set(false);
+          this.routeToDashboard(this.pendingRole);
+        }, 1500);
+      },
+      error: (err: any) => {
+        this.errorMessage.set(err.error?.message || err.error || 'Failed to set security question.');
+        this.autoHideToast();
+      }
+    });
+  }
+
   // ==== Forgot Password Flow ====
   isForgotPasswordMode = signal(false);
   forgotPasswordStep = signal(1); // 1 = Enter Email, 2 = Answer & New Password
@@ -106,6 +148,19 @@ export class CustomerLogin implements OnInit {
   confirmNewPassword = '';
 
   successMessage = signal('');
+
+  // ==== Set Security Question Flow ====
+  isSettingSecurityQuestion = signal(false);
+  newSecurityQuestion = '';
+  newSecurityAnswer = '';
+  securityQuestions = [
+    "Father's Name",
+    "Mother's Name",
+    "Wife's Name",
+    "Pet's Name"
+  ];
+  pendingRole = '';
+
 
   openForgotPassword() {
     this.errorMessage.set('');

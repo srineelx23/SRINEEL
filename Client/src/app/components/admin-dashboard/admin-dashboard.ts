@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../../services/admin.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
@@ -123,43 +124,32 @@ export class AdminDashboard implements OnInit, OnDestroy {
   });
 
   vehicleTransactions = computed(() => {
-    let txns: any[] = [];
+    const policyIds = this.vehiclePolicies().map(p => p.policyId);
+    // Pull ALL payments for this vehicle's policies (premiums + claim payouts)
+    const allVehiclePayments = this.payments().filter((p: any) =>
+      policyIds.includes(p.policyId)
+    );
 
-    // Premium Payments (Credits to company)
-    this.vehiclePayments().forEach(p => {
-      txns.push({
-        id: p.paymentId || p.transactionId,
-        date: p.paymentDate,
-        type: 'Premium Payment',
+    const txns = allVehiclePayments.map((p: any) => {
+      const isClaimPayout = this.claimPaymentIds().has(p.paymentId);
+      return {
+        id: p.paymentId,
+        date: p.paymentDate,        // from payments table — always set
+        type: isClaimPayout ? 'Claim Payout' : 'Premium Payment',
         amount: p.amount,
         status: p.status,
-        isCredit: true
-      });
+        isCredit: !isClaimPayout
+      };
     });
 
-    // Claim Payouts (Debits — losses to company)
-    this.vehicleClaims()
-      .filter((c: any) => c.status === 'Approved' || c.status === 1)
-      .forEach((c: any) => {
-        if (c.approvedAmount) {
-          txns.push({
-            id: c.claimNumber || c.claimId,
-            date: c.resolvedDate || c.incidentDate,
-            type: 'Claim Payout',
-            amount: c.approvedAmount,
-            status: 'Settled',
-            isCredit: false
-          });
-        }
-      });
-
-    // Sort by date descending where possible
-    return txns.sort((a, b) => {
+    // Sort by date descending
+    return txns.sort((a: any, b: any) => {
       if (!a.date) return 1;
       if (!b.date) return -1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   });
+
 
   vehicleDocuments = computed(() => {
     let docs: any[] = [];
@@ -241,15 +231,25 @@ export class AdminDashboard implements OnInit, OnDestroy {
   // All transactions (for the Payments tab)
   allTransactions = computed(() => {
     let txns: any[] = [];
+
+    // Premium payments + claim payout records from payments table
     this.payments().forEach((p: any) => {
       const isClaimPayout = this.claimPaymentIds().has(p.paymentId);
       const policy = this.policies().find((pol: any) => pol.policyId === p.policyId);
+      // For claim payout entries, look up the createdAt from the matching claim
+      let date = p.paymentDate;
+      if (isClaimPayout && !date) {
+        const matchingClaim = this.claims().find((c: any) =>
+          c.policyId === p.policyId && c.approvedAmount === p.amount
+        );
+        date = matchingClaim?.createdAt || null;
+      }
       txns.push({
         id: p.paymentId,
         policyId: p.policyId,
         vehicle: policy?.vehicle ? `${policy.vehicle.make || ''} ${policy.vehicle.model || ''} (${policy.vehicle.registrationNumber || ''})` : 'N/A',
         customer: policy?.customer?.fullName || 'N/A',
-        date: p.paymentDate,
+        date,
         amount: p.amount,
         status: p.status,
         isCredit: !isClaimPayout,
@@ -257,12 +257,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
         transactionRef: p.transactionReference || ''
       });
     });
+
     return txns.sort((a, b) => {
       if (!a.date) return 1;
       if (!b.date) return -1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   });
+
 
   userRoleFilter = signal<string>('All');
   filteredUsers = computed(() => {
@@ -489,7 +491,23 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   registerForm = { fullName: '', email: '', password: '', role: '' };
 
-  planForm = { planName: '', description: '', coveragePercent: 80, isZeroDepreciationAvailable: false, coversThirdParty: true, coversTheft: true, coversOwnDamage: true, maxCoverageAmount: null as number | null, deductibleAmount: 0 };
+  vehicleCategories = ['Car', 'TwoWheeler', 'EVCar', 'EVTwoWheeler', 'HeavyVehicle', 'ThreeWheeler', 'EVThreeWheeler'];
+  policyCategories = ['Comprehensive', 'ThirdParty', 'ZeroDepreciation'];
+
+  planForm = {
+    planName: '',
+    policyType: '',
+    basePremium: 0,
+    policyDurationMonths: 12,
+    deductibleAmount: 0,
+    coversThirdParty: true,
+    coversOwnDamage: true,
+    coversTheft: true,
+    zeroDepreciationAvailable: false,
+    engineProtectionAvailable: false,
+    roadsideAssistanceAvailable: false,
+    applicableVehicleType: ''
+  };
 
   errorMessage = signal('');
   successMessage = signal('');
@@ -840,6 +858,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   submitUserRegistration() {
     this.errorMessage.set('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.registerForm.email)) {
+      this.errorMessage.set('Please provide a valid email address.');
+      return;
+    }
+
     if (this.isCreatingAgent()) {
       this.adminService.createAgent(this.registerForm).subscribe({
         next: () => {
@@ -888,18 +913,28 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   openPlanForm() {
-    this.planForm = { planName: '', description: '', coveragePercent: 80, isZeroDepreciationAvailable: false, coversThirdParty: true, coversTheft: true, coversOwnDamage: true, maxCoverageAmount: null, deductibleAmount: 0 };
+    this.planForm = {
+      planName: '',
+      policyType: '',
+      basePremium: 0,
+      policyDurationMonths: 12,
+      deductibleAmount: 0,
+      coversThirdParty: true,
+      coversOwnDamage: true,
+      coversTheft: true,
+      zeroDepreciationAvailable: false,
+      engineProtectionAvailable: false,
+      roadsideAssistanceAvailable: false,
+      applicableVehicleType: ''
+    };
     this.isCreatingPlan.set(true);
   }
 
   private showError(err: any) {
-    const errorStatus = err.status || 500;
-    const errorMessage = typeof err.error === 'string' ? err.error : (err.error?.message || err.error || 'Operation Failed.');
-
     this.router.navigate(['/error'], {
       state: {
-        status: errorStatus,
-        message: errorMessage,
+        status: err.status || 500,
+        message: extractErrorMessage(err),
         title: 'Administrative Action Error'
       }
     });

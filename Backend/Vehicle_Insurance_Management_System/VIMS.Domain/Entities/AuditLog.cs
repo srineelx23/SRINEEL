@@ -14,6 +14,5 @@ namespace VIMS.Domain.Entities
         public string? EntityId { get; set; } // ID of affected entity
         public string? Details { get; set; } // Human-readable details
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-        public string? IPAddress { get; set; }
     }
 }

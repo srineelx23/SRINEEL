@@ -20,7 +20,7 @@
                     <h2>VIMS</h2>
                 </div>
                 <h3>Welcome Back</h3>
-                <p>Log in to manage your policies, track claims, or instantly download your vehicle documents.</p>
+                <p>Log in to your secure portal to manage policies, track claims, or review administrative tasks.</p>
 
                 <div class="info-footer">
                     <span>Not a member?</span>
@@ -29,9 +29,9 @@
             </div>
 
             <!-- Right Form Side (Login Flow) -->
-            @if (!isForgotPasswordMode()) {
+            @if (!isForgotPasswordMode() && !isSettingSecurityQuestion()) {
             <div class="login-form-container">
-                <h2 class="form-title">Customer Login</h2>
+                <h2 class="form-title">Secure Login</h2>
                 <form class="vims-form" (ngSubmit)="login()">
                     <div class="form-group">
                         <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
@@ -63,12 +63,7 @@
                         </div>
                     </div>
 
-                    <div class="form-options">
-                        <label class="checkbox-container">
-                            <input type="checkbox">
-                            <span class="checkmark"></span>
-                            Remember me
-                        </label>
+                    <div class="form-options" style="justify-content: flex-end;">
                         <a href="javascript:void(0)" class="forgot-link" (click)="openForgotPassword()">Forgot
                             password?</a>
                     </div>
@@ -79,7 +74,7 @@
             }
 
             <!-- Forgot Password Flow -->
-            @if (isForgotPasswordMode()) {
+            @if (isForgotPasswordMode() && !isSettingSecurityQuestion()) {
             <div class="login-form-container fade-in">
                 <h2 class="form-title">Reset Password</h2>
                 <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">
@@ -142,6 +137,39 @@
                     </div>
                 </form>
                 }
+            </div>
+            }
+            @if (isSettingSecurityQuestion()) {
+            <div class="login-form-container fade-in">
+                <h2 class="form-title">Action Required</h2>
+                <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">
+                    For your security, please configure a recovery question. It will be used if you ever forget your
+                    password.
+                </p>
+
+                <form class="vims-form" (ngSubmit)="submitSecurityQuestion()">
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label class="static-label">Security Question</label>
+                        <select name="newSecurityQuestion" class="form-control" [(ngModel)]="newSecurityQuestion"
+                            required>
+                            <option value="" disabled selected>Select a Security Question</option>
+                            @for (q of securityQuestions; track q) {
+                            <option [value]="q">{{ q }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="text" id="newSecAnswer" name="newSecurityAnswer" [(ngModel)]="newSecurityAnswer"
+                            class="form-control" placeholder="" required>
+                        <label for="newSecAnswer" class="floating-label">Secret Answer</label>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width-btn">Save Configuration &
+                        Continue</button>
+                    <button type="button" class="btn-text full-width-btn" style="margin-top: 10px; opacity: 0.7;"
+                        (click)="isSettingSecurityQuestion.set(false)">Cancel</button>
+                </form>
             </div>
             }
         </div>

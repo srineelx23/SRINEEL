@@ -74,14 +74,12 @@
                     <div style="display: flex; gap: 16px; width: 100%; margin-bottom: 8px;">
                         <div class="form-group" style="flex: 1;">
                             <select id="securityQuestion" name="securityQuestion" [(ngModel)]="securityQuestion"
-                                class="form-control" required style="appearance: none;">
+                                class="form-control" required>
                                 <option value="" disabled selected>Select a Security Question</option>
                                 @for (q of securityQuestions; track q) {
                                 <option [value]="q">{{ q }}</option>
                                 }
                             </select>
-                            <i class="fa-solid fa-chevron-down"
-                                style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;"></i>
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <input type="text" id="securityAnswer" name="securityAnswer" [(ngModel)]="securityAnswer"

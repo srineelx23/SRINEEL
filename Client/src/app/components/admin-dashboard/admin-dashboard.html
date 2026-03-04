@@ -284,9 +284,9 @@
                                 {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
                             </td>
                             <td><span class="status-badge"
-                                    [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' || pmt.status === 'Settled') ? 'paid' : 'pending'">
-                                    {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved' ||
-                                    pmt.status === 'Settled') ? 'Settled' : 'Pending' }}</span>
+                                    [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ? 'paid' : 'pending'">
+                                    {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ?
+                                    'Approved' : 'Pending' }}</span>
                             </td>
                         </tr>
                         }
@@ -361,7 +361,7 @@
                             <th>Claim No.</th>
                             <th>Policy ID</th>
                             <th>Type</th>
-                            <th>Incident Date</th>
+                            <th>Filed Date</th>
                             <th>Approved Amount</th>
                             <th>Status</th>
                         </tr>
@@ -373,11 +373,12 @@
                                 }}</td>
                             <td style="color: var(--text-muted);">{{ c.policyId }}</td>
                             <td>{{ c.claimType }}</td>
-                            <td>{{ c.incidentDate ? (c.incidentDate | date:'mediumDate') : 'N/A' }}</td>
-                            <td [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--error)' : 'var(--text-muted)'"
-                                style="font-weight: 700;">
-                                {{ (c.status === 'Approved' || c.status === 1) ? '-' : '' }}{{ c.approvedAmount ?
-                                (c.approvedAmount | currency:'INR') : '—' }}
+                            <td>{{ c.createdAt ? (c.createdAt | date:'dd MMM yyyy') : 'N/A' }}</td>
+                            <td style="font-weight: 700;"
+                                [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--error)' : 'var(--text-muted)'">
+                                {{ (c.status === 'Approved' || c.status === 1) ? '-' + (c.approvedAmount |
+                                currency:'INR') :
+                                (c.status === 'Rejected' || c.status === 2) ? '-' : 'Pending Assessment' }}
                             </td>
                             <td>
                                 <span class="status-badge"
@@ -465,8 +466,9 @@
                             </td>
                             <td>
                                 <span class="status-badge"
-                                    [ngClass]="(t.status === 'Paid' || t.status === 1) ? 'paid' : 'pending'">
-                                    {{ (t.status === 'Paid' || t.status === 1) ? 'Settled' : 'Pending' }}
+                                    [ngClass]="(t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'paid' : 'pending'">
+                                    {{ (t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'Approved' :
+                                    'Pending' }}
                                 </span>
                             </td>
                         </tr>
@@ -530,7 +532,12 @@
                         <div>
                             <label>Secure Identifier (Email)</label>
                             <input type="email" name="email" class="form-control" [(ngModel)]="registerForm.email"
-                                required>
+                                required email #emailInput="ngModel">
+                            @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
+                            <div style="color: var(--error); font-size: 0.8rem; margin-top: 4px;">
+                                Please enter a valid email address.
+                            </div>
+                            }
                         </div>
                         <div>
                             <label>Temporary Password</label>
@@ -603,48 +610,71 @@
                             <input type="text" name="planName" class="form-control" [(ngModel)]="planForm.planName"
                                 required>
                         </div>
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label>Plan Underwriting Details</label>
-                            <textarea name="description" class="form-control" [(ngModel)]="planForm.description"
-                                rows="3" required></textarea>
+                        <div class="form-group">
+                            <label>Policy Category / Type</label>
+                            <select name="policyType" class="form-control" [(ngModel)]="planForm.policyType" required>
+                                <option value="" disabled selected>Select Policy Type</option>
+                                @for (cat of policyCategories; track cat) {
+                                <option [value]="cat">{{ cat }}</option>
+                                }
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label>Coverage Vector (%)</label>
-                            <input type="number" name="coveragePercent" class="form-control"
-                                [(ngModel)]="planForm.coveragePercent" required min="1" max="100">
+                            <label>Base Premium (INR)</label>
+                            <input type="number" name="basePremium" class="form-control"
+                                [(ngModel)]="planForm.basePremium" required>
                         </div>
+                        <div class="form-group">
+                            <label>Policy Duration (Months)</label>
+                            <input type="number" name="policyDurationMonths" class="form-control"
+                                [(ngModel)]="planForm.policyDurationMonths" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Applicable Vehicle Classification</label>
+                            <select name="applicableVehicleType" class="form-control"
+                                [(ngModel)]="planForm.applicableVehicleType" required>
+                                <option value="" disabled selected>Select Vehicle Class</option>
+                                @for (vCat of vehicleCategories; track vCat) {
+                                <option [value]="vCat">{{ vCat }}</option>
+                                }
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label>Statutory Deductible (INR)</label>
                             <input type="number" name="deductibleAmount" class="form-control"
                                 [(ngModel)]="planForm.deductibleAmount" required>
                         </div>
-                        <div class="form-group">
-                            <label>Risk Constraint: Max Cap (INR) (Optional)</label>
-                            <input type="number" name="maxCoverageAmount" class="form-control"
-                                [(ngModel)]="planForm.maxCoverageAmount">
-                        </div>
+
                     </div>
                     <div
                         style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--bg-dark); padding: 16px; border-radius: 8px;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" name="coversThirdParty" [(ngModel)]="planForm.coversThirdParty"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes 3rd Party
-                            Liability
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> 3rd Party Liability
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" name="coversOwnDamage" [(ngModel)]="planForm.coversOwnDamage"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Includes Personal
-                            Damage
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Personal Damage
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" name="coversTheft" [(ngModel)]="planForm.coversTheft"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Insures Against Theft
+                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Theft Protection
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="isZeroDepreciationAvailable"
-                                [(ngModel)]="planForm.isZeroDepreciationAvailable"
-                                style="accent-color: var(--success); width: 18px; height: 18px;"> Offer
-                            Zero-Depreciation
+                            <input type="checkbox" name="zeroDepreciationAvailable"
+                                [(ngModel)]="planForm.zeroDepreciationAvailable"
+                                style="accent-color: var(--success); width: 18px; height: 18px;"> Zero-Depreciation
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="engineProtectionAvailable"
+                                [(ngModel)]="planForm.engineProtectionAvailable"
+                                style="accent-color: var(--success); width: 18px; height: 18px;"> Engine Protection
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" name="roadsideAssistanceAvailable"
+                                [(ngModel)]="planForm.roadsideAssistanceAvailable"
+                                style="accent-color: var(--success); width: 18px; height: 18px;"> Roadside Assistance
                         </label>
                     </div>
                     <button type="submit" class="btn-primary" style="background: var(--success); border: none;">Deploy
@@ -670,27 +700,31 @@
                                 {{ p.planName }}
                                 <span class="status-badge"
                                     [ngStyle]="{'background': p.status === 1 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(255, 90, 95, 0.2)', 'color': p.status === 1 ? 'var(--success)' : 'var(--error)'}">
-                                    {{ p.status === 1 ? 'Available Globally' : 'Deactivated' }}
+                                    {{ p.status === 1 ? 'Available' : 'Deactivated' }}
                                 </span>
                             </h3>
-                            <p
-                                style="color: var(--text-light); max-width: 600px; line-height: 1.5; margin-bottom: 12px;">
-                                {{ p.description }}</p>
                             <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-                                <strong>Coverage:</strong> {{ p.coveragePercent }}%
-                                @if (p.maxCoverageAmount) {
-                                <span>&nbsp;|&nbsp; <strong>Max Cap:</strong> {{ p.maxCoverageAmount | currency:'INR'
-                                    }}</span>
-                                }
-                                &nbsp;|&nbsp; <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }}
+                                <strong>Type:</strong> {{ p.policyType }} | <strong>Vehicle:</strong> {{
+                                p.applicableVehicleType }}
                                 <br>
-                                <strong>Perks:</strong>
+                                <strong>Duration:</strong> {{ p.policyDurationMonths }} Months | <strong>Base
+                                    Premium:</strong> {{ p.basePremium | currency:'INR' }}
+                                <br>
+                                <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }}
+                                <br>
+                                <strong>Coverage:</strong>
                                 @if (p.coversOwnDamage) {<span> Own Damage,</span>}
                                 @if (p.coversThirdParty) {<span> 3rd Party,</span>}
                                 @if (p.coversTheft) {<span> Theft,</span>}
-                                @if (p.isZeroDepreciationAvailable) {
-                                <span style="color: var(--success); font-weight: 600;"> ✓ Zero-Dep</span>
-                                }
+
+                                <br>
+                                <strong>Add-ons:</strong>
+                                @if (p.zeroDepreciationAvailable) {<span style="color: var(--success);"> ✓
+                                    Zero-Dep</span>}
+                                @if (p.engineProtectionAvailable) {<span style="color: var(--success);"> ✓
+                                    Engine-Prot</span>}
+                                @if (p.roadsideAssistanceAvailable) {<span style="color: var(--success);"> ✓
+                                    Roadside-Asst</span>}
                             </p>
                         </div>
                         <div>
@@ -737,7 +771,6 @@
                             <th>Action</th>
                             <th>Category</th>
                             <th>Details</th>
-                            <th>IP Address</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -755,8 +788,6 @@
                             <td><strong style="color: var(--accent);">{{ log.action }}</strong></td>
                             <td>{{ log.category }}</td>
                             <td style="font-size: 0.85rem; max-width: 300px;">{{ log.details }}</td>
-                            <td style="font-family: monospace; font-size: 0.8rem;">{{ log.ipAddress || 'Internal' }}
-                            </td>
                         </tr>
                         }
                     </tbody>

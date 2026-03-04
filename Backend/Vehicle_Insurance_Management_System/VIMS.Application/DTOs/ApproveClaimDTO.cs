@@ -11,5 +11,6 @@ namespace VIMS.Application.DTOs
         // For third party: invoice amount and manufacture year
         public decimal? InvoiceAmount { get; set; }
         public int? ManufactureYear { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

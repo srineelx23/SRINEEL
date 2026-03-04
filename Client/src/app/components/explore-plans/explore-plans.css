@@ -125,6 +125,9 @@
     flex-direction: column;
     gap: 20px;
     border-radius: 24px;
+    position: relative;
+    z-index: 50;
+    /* Ensure it stays above the plans grid */
 }
 
 .filter-group-main {
@@ -152,7 +155,7 @@
     padding: 12px 12px 12px 48px;
     border-radius: 30px;
     background: var(--card-inner-bg);
-    border: 1px solid var(--card-inner-border);
+    border: 1.5px solid var(--border-light);
     color: var(--text-main);
     transition: var(--transition);
     outline: none;
@@ -174,7 +177,7 @@
     padding: 12px 20px;
     border-radius: 30px;
     background: var(--card-inner-bg);
-    border: 1px solid var(--card-inner-border);
+    border: 1.5px solid var(--border-light);
     color: var(--text-main);
     display: flex;
     justify-content: space-between;
@@ -207,13 +210,14 @@
     top: calc(100% + 8px);
     left: 0;
     width: 100%;
-    min-width: 200px;
+    min-width: 220px;
     background: var(--bg-card);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 8px;
-    z-index: 1100;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    /* Much higher than everything else */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
 }
 
 .option-item {
@@ -353,7 +357,7 @@
     transition: var(--transition);
     height: 100%;
     border-radius: 20px;
-    /* Consistent with sidebar and navbar */
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .plan-card:hover {
@@ -470,6 +474,21 @@
     align-items: center;
     justify-content: space-between;
     margin-top: auto;
+    gap: 12px;
+}
+
+.plan-actions .btn-text {
+    flex: 1;
+    color: var(--text-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.plan-actions .btn-primary {
+    flex: 1.5;
+    padding: 12px;
+    border-radius: 8px;
 }
 
 .empty-results {
@@ -496,7 +515,7 @@
 .vims-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
 }
 
 .form-group {
@@ -506,20 +525,21 @@
 
 .form-control {
     width: 100%;
-    background: var(--card-inner-bg);
-    border: 1px solid var(--card-inner-border);
     padding: 16px 20px;
+    background: var(--card-inner-bg);
+    border: 1.5px solid var(--border-light);
     border-radius: 12px;
     color: var(--text-main);
     font-size: 1rem;
-    transition: var(--transition);
+    font-family: var(--font-body);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
 }
 
 .form-control:focus {
-    border-color: var(--accent);
     background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 15px rgba(91, 192, 190, 0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
 /* Floating Label Logic */
@@ -531,42 +551,38 @@
     color: var(--text-muted);
     font-size: 1rem;
     pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
+    padding: 0 4px;
 }
 
-/* When input is focused OR has value (placeholder=" " is used as a trick) */
+/* Move label up on focus or when input has content */
 .form-control:focus~.floating-label,
 .form-control:not(:placeholder-shown)~.floating-label,
 select.form-control~.floating-label {
     top: 0;
-    left: 12px;
-    font-size: 0.75rem;
+    left: 14px;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--accent);
-    padding: 0 8px;
     background: var(--bg-card);
     transform: translateY(-50%);
-    z-index: 10;
+    opacity: 1;
 }
 
-.form-group select.form-control {
-    appearance: none;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 20px center;
-    background-size: 18px;
-    padding-right: 50px;
-    padding-top: 20px;
-    padding-bottom: 12px;
+/* Special Case for Selects - always up since they have default value or arrow */
+select.form-control~.floating-label {
+    top: 0;
+    background: var(--bg-card);
 }
 
 .full-width-btn {
     width: 100%;
-    padding: 16px;
+    padding: 18px;
     font-size: 1.1rem;
+    font-weight: 700;
     margin-top: 12px;
+    border-radius: 12px;
 }
 
 /* Plan Selection Preview in Form */
@@ -698,6 +714,62 @@ select.form-control~.floating-label {
     color: var(--text-main);
 }
 
+.direct-apply-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px;
+    background: var(--card-inner-bg);
+    border-radius: 16px;
+    border: 1px dashed var(--accent);
+    margin-bottom: 12px;
+}
+
 .empty-results p {
     color: var(--text-muted);
+}
+
+/* Premium Breakdown Styles */
+.breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.breakdown-label {
+    color: var(--text-muted);
+}
+
+.breakdown-value {
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.breakdown-value.discount {
+    color: var(--success);
+}
+
+.breakdown-row.total-net {
+    padding-top: 16px;
+    border-top: 1px dashed var(--card-inner-border);
+    margin-top: 4px;
+}
+
+.breakdown-row.total-net .breakdown-label {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.breakdown-row.total-net .breakdown-value {
+    color: var(--accent);
+    font-size: 1.25rem;
+    font-weight: 800;
 }

@@ -40,7 +40,8 @@ export class ClaimsOfficerDashboard implements OnInit {
         repairCost: null as number | null,
         engineCost: null as number | null,
         invoiceAmount: null as number | null,
-        manufactureYear: null as number | null
+        manufactureYear: null as number | null,
+        rejectionReason: ''
     };
 
     errorMessage = signal('');
@@ -75,17 +76,18 @@ export class ClaimsOfficerDashboard implements OnInit {
                 const mapped = res.map((c: any) => ({ ...c, status: this.mapStatus(c.status) }));
 
                 // Filter out pending vs history
-                this.pendingClaims.set(mapped.filter((c: any) => c.status === 'Submitted' || c.status === 'UnderReview' || c.status === '0'));
-                this.reviewedClaims.set(mapped.filter((c: any) => c.status === 'Approved' || c.status === 'Rejected' || c.status === '1' || c.status === '2'));
+                this.pendingClaims.set(mapped.filter((c: any) => c.status === 'Submitted'));
+                this.reviewedClaims.set(mapped.filter((c: any) => c.status === 'Approved' || c.status === 'Rejected'));
             },
             error: (err) => console.error('Error loading claims:', err)
         });
     }
 
     mapStatus(status: any): string {
-        if (status === 0 || status === 'Submitted' || status === 'UnderReview') return 'Submitted';
-        if (status === 1 || status === 'Approved') return 'Approved';
-        if (status === 2 || status === 'Rejected') return 'Rejected';
+        const s = status?.toString();
+        if (s === '0' || s === 'Submitted' || s === 'UnderReview') return 'Submitted';
+        if (s === '1' || s === 'Approved') return 'Approved';
+        if (s === '2' || s === 'Rejected') return 'Rejected';
         return status;
     }
 
@@ -112,6 +114,7 @@ export class ClaimsOfficerDashboard implements OnInit {
         this.decisionForm.engineCost = null;
         this.decisionForm.invoiceAmount = null;
         this.decisionForm.manufactureYear = null;
+        this.decisionForm.rejectionReason = '';
     }
 
     closeClaimReview() {
@@ -137,13 +140,20 @@ export class ClaimsOfficerDashboard implements OnInit {
                     return;
                 }
             }
+        } else {
+            if (!this.decisionForm.rejectionReason || this.decisionForm.rejectionReason.trim().length === 0) {
+                this.errorMessage.set('A reason is mandatory when rejecting a claim.');
+                this.autoHideToast();
+                return;
+            }
         }
 
         const payload = {
             repairCost: this.decisionForm.repairCost,
             engineCost: this.decisionForm.engineCost,
             invoiceAmount: this.decisionForm.invoiceAmount,
-            manufactureYear: this.decisionForm.manufactureYear
+            manufactureYear: this.decisionForm.manufactureYear,
+            rejectionReason: this.decisionForm.rejectionReason
         };
 
         const claimId = this.selectedClaim().claimId;

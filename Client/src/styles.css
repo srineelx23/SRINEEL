@@ -250,43 +250,64 @@ a:hover {
 
 select.form-control {
     cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 18px center;
-    background-size: 16px;
-    padding: 12px 48px 12px 24px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235BC0BE' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1.25rem center !important;
+    background-size: 1rem !important;
+    padding: 0.75rem 3rem 0.75rem 1.25rem !important;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    border-radius: 30px;
-    /* Pill shape like navbar trigger */
+    border-radius: 12px;
     border: 1px solid var(--glass-border);
-    background-color: var(--glass-bg, rgba(255, 255, 255, 0.08));
+    background-color: var(--card-inner-bg);
     backdrop-filter: blur(12px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     color: var(--text-main);
     font-size: 0.95rem;
     font-weight: 500;
     transition: var(--transition);
 }
 
+select.form-control:focus {
+    border-color: var(--accent);
+    background-color: var(--bg-card);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+    outline: none;
+}
+
 select.form-control:hover {
     border-color: var(--accent);
-    background-color: rgba(255, 255, 255, 0.12);
-    transform: translateY(-2px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 [data-theme='light'] select.form-control {
-    background-color: #f8fafc;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-color: #ffffff;
+    border-color: #cbd5e1;
+    background-repeat: no-repeat !important;
 }
 
 select.form-control option {
-    background: var(--bg-card, #1E293B);
+    background: var(--bg-card);
     color: var(--text-main);
-    padding: 16px;
+    padding: 12px;
     font-size: 1rem;
+    border: none;
+}
+
+select.form-control option:checked {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.static-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .full-screen {

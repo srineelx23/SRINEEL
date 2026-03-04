@@ -11,7 +11,7 @@ namespace VIMS.Domain.Enums
         Draft=0,
         PendingPayment=1,
         Active=2,
-        Closed=3,
+        Claimed=3,
         Expired=4,
         Cancelled=5
     }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 import { CaptchaService } from '../../services/captcha.service';
 
 @Component({
@@ -61,19 +62,14 @@ export class AdminLogin implements OnInit {
           sessionStorage.setItem('token', response.token);
 
           const role = this.authService.getRoleFromToken(response.token);
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
-          if (returnUrl) {
-            this.router.navigateByUrl(returnUrl);
-          } else if (role === 'Admin') {
-            this.router.navigate(['/admin-dashboard']);
-          } else if (role === 'Agent') {
-            this.router.navigate(['/agent-dashboard']);
-          } else if (role === 'ClaimsOfficer' || role === 'Claims') {
-            this.router.navigate(['/claims-dashboard']);
-          } else {
-            this.router.navigate(['/customer-dashboard']);
+          if (response.isSecurityQuestionSet === false) {
+            this.isSettingSecurityQuestion.set(true);
+            this.pendingRole = role || '';
+            return;
           }
+
+          this.routeToDashboard(role);
         }
       },
       error: (err: any) => {
@@ -91,6 +87,52 @@ export class AdminLogin implements OnInit {
     });
   }
 
+  private routeToDashboard(role: string | null) {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+    } else if (role === 'Admin') {
+      this.router.navigate(['/admin-dashboard']);
+    } else if (role === 'Agent') {
+      this.router.navigate(['/agent-dashboard']);
+    } else if (role === 'ClaimsOfficer' || role === 'Claims') {
+      this.router.navigate(['/claims-dashboard']);
+    } else {
+      this.router.navigate(['/customer-dashboard']);
+    }
+  }
+
+  submitSecurityQuestion() {
+    this.errorMessage.set('');
+    if (!this.newSecurityQuestion || !this.newSecurityAnswer) {
+      this.errorMessage.set('Please select a question and provide an answer.');
+      this.autoHideToast();
+      return;
+    }
+
+    const payload = {
+      Email: this.email,
+      SecurityQuestion: this.newSecurityQuestion,
+      SecurityAnswer: this.newSecurityAnswer
+    };
+
+    this.authService.setSecurityQuestion(payload).subscribe({
+      next: () => {
+        this.successMessage.set('Security capability enabled successfully.');
+        setTimeout(() => {
+          this.successMessage.set('');
+          this.isSettingSecurityQuestion.set(false);
+          this.routeToDashboard(this.pendingRole);
+        }, 1500);
+      },
+      error: (err: any) => {
+        this.errorMessage.set(err.error?.message || err.error || 'Failed to set security question.');
+        this.autoHideToast();
+      }
+    });
+  }
+
   // ==== Forgot Password Flow ====
   isForgotPasswordMode = signal(false);
   forgotPasswordStep = signal(1); // 1 = Enter Email, 2 = Answer & New Password
@@ -101,6 +143,18 @@ export class AdminLogin implements OnInit {
   confirmNewPassword = '';
 
   successMessage = signal('');
+
+  // ==== Set Security Question Flow ====
+  isSettingSecurityQuestion = signal(false);
+  newSecurityQuestion = '';
+  newSecurityAnswer = '';
+  securityQuestions = [
+    "Father's Name",
+    "Mother's Name",
+    "Wife's Name",
+    "Pet's Name"
+  ];
+  pendingRole = '';
 
   openForgotPassword() {
     this.errorMessage.set('');
@@ -135,8 +189,8 @@ export class AdminLogin implements OnInit {
           this.forgotPasswordStep.set(2);
         }
       },
-      error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to fetch security question.');
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -167,8 +221,8 @@ export class AdminLogin implements OnInit {
         this.isForgotPasswordMode.set(false);
         setTimeout(() => this.successMessage.set(''), 5000);
       },
-      error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to reset password.');
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });

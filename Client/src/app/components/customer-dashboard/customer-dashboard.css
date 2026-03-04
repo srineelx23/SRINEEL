@@ -368,6 +368,11 @@
     color: var(--text-muted);
 }
 
+.status-badge.claimed {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7C3AED;
+}
+
 .status-badge.paid,
 .status-badge.approved {
     background: rgba(22, 163, 74, 0.1);
@@ -436,14 +441,7 @@
     border-radius: 4px;
 }
 
-select.form-control {
-    appearance: none;
-}
-
-select.form-control option {
-    background: var(--bg-card);
-    color: var(--text-main);
-}
+/* Form Control select styles removed to use global design in styles.css */
 
 .full-width-btn {
     width: 100%;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 import { CaptchaService } from '../../services/captcha.service';
 
 @Component({
@@ -146,8 +147,8 @@ export class AgentLogin implements OnInit {
           this.routeToDashboard(this.pendingRole);
         }, 1500);
       },
-      error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to set security question.');
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -186,8 +187,8 @@ export class AgentLogin implements OnInit {
           this.forgotPasswordStep.set(2);
         }
       },
-      error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to fetch security question.');
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -218,8 +219,8 @@ export class AgentLogin implements OnInit {
         this.isForgotPasswordMode.set(false);
         setTimeout(() => this.successMessage.set(''), 5000);
       },
-      error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to reset password.');
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });

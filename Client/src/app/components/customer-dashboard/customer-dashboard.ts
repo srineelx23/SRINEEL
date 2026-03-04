@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
 import { AuthService } from '../../services/auth.service';
 import { jwtDecode } from 'jwt-decode';
+import { extractErrorMessage } from '../../utils/error-handler';
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -28,12 +29,26 @@ export class CustomerDashboard implements OnInit {
   // Categorization
   policyFilter = signal('Active');
 
-  activePolicies = computed(() =>
-    this.policies().filter(p => p.status === 'Active')
-  );
+  activePolicies = computed(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.policies().filter(p => {
+      if (p.status !== 'Active') return false;
+      const endDate = new Date(p.endDate);
+      endDate.setHours(0, 0, 0, 0);
+
+      const diffTime = endDate.getTime() - now.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+      // If within 30 days of expiry AND not already renewed, it goes to Renewable
+      if (diffDays <= 30 && diffDays >= 0 && !p.isRenewed) return false;
+      return true;
+    });
+  });
 
   pendingPolicies = computed(() =>
-    this.policies().filter(p => !['Active', 'Cancelled', 'Expired', 'PendingPayment'].includes(p.status))
+    this.policies().filter(p => !['Active', 'Cancelled', 'Expired', 'PendingPayment', 'Claimed'].includes(p.status))
   );
 
   pendingPaymentPolicies = computed(() =>
@@ -44,9 +59,46 @@ export class CustomerDashboard implements OnInit {
     this.applications().filter(a => a.status === 'UnderReview' || a.status === 0).length
   );
 
-  inactivePolicies = computed(() =>
-    this.policies().filter(p => p.status === 'Cancelled' || p.status === 'Expired')
+  claimablePolicies = computed(() =>
+    this.policies().filter(p => p.status === 'Active')
   );
+
+  inactivePolicies = computed(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.policies().filter(p => {
+      if (p.status !== 'Cancelled' && p.status !== 'Expired' && p.status !== 'Claimed') return false;
+      if (p.status === 'Cancelled' || p.status === 'Claimed') return true;
+
+      const endDate = new Date(p.endDate);
+      endDate.setHours(0, 0, 0, 0);
+
+      const diffTime = endDate.getTime() - now.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+      // If Expired but within 30 days after expiry AND not already renewed, it goes to Renewable
+      if (p.status === 'Expired' && diffDays >= -30 && !p.isRenewed) return false;
+      return true;
+    });
+  });
+
+  renewablePolicies = computed(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return this.policies().filter(p => {
+      if (p.isRenewed || p.status === 'Cancelled' || p.status === 'Claimed') return false;
+
+      const endDate = new Date(p.endDate);
+      endDate.setHours(0, 0, 0, 0);
+
+      const diffTime = endDate.getTime() - now.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+      return diffDays >= -30 && diffDays <= 30;
+    });
+  });
 
   selectedPolicy = signal<any>(null);
 
@@ -126,6 +178,15 @@ export class CustomerDashboard implements OnInit {
     confirmPassword: ''
   };
   changePwdLoading = signal(false);
+
+  getStatusString(status: any): string {
+    const s = status?.toString();
+    if (s === '0' || s === 'Submitted') return 'Submitted';
+    if (s === '1' || s === 'Approved') return 'Approved';
+    if (s === '2' || s === 'Rejected') return 'Rejected';
+    return 'Under Review';
+  }
+
   showCurrentPwd = false;
   showNewPwd = false;
   showConfirmPwd = false;
@@ -282,7 +343,7 @@ export class CustomerDashboard implements OnInit {
         this.router.navigate(['/error'], {
           state: {
             status: err.status,
-            message: err.error?.message || (typeof err.error === 'string' ? err.error : "Submit claim failed."),
+            message: extractErrorMessage(err),
             title: 'Claim Submission Failed'
           }
         });
@@ -321,7 +382,7 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err) => {
-        this.errorMessage.set(err.error?.message || "Payment failed.");
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -340,7 +401,7 @@ export class CustomerDashboard implements OnInit {
           setTimeout(() => this.successMessage.set(''), 3000);
         },
         error: (err) => {
-          this.errorMessage.set(err.error?.message || "Cancellation failed.");
+          this.errorMessage.set(extractErrorMessage(err));
           this.autoHideToast();
         }
       });
@@ -348,10 +409,16 @@ export class CustomerDashboard implements OnInit {
   }
 
   startRenew(policyId: number) {
-    if (!this.plans() || this.plans().length === 0) {
-      this.customerService.getAllPolicyPlans().subscribe(res => this.plans.set(res));
-    }
     this.renewingPolicyId.set(policyId);
+    this.renewForm.NewPlanId = null;
+    this.renewForm.SelectedYears = 1;
+
+    if (!this.plans() || this.plans().length === 0) {
+      this.customerService.getAllPolicyPlans().subscribe({
+        next: (res) => this.plans.set(res),
+        error: (err) => console.error(err)
+      });
+    }
   }
 
   submitRenew() {
@@ -374,7 +441,7 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err) => {
-        this.errorMessage.set(err.error?.message || (typeof err.error === 'string' ? err.error : "Renewal failed."));
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -422,10 +489,7 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.closeTransferModal(), 2000);
       },
       error: (err) => {
-        if (err.status === 404)
-          this.transferError.set('No customer found with that email address.');
-        else
-          this.transferError.set(err.error?.message || 'Transfer failed. Try again.');
+        this.transferError.set(extractErrorMessage(err));
       }
     });
   }
@@ -477,7 +541,7 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 5000);
       },
       error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Accept failed.');
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -493,7 +557,7 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Reject failed.');
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -528,7 +592,7 @@ export class CustomerDashboard implements OnInit {
       },
       error: (err) => {
         this.changePwdLoading.set(false);
-        this.errorMessage.set(err.error || 'Failed to change password. Please check your current password.');
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });

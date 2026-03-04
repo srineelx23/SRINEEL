@@ -2,6 +2,7 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { extractErrorMessage } from '../utils/error-handler';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const router = inject(Router);
@@ -16,12 +17,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(authReq).pipe(
         catchError((error: HttpErrorResponse) => {
-            // Only redirect on actual errors, not for simple auth checks if needed
-            // But for this requirement, we'll redirect all HTTP errors
+            const displayMessage = extractErrorMessage(error);
+
             router.navigate(['/error'], {
                 state: {
                     status: error.status,
-                    message: typeof error.error === 'string' ? error.error : (error.error?.message || error.message || 'An unexpected error occurred'),
+                    message: displayMessage,
                     title: 'System Exception'
                 }
             });

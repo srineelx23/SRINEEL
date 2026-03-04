@@ -206,7 +206,7 @@
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-light);
-    border-radius: 40px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     color: var(--text-main);

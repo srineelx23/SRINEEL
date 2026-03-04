@@ -64,41 +64,55 @@
         <div class="tab-content fade-in">
 
             <!-- Hero Greeting -->
-            <div class="overview-hero">
-                <div class="overview-hero-text">
-                    <p class="overview-greeting">Welcome back 👋</p>
-                    <h1 class="overview-title">Welcome, {{ officerName() }}!</h1>
-                    <p class="overview-sub">Investigate, evaluate, and resolve vehicle insurance claims.</p>
+            <div
+                class="overview-hero flex items-center justify-between p-9 mb-8 rounded-[20px] relative overflow-hidden shadow-lg shadow-indigo-500/20">
+                <div class="overview-hero-text z-10">
+                    <p class="text-sm font-medium text-white/70 mb-1 tracking-wider uppercase">Welcome back 👋</p>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">Welcome, {{ officerName()
+                        }}!</h1>
+                    <p class="text-base text-white/60">Investigate, evaluate, and resolve vehicle insurance claims.</p>
                 </div>
-                <div class="overview-hero-badge">
-                    <span class="hero-shield"><i class="fa-solid fa-scale-balanced"></i></span>
-                    <span class="hero-badge-label">Claims Officer</span>
+                <div class="flex flex-col items-center gap-1.5 shrink-0 z-10">
+                    <span
+                        class="w-16 h-16 flex items-center justify-center rounded-full bg-white/15 backdrop-blur-md text-2xl text-white shadow-xl shadow-black/30"><i
+                            class="fa-solid fa-scale-balanced"></i></span>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-[1.5px] text-white/80 bg-white/15 px-3 py-1 rounded-full backdrop-blur-sm">Officer</span>
                 </div>
             </div>
 
             <!-- KPI Cards -->
-            <div class="overview-kpi-grid">
-                <div class="kpi-card kpi-warning" (click)="switchTab('pending')">
-                    <div class="kpi-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ totalPending() }}</div>
-                        <div class="kpi-label">Pending Claims</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                <div class="kpi-card kpi-warning flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25 overflow-hidden border border-transparent"
+                    (click)="switchTab('pending')">
+                    <div class="w-11 h-11 flex items-center justify-center shrink-0 rounded-xl bg-white/10 text-xl"><i
+                            class="fa-solid fa-magnifying-glass"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-3xl font-bold leading-none mb-1 text-[var(--warning)]">{{ totalPending() }}
+                        </div>
+                        <div class="text-xs font-semibold opacity-80 uppercase tracking-wider">Pending Assignment</div>
                     </div>
-                    <div class="kpi-arrow">→</div>
                 </div>
-                <div class="kpi-card kpi-success" (click)="switchTab('history')">
-                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ totalReviewed() }}</div>
-                        <div class="kpi-label">Reviewed Claims</div>
+
+                <div class="kpi-card kpi-success flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25 overflow-hidden border border-transparent"
+                    (click)="switchTab('history')">
+                    <div class="w-11 h-11 flex items-center justify-center shrink-0 rounded-xl bg-white/10 text-xl"><i
+                            class="fa-solid fa-circle-check"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-3xl font-bold leading-none mb-1 text-[var(--success)]">{{ totalReviewed() }}
+                        </div>
+                        <div class="text-xs font-semibold opacity-80 uppercase tracking-wider">Historical Record</div>
                     </div>
-                    <div class="kpi-arrow">→</div>
                 </div>
-                <div class="kpi-card kpi-accent">
-                    <div class="kpi-icon"><i class="fa-solid fa-chart-pie"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ totalPending() + totalReviewed() }}</div>
-                        <div class="kpi-label">Total Assigned</div>
+
+                <div
+                    class="kpi-card kpi-accent flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/25 overflow-hidden border border-transparent">
+                    <div class="w-11 h-11 flex items-center justify-center shrink-0 rounded-xl bg-white/10 text-xl"><i
+                            class="fa-solid fa-chart-pie"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-3xl font-bold leading-none mb-1 text-[var(--accent)]">{{ totalPending() +
+                            totalReviewed() }}</div>
+                        <div class="text-xs font-semibold opacity-80 uppercase tracking-wider">Total Claims</div>
                     </div>
                 </div>
             </div>
@@ -139,7 +153,7 @@
         <div class="tab-content fade-in">
             <header class="page-header">
                 <h1 class="page-title">Pending Claims</h1>
-                <p class="page-subtitle">Outstanding claims requiring investigation and settlement decisions.</p>
+                <p class="page-subtitle">Outstanding claims requiring investigation and approval decisions.</p>
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
@@ -179,70 +193,182 @@
         <!-- Detailed Claim Review Panel -->
         @if (selectedClaim()) {
         <div class="tab-content fade-in">
-            <div class="glass-panel" style="padding: 32px; position: relative;">
-                <button class="btn-outline"
-                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-                    (click)="closeClaimReview()">← Back to List</button>
 
-                <h2 class="form-title" style="margin-bottom: 24px;">Investigate Claim: {{
-                    selectedClaim().claimNumber }}</h2>
+            <!-- Premium Claim Card -->
+            <div class="fade-in" style="
+                background: var(--bg-card);
+                border: 1px solid var(--glass-border);
+                border-radius: 20px;
+                overflow: hidden;
+                box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+                max-width: 960px;
+                margin: 0 auto;
+            ">
+                <!-- Color-Coded Status Top Bar -->
+                <div style="height: 5px; width: 100%;" [ngStyle]="{
+                    'background': selectedClaim().status === 'Approved' ? 'var(--success)' :
+                                  selectedClaim().status === 'Rejected' ? 'var(--error)' : '#EAB308'
+                }"></div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-                    <!-- Claim Details -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Claim Specifics</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
-                            {{ selectedClaim().customer?.fullName }} ({{ selectedClaim().customer?.email }})</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type:</strong>
-                            {{ selectedClaim().claimType }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
-                            {{ selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }} ({{
-                            selectedClaim().vehicle?.year }})</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
-                            {{ selectedClaim().vehicle?.registrationNumber }}</p>
+                <!-- Header -->
+                <div
+                    style="padding: 24px 28px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;"
+                            [ngStyle]="{
+                                'background': selectedClaim().status === 'Approved' ? 'rgba(22,163,74,0.15)' :
+                                              selectedClaim().status === 'Rejected' ? 'rgba(220,38,38,0.15)' : 'rgba(234,179,8,0.15)',
+                                'color':      selectedClaim().status === 'Approved' ? 'var(--success)' :
+                                              selectedClaim().status === 'Rejected' ? 'var(--error)' : '#EAB308'
+                            }">
+                            <i class="fa-solid" [ngClass]="{
+                                    'fa-hourglass-half':  selectedClaim().status === 'Submitted' || selectedClaim().status === 'UnderReview',
+                                    'fa-circle-check':    selectedClaim().status === 'Approved',
+                                    'fa-circle-xmark':    selectedClaim().status === 'Rejected'
+                                }"></i>
+                        </div>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span
+                                    style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent);">Claim
+                                    Investigation</span>
+                                <span class="status-badge" style="font-size: 0.65rem; padding: 2px 10px;"
+                                    [ngClass]="selectedClaim().status?.toLowerCase()">{{
+                                    selectedClaim().status === 'UnderReview' ? 'Under Review' : selectedClaim().status
+                                    }}</span>
+                            </div>
+                            <h2
+                                style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.02em;">
+                                Case #{{ selectedClaim().claimNumber }}</h2>
+                        </div>
                     </div>
+                    <button class="btn-outline" (click)="closeClaimReview()"
+                        style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 0.85rem; white-space: nowrap;">
+                        <i class="fa-solid fa-arrow-left"></i> Back to List
+                    </button>
+                </div>
 
-                    <!-- Documents -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Evidence & Documents</h3>
-                        @if (!selectedClaim().documents || selectedClaim().documents.length === 0) {
-                        <p style="color: var(--text-muted); font-style: italic;">No evidence uploaded.</p>
-                        }
+                <!-- Info Grid (3 columns) -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; background: var(--glass-border);">
+                    <!-- Customer -->
+                    <div style="background: var(--bg-card); padding: 22px 24px;">
+                        <p
+                            style="font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-user-shield"></i> Applicant
+                        </p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Full Name</p>
+                        <p style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 14px;">{{
+                            selectedClaim().customer?.fullName }}</p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Email</p>
+                        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">{{
+                            selectedClaim().customer?.email }}</p>
+                    </div>
+                    <!-- Incident -->
+                    <div style="background: var(--bg-card); padding: 22px 24px;">
+                        <p
+                            style="font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-calendar-check"></i> Incident Details
+                        </p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Incident Category</p>
+                        <p style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 14px;">{{
+                            selectedClaim().claimType }}</p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Policy Number</p>
+                        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">#{{
+                            selectedClaim().policy?.policyNumber }}</p>
+                    </div>
+                    <!-- Vehicle -->
+                    <div style="background: var(--bg-card); padding: 22px 24px;">
+                        <p
+                            style="font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-car-rear"></i> Insured Vehicle
+                        </p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Registration No.</p>
+                        <p
+                            style="font-size: 1.1rem; font-weight: 800; color: var(--accent); font-family: monospace; letter-spacing: 0.05em; margin-bottom: 14px;">
+                            {{ selectedClaim().vehicle?.registrationNumber }}</p>
+                        <p
+                            style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;">
+                            Vehicle</p>
+                        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">{{
+                            selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }} ({{
+                            selectedClaim().vehicle?.year }})</p>
+                    </div>
+                </div><!-- grid-end -->
 
-                        @if (selectedClaim().documents && selectedClaim().documents.length > 0) {
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            @for (docPair of selectedClaim().documents; track docPair.id) {
-                            @if (docPair.document1) {
-                            <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank"
-                                class="btn-outline"
-                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                <span style="font-size: 1.2rem;">📄</span> View Primary Document
-                            </a>
-                            }
-                            @if (docPair.document2) {
-                            <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank"
-                                class="btn-outline"
-                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                <span style="font-size: 1.2rem;">📄</span> View Secondary Document
-                            </a>
-                            }
-                            }
+                <!-- Supporting Documents -->
+                <div style="padding: 20px 28px; border-top: 1px solid var(--glass-border);">
+                    <p
+                        style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-folder-closed" style="color: var(--accent);"></i> Supporting Documents
+                    </p>
+                    @if (!selectedClaim().documents || selectedClaim().documents.length === 0) {
+                    <div
+                        style="text-align: center; padding: 24px; border: 1px dashed var(--glass-border); border-radius: 10px;">
+                        <i class="fa-solid fa-file-slash"
+                            style="font-size: 1.6rem; opacity: 0.25; margin-bottom: 8px; display: block;"></i>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">No evidence uploaded for
+                            this claim.</p>
+                    </div>
+                    }
+                    @if (selectedClaim().documents && selectedClaim().documents.length > 0) {
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        @for (docPair of selectedClaim().documents; track $index) {
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 10px; gap: 14px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div
+                                    style="width: 36px; height: 36px; border-radius: 10px; background: rgba(99,102,241,0.12); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </div>
+                                <div>
+                                    <p
+                                        style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px;">
+                                        Evidence Document {{ $index + 1 }}</p>
+                                    <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Claim Support
+                                        Evidence</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                @if (docPair.document1) {
+                                <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank"
+                                    class="btn-outline"
+                                    style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
+                                    <i class="fa-solid fa-eye"></i> View Primary
+                                </a>
+                                }
+                                @if (docPair.document2) {
+                                <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank"
+                                    class="btn-outline"
+                                    style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
+                                    <i class="fa-solid fa-eye"></i> View Secondary
+                                </a>
+                                }
+                            </div>
                         </div>
                         }
                     </div>
+                    }
                 </div>
 
                 <!-- Review Action Form (Only for Pending) -->
                 @if (selectedClaim().status === 'Submitted' || selectedClaim().status === 'UnderReview') {
-                <div class="glass-panel"
-                    style="padding: 24px; border: 1px solid var(--accent); background: rgba(58, 80, 107, 0.1);">
-                    <h3 style="margin-bottom: 24px;">Settlement Decision</h3>
+                <div
+                    style="padding: 24px 28px; border-top: 1px solid var(--glass-border); background: rgba(58,80,107,0.08);">
+                    <p
+                        style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-scale-balanced" style="color: var(--accent);"></i> Officer Decision
+                    </p>
                     <form class="vims-form" (ngSubmit)="submitDecision()">
 
                         <div style="display: flex; gap: 24px; margin-bottom: 24px;">
@@ -251,7 +377,7 @@
                                 <input type="radio" [value]="true" name="approvedDecision"
                                     [(ngModel)]="decisionForm.approved"
                                     style="accent-color: var(--success); width: 18px; height: 18px;">
-                                Approve & Generate Payout
+                                Approve Claim
                             </label>
                             <label
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
@@ -318,6 +444,20 @@
                         </div>
                         }
 
+                        <!-- Decision Comments / Reason -->
+                        <div class="form-group slide-in" style="margin-bottom: 24px;">
+                            <label for="rejectionReason"
+                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+                                Decision Reason / Internal Comments
+                                @if(!decisionForm.approved) { <span style="color: var(--error);">* (Mandatory for
+                                    rejection)</span> }
+                            </label>
+                            <textarea id="rejectionReason" name="rejectionReason" class="form-control"
+                                [(ngModel)]="decisionForm.rejectionReason"
+                                placeholder="Explain the decision or add investigative notes..."
+                                style="min-height: 100px; resize: vertical;"></textarea>
+                        </div>
+
                         @if (!decisionForm.approved) {
                         <div class="form-group slide-in">
                             <p style="color: var(--error); font-style: italic; margin-bottom: 16px;">Warning: Rejecting
@@ -327,24 +467,53 @@
 
                         <button type="submit" class="btn-primary" style="margin-top: 16px; padding: 12px 32px;"
                             [ngStyle]="{'background': decisionForm.approved ? 'var(--success)' : 'var(--error)'}">
-                            {{ decisionForm.approved ? 'Confirm Settlement' : 'Reject Without Prejudice' }}
+                            {{ decisionForm.approved ? 'Confirm Approval' : 'Reject Claim' }}
                         </button>
                     </form>
                 </div>
                 }
 
-                <!-- Read-Only History View -->
+                <!-- Read-Only Resolution Record -->
                 @if (selectedClaim().status === 'Approved' || selectedClaim().status === 'Rejected') {
-                <div class="glass-panel"
-                    style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
-                    <h3 style="margin-bottom: 24px; color: var(--text-main);">Final Resolution Record</h3>
-
-                    <p style="margin-bottom: 8px;"><strong
-                            style="color: var(--text-muted); display: inline-block; width: 140px;">Final
-                            Status:</strong>
-                        <span class="status-badge" [ngClass]="selectedClaim().status?.toLowerCase()"
-                            style="display: inline-block;">{{ selectedClaim().status }}</span>
-                    </p>
+                <div style="padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-top: 1px solid var(--glass-border);"
+                    [ngStyle]="{
+                        'background': selectedClaim().status === 'Approved' ? 'rgba(22,163,74,0.08)' :
+                                      selectedClaim().status === 'Rejected' ? 'rgba(220,38,38,0.08)' : 'rgba(255,255,255,0.02)'
+                    }">
+                    <div style="display: flex; align-items: center; gap: 18px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;"
+                            [ngStyle]="{
+                                'background': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)',
+                                'color': 'white'
+                            }">
+                            <i class="fa-solid" [ngClass]="{
+                                    'fa-circle-check': selectedClaim().status === 'Approved',
+                                    'fa-ban':          selectedClaim().status === 'Rejected'
+                                }"></i>
+                        </div>
+                        <div>
+                            <p
+                                style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">
+                                Final Resolution</p>
+                            <p style="font-size: 1.6rem; font-weight: 900; margin: 0; letter-spacing: -0.02em;"
+                                [ngStyle]="{'color': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'}">
+                                {{ selectedClaim().status === 'Approved' ? (selectedClaim().approvedAmount ?
+                                (selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0') : 'Approved') :
+                                'Rejected' }}</p>
+                        </div>
+                    </div>
+                    @if (selectedClaim().rejectionReason) {
+                    <div
+                        style="flex: 1; min-width: 240px; max-width: 460px; background: rgba(0,0,0,0.3); border: 1px solid rgba(220,38,38,0.2); border-radius: 12px; padding: 14px 18px;">
+                        <p
+                            style="font-size: 0.6rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--error); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-file-invoice"></i> Decision Notes / Reason
+                        </p>
+                        <p
+                            style="font-size: 0.85rem; color: rgba(255,255,255,0.85); line-height: 1.6; margin: 0; font-style: italic;">
+                            "{{ selectedClaim().rejectionReason }}"</p>
+                    </div>
+                    }
                 </div>
                 }
             </div>
@@ -354,8 +523,8 @@
         @if (activeTab() === 'history' && !selectedClaim()) {
         <div class="tab-content fade-in">
             <header class="page-header">
-                <h1 class="page-title">Completed Settlements</h1>
-                <p class="page-subtitle">A historical record of claims you've processed.</p>
+                <h1 class="page-title">Processed Claims</h1>
+                <p class="page-subtitle">A historical record of claims you've reviewed.</p>
             </header>
 
             <div class="glass-panel" style="padding: 24px;">

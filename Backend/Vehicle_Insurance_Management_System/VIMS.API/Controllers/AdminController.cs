@@ -85,6 +85,7 @@ namespace VIMS.API.Controllers
                 Status = c.Status.ToString(),
                 c.ApprovedAmount,
                 c.DecisionType,
+                c.CreatedAt,
                 Policy = c.Policy == null ? null : new { c.Policy.PolicyId, c.Policy.PolicyNumber, c.Policy.InvoiceAmount },
                 Documents = c.Documents != null ? c.Documents.Select(d => new { d.Document1, d.Document2 }) : null
             });
@@ -101,6 +102,7 @@ namespace VIMS.API.Controllers
                 p.PolicyId,
                 p.Amount,
                 p.PaymentDate,
+                p.TransactionReference,
                 Status = p.Status.ToString()
             });
             return Ok(result);

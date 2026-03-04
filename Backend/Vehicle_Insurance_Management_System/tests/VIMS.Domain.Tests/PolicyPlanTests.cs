@@ -41,12 +41,12 @@ namespace VIMS.Domain.Tests
             var plan = new PolicyPlan
             {
                 CoversTheft = true,
-                CoversNaturalDisaster = false
+
             };
 
             // Assert
             Assert.True(plan.CoversTheft);
-            Assert.False(plan.CoversNaturalDisaster);
+
         }
     }
 }

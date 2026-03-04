@@ -51,9 +51,6 @@ namespace VIMS.Infrastructure.Migrations
                     b.Property<string>("EntityName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("IPAddress")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -114,6 +111,9 @@ namespace VIMS.Infrastructure.Migrations
                     b.Property<int?>("ClaimsOfficerId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
@@ -122,6 +122,9 @@ namespace VIMS.Infrastructure.Migrations
 
                     b.Property<int>("PolicyId")
                         .HasColumnType("int");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -278,9 +281,6 @@ namespace VIMS.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<bool>("CoversNaturalDisaster")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("CoversOwnDamage")
                         .HasColumnType("bit");
 
@@ -296,10 +296,6 @@ namespace VIMS.Infrastructure.Migrations
 
                     b.Property<bool>("EngineProtectionAvailable")
                         .HasColumnType("bit");
-
-                    b.Property<decimal?>("MaxCoverageAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("PlanName")
                         .IsRequired()
