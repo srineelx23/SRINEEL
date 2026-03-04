@@ -17,6 +17,8 @@ namespace VIMS.Domain.Entities
         public DateTime PaymentDate { get; set; }
         public PaymentStatus Status { get; set; }
         public string? TransactionReference { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
+
         // Navigation
         public Policy Policy { get; set; } = null!;
     }

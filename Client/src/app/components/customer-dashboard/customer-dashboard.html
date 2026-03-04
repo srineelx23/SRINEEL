@@ -1,10 +1,5 @@
 <div class="dashboard-layout">
-    <!-- Display Error/Success Messages -->
-    @if (errorMessage()) {
-    <div class="error-toast">
-        {{ errorMessage() }}
-    </div>
-    }
+    <!-- Success Message -->
     @if (successMessage()) {
     <div class="success-toast">
         {{ successMessage() }}
@@ -781,6 +776,7 @@
                             <th>Amount</th>
                             <th>Reference</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -797,9 +793,16 @@
                                     p.status
                                     }}</span>
                             </td>
+                            <td>
+                                <button class="btn-outline-sm" (click)="downloadInvoice(p.paymentId)"
+                                    title="Download Invoice" style="padding: 4px 8px; font-size: 0.8rem;">
+                                    <i class="fa-solid fa-download"></i> Invoice
+                                </button>
+                            </td>
                         </tr>
                         }
                     </tbody>
+
                 </table>
                 }
             </div>

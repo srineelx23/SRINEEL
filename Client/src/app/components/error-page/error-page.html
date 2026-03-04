@@ -1,0 +1,23 @@
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+
+        <div class="status-code">{{ errorData.status }}</div>
+        <h1 class="error-title">{{ errorData.title || 'System Exception' }}</h1>
+
+        <div class="error-message">
+            {{ errorData.message }}
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-home" (click)="goHome()">
+                <i class="fas fa-home" style="margin-right: 8px;"></i> Return Home
+            </button>
+            <button class="btn-retry" (click)="goBack()">
+                <i class="fas fa-redo" style="margin-right: 8px;"></i> Try Again
+            </button>
+        </div>
+    </div>
+</div>

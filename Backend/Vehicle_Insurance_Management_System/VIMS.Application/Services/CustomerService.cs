@@ -224,7 +224,8 @@ namespace VIMS.Application.Services
                     Amount = 500, // Fixed Transfer Fee
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
-                    TransactionReference = "Transfer Fees"
+                    TransactionReference = "Transfer Fees",
+                    PaymentMethod = PaymentMethod.NetBanking
                 };
 
                 // After paying the fee, if the current year was already paid by the old owner, 
@@ -268,7 +269,8 @@ namespace VIMS.Application.Services
                     Amount = result.Premium,
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
-                    TransactionReference = "Premium"
+                    TransactionReference = "Premium",
+                    PaymentMethod = PaymentMethod.NetBanking
                 };
                 policy.Status = PolicyStatus.Active;
                 policy.CurrentYearNumber = 1;
@@ -330,7 +332,8 @@ namespace VIMS.Application.Services
                 Amount = annualResult.Premium,
                 PaymentDate = DateTime.UtcNow,
                 Status = PaymentStatus.Paid,
-                TransactionReference = "Premium"
+                TransactionReference = "Premium",
+                PaymentMethod = PaymentMethod.NetBanking
             };
 
             policy.CurrentYearNumber++;

@@ -199,7 +199,29 @@ export class CustomerDashboard implements OnInit {
     });
   }
 
+  downloadInvoice(paymentId: number) {
+    this.customerService.downloadInvoice(paymentId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Invoice_${paymentId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage.set("Invoice downloaded successfully!");
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err: any) => {
+        console.error('Download failed', err);
+        this.router.navigate(['/error'], {
+          state: { status: err.status, message: "Failed to download invoice.", title: 'Download Error' }
+        });
+      }
+    });
+  }
+
   loadPolicies() {
+
     this.customerService.getMyPolicies().subscribe({
       next: (res) => this.policies.set(res),
       error: (err) => console.error(err)
@@ -236,8 +258,9 @@ export class CustomerDashboard implements OnInit {
     this.successMessage.set('');
 
     if (!this.claimForm.PolicyId || !this.claimForm.ClaimType) {
-      this.errorMessage.set("Please fill in policy and claim type.");
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please fill in policy and claim type.", title: 'Claim Error' }
+      });
       return;
     }
 
@@ -255,9 +278,14 @@ export class CustomerDashboard implements OnInit {
         this.loadClaims();
         setTimeout(() => this.successMessage.set(''), 3000);
       },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || (typeof err.error === 'string' ? err.error : "Submit claim failed."));
-        this.autoHideToast();
+      error: (err: any) => {
+        this.router.navigate(['/error'], {
+          state: {
+            status: err.status,
+            message: err.error?.message || (typeof err.error === 'string' ? err.error : "Submit claim failed."),
+            title: 'Claim Submission Failed'
+          }
+        });
       }
     });
   }

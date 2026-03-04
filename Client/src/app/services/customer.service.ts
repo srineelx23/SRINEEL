@@ -85,7 +85,12 @@ export class CustomerService {
         return this.http.get(`${this.backendUrl}/payments/my`);
     }
 
+    downloadInvoice(paymentId: number): Observable<Blob> {
+        return this.http.get(`${this.backendUrl}/invoice/download/${paymentId}`, { responseType: 'blob' });
+    }
+
     getClaim(claimId: number): Observable<any> {
+
         return this.http.get(`${this.backendUrl}/claim/${claimId}`);
     }
 

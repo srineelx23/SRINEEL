@@ -39,14 +39,16 @@ export class CustomerRegister {
     this.successMessage.set('');
 
     if (!this.firstName || !this.lastName || !this.email || !this.password || !this.securityQuestion || !this.securityAnswer) {
-      this.errorMessage.set('Please fill out all required fields.');
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Please fill out all required fields.', title: 'Registration Error' }
+      });
       return;
     }
 
     if (this.password !== this.confirmPassword) {
-      this.errorMessage.set('Passwords do not match.');
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Passwords do not match.', title: 'Validation Error' }
+      });
       return;
     }
 
@@ -71,15 +73,17 @@ export class CustomerRegister {
           this.router.navigate(['/login']);
         }, 2500);
       },
-      error: (err) => {
-        if (err.error && err.error.message) {
-          this.errorMessage.set(err.error.message);
-        } else if (typeof err.error === 'string') {
-          this.errorMessage.set(err.error);
-        } else {
-          this.errorMessage.set('Registration failed. Please check your details and try again.');
-        }
-        this.autoHideToast();
+      error: (err: any) => {
+        const errorStatus = err.status || 500;
+        const errorMessage = typeof err.error === 'string' ? err.error : (err.error?.message || 'Registration failed. Please check your details.');
+
+        this.router.navigate(['/error'], {
+          state: {
+            status: errorStatus,
+            message: errorMessage,
+            title: 'Registration Rejected'
+          }
+        });
       }
     });
   }

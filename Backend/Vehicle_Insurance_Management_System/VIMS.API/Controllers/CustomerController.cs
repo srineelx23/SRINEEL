@@ -22,8 +22,9 @@ namespace VIMS.API.Controllers
         private readonly IPolicyRepository _policyRepository;
         private readonly VIMS.Application.Interfaces.Repositories.IClaimsRepository _claimsRepository;
         private readonly VIMS.Application.Interfaces.Repositories.IPaymentRepository _paymentRepository;
+        private readonly IInvoiceService _invoiceService;
 
-        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository)
+        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, IInvoiceService invoiceService)
         {
             _customerService = customerService;
             _policyPlanService = policyPlanService;
@@ -31,9 +32,21 @@ namespace VIMS.API.Controllers
             _policyRepository = policyRepository;
             _claimsRepository = claimsRepository;
             _paymentRepository = paymentRepository;
+            _invoiceService = invoiceService;
+        }
+
+        [HttpGet("invoice/download/{paymentId}")]
+        public IActionResult DownloadInvoice(int paymentId)
+        {
+            var pdfBytes = _invoiceService.GenerateInvoicePdf(paymentId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Invoice not found or could not be generated" });
+
+            return File(pdfBytes, "application/pdf", $"Invoice_{paymentId}.pdf");
         }
 
         [HttpGet("policy/{policyId}")]
+
         public async Task<IActionResult> GetPolicy(int policyId)
         {
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -305,13 +318,13 @@ public async Task<IActionResult> GetMyApplications()
             var payments = await _paymentRepository.GetAllAsync();
             var myPayments = payments.Where(p => p.Policy != null && p.Policy.CustomerId == userId).Select(p => new
             {
-                p.PaymentId,
-                p.PolicyId,
-                p.Amount,
-                p.PaymentDate,
-                Status = p.Status.ToString(),
-                p.TransactionReference,
-                PolicyNumber = p.Policy?.PolicyNumber
+                paymentId = p.PaymentId,
+                policyId = p.PolicyId,
+                amount = p.Amount,
+                paymentDate = p.PaymentDate,
+                status = p.Status.ToString(),
+                transactionReference = p.TransactionReference,
+                policyNumber = p.Policy?.PolicyNumber
             }).ToList();
 
             return Ok(myPayments);

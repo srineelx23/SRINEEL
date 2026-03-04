@@ -158,6 +158,9 @@ namespace VIMS.Infrastructure.Migrations
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
                     b.Property<int>("PolicyId")
                         .HasColumnType("int");
 

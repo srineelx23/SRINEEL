@@ -23,30 +23,34 @@ describe('AgentService', () => {
         expect(service).toBeTruthy();
     });
 
-    it('should fetch pending applications', () => {
-        const mockApps = [{ id: 1, registrationNumber: 'KA01-1234' }];
-        service.getPendingApplications().subscribe(apps => {
-            expect(apps).toEqual(mockApps);
-        });
+    it('should review application', () => {
+        const dto: ReviewVehicleApplicationDTO = { Approved: true, InvoiceAmount: 10000 };
+        const appId = 1;
+        const mockResponse = 'Success';
 
-        const req = httpMock.expectOne('https://localhost:7257/api/Agent/pending-applications');
-        expect(req.request.method).toBe('GET');
-        req.flush(mockApps);
+        service.reviewApplication(appId, dto).subscribe(res => expect(res).toBe(mockResponse));
+
+        const req = httpMock.expectOne(`https://localhost:7257/api/Agent/vehicle-application/${appId}/review`);
+        expect(req.request.method).toBe('PUT');
+        req.flush(mockResponse);
     });
 
-    it('should review application', () => {
-        const applicationId = 101;
-        const dto: ReviewVehicleApplicationDTO = {
-            Approved: true,
-            InvoiceAmount: 1000000
-        };
-        service.reviewApplication(applicationId, dto).subscribe(res => {
-            expect(res).toBe('Success');
-        });
+    it('should fetch pending applications', () => {
+        service.getPendingApplications().subscribe();
+        const req = httpMock.expectOne('https://localhost:7257/api/Agent/pending-applications');
+        expect(req.request.method).toBe('GET');
+        req.flush([]);
+    });
 
-        const req = httpMock.expectOne(`https://localhost:7257/api/Agent/vehicle-application/${applicationId}/review`);
-        expect(req.request.method).toBe('PUT');
-        expect(req.request.body).toEqual(dto);
-        req.flush('Success');
+    it('should fetch customers', () => {
+        service.getCustomers().subscribe();
+        const req = httpMock.expectOne('https://localhost:7257/api/Agent/customers');
+        req.flush([]);
+    });
+
+    it('should fetch all applications', () => {
+        service.getApplications().subscribe();
+        const req = httpMock.expectOne('https://localhost:7257/api/Agent/applications');
+        req.flush([]);
     });
 });

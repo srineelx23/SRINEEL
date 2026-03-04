@@ -32,6 +32,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   plans = signal<any[]>([]);
   auditLogs = signal<any[]>([]);
   showUserDropdown = signal(false);
+  showRoleDropdown = signal(false);
 
   // Aggregate Computations
 
@@ -265,7 +266,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   userRoleFilter = signal<string>('All');
   filteredUsers = computed(() => {
-    const mappedUsers = this.users().map(u => ({ ...u, displayRole: this.getRoleString(u.role || u.roles) }));
+    const mappedUsers = this.users().map(u => {
+      // Use nullish coalescing (??) because role constant 0 (Admin) is falsy in JS
+      const roleVal = u.role ?? u.Role ?? u.roles;
+      return { ...u, displayRole: this.getRoleString(roleVal) };
+    });
     if (this.userRoleFilter() === 'All') return mappedUsers;
     return mappedUsers.filter(u => u.displayRole === this.userRoleFilter() || (u.roles && u.roles.includes(this.userRoleFilter())));
   });
@@ -843,7 +848,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
           this.loadAllData();
           setTimeout(() => this.successMessage.set(''), 3000);
         },
-        error: (err) => this.showError(err)
+        error: (err: any) => this.showError(err)
       });
     } else {
       this.adminService.createClaimsOfficer(this.registerForm).subscribe({
@@ -853,7 +858,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
           this.loadAllData();
           setTimeout(() => this.successMessage.set(''), 3000);
         },
-        error: (err) => this.showError(err)
+        error: (err: any) => this.showError(err)
       });
     }
   }
@@ -867,7 +872,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
         this.loadAllData();
         setTimeout(() => this.successMessage.set(''), 3000);
       },
-      error: (err) => this.showError(err)
+      error: (err: any) => this.showError(err)
     });
   }
 
@@ -888,7 +893,15 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   private showError(err: any) {
-    this.errorMessage.set(err.error?.message || err.error || 'Operation Failed.');
-    setTimeout(() => this.errorMessage.set(''), 4000);
+    const errorStatus = err.status || 500;
+    const errorMessage = typeof err.error === 'string' ? err.error : (err.error?.message || err.error || 'Operation Failed.');
+
+    this.router.navigate(['/error'], {
+      state: {
+        status: errorStatus,
+        message: errorMessage,
+        title: 'Administrative Action Error'
+      }
+    });
   }
 }

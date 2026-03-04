@@ -481,6 +481,212 @@
     gap: 16px;
 }
 
+/* =========================================================
+   GET A QUOTE FORM & DOCUMENT UPLOAD STYLES
+   ========================================================= */
+
+.form-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+}
+
+.vims-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.form-group {
+    position: relative;
+    width: 100%;
+}
+
+.form-control {
+    width: 100%;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    padding: 16px 20px;
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: var(--transition);
+    outline: none;
+}
+
+.form-control:focus {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 15px rgba(91, 192, 190, 0.15);
+}
+
+/* Floating Label Logic */
+.floating-label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+}
+
+/* When input is focused OR has value (placeholder=" " is used as a trick) */
+.form-control:focus~.floating-label,
+.form-control:not(:placeholder-shown)~.floating-label,
+select.form-control~.floating-label {
+    top: 0;
+    left: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 0 8px;
+    background: var(--bg-card);
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.form-group select.form-control {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 20px center;
+    background-size: 18px;
+    padding-right: 50px;
+    padding-top: 20px;
+    padding-bottom: 12px;
+}
+
+.full-width-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    margin-top: 12px;
+}
+
+/* Plan Selection Preview in Form */
+.form-plan-preview {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-plan-info h4 {
+    color: var(--accent);
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+}
+
+.form-plan-info p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.file-upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.file-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 4px;
+}
+
+.file-input-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file-input-container:hover {
+    border-color: var(--accent);
+    background: rgba(91, 192, 190, 0.05);
+    transform: translateY(-1px);
+}
+
+.file-input-container.has-file {
+    border-style: solid;
+    border-color: var(--success);
+    background: rgba(46, 204, 113, 0.05);
+}
+
+.file-display {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--text-muted);
+    overflow: hidden;
+}
+
+.file-display i {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+}
+
+.has-file .file-display i {
+    color: var(--success);
+}
+
+.file-name-text {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.has-file .file-name-text {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.file-status-badge {
+    background: var(--success);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
+}
+
+/* Layout for two-column quote page */
+.quote-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 32px;
+    margin-top: 24px;
+}
+
+@media (max-width: 992px) {
+    .quote-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 .empty-results i {
     font-size: 4rem;
     color: var(--text-muted);

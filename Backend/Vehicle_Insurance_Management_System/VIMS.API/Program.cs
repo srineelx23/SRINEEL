@@ -52,6 +52,8 @@ namespace VIMS.API
             builder.Services.AddScoped<IAuditService, AuditService>();
             builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
             builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+            builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             builder.Services.AddProblemDetails();

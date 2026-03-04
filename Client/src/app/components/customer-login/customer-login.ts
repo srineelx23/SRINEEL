@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CaptchaService } from '../../services/captcha.service';
 
 @Component({
   selector: 'app-customer-login',
@@ -11,19 +12,41 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './customer-login.html',
   styleUrl: './customer-login.css',
 })
-export class CustomerLogin {
+export class CustomerLogin implements OnInit {
   email = '';
   password = '';
   errorMessage = signal('');
+  captchaCode = signal('');
+  userCaptcha = '';
 
   private authService = inject(AuthService);
+  private captchaService = inject(CaptchaService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  ngOnInit() {
+    this.refreshCaptcha();
+  }
+
+  refreshCaptcha() {
+    this.captchaCode.set(this.captchaService.generateCaptcha());
+    this.userCaptcha = '';
+  }
 
   login() {
     this.errorMessage.set('');
     if (!this.email || !this.password) {
-      this.errorMessage.set('Please enter both email and password.');
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Please enter both email and password.', title: 'Validation Error' }
+      });
+      return;
+    }
+
+    if (!this.captchaService.validateCaptcha(this.userCaptcha)) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Invalid CAPTCHA. Please try again.', title: 'Security Check' }
+      });
+      this.refreshCaptcha();
       return;
     }
 
@@ -58,19 +81,17 @@ export class CustomerLogin {
           }
         }
       },
-      error: (err) => {
-        if (err.error && err.error.message) {
-          this.errorMessage.set(err.error.message);
-        } else if (typeof err.error === 'string') {
-          this.errorMessage.set(err.error);
-        } else {
-          this.errorMessage.set('Login failed. Please check your credentials.');
-        }
+      error: (err: any) => {
+        const errorStatus = err.status || 500;
+        const errorMessage = typeof err.error === 'string' ? err.error : (err.error?.message || 'Login failed. Please check your credentials.');
 
-        // Auto-hide the toast after 5 seconds
-        setTimeout(() => {
-          this.errorMessage.set('');
-        }, 5000);
+        this.router.navigate(['/error'], {
+          state: {
+            status: errorStatus,
+            message: errorMessage,
+            title: 'Authentication Failed'
+          }
+        });
       }
     });
   }
@@ -119,7 +140,7 @@ export class CustomerLogin {
           this.forgotPasswordStep.set(2);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.errorMessage.set(err.error?.message || err.error || 'Failed to fetch security question.');
         this.autoHideToast();
       }
@@ -151,7 +172,7 @@ export class CustomerLogin {
         this.isForgotPasswordMode.set(false);
         setTimeout(() => this.successMessage.set(''), 5000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.errorMessage.set(err.error?.message || err.error || 'Failed to reset password.');
         this.autoHideToast();
       }

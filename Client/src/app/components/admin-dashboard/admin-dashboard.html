@@ -1,8 +1,5 @@
 <div class="dashboard-layout">
-    <!-- Notifications -->
-    @if (errorMessage()) {
-    <div class="error-toast">{{ errorMessage() }}</div>
-    }
+    <!-- Success Notifications -->
     @if (successMessage()) {
     <div class="success-toast">{{ successMessage() }}</div>
     }
@@ -489,14 +486,26 @@
                     <h1 class="page-title">Identity Access Management</h1>
                     <p class="page-subtitle">Configure system users, support officers, and agents.</p>
                 </div>
-                <div style="display: flex; gap: 16px;">
-                    <select class="form-control" [(ngModel)]="userRoleFilter"
-                        style="width: 200px; background: rgba(58, 80, 107, 0.4);">
-                        @for (role of rolesList(); track role) {
-                        <option [value]="role">{{ role === 'All' ? 'All Roles' : role
-                            }}</option>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showRoleDropdown.set(!showRoleDropdown())">
+                            <i class="fa-solid fa-filter" style="font-size: 0.9rem; color: var(--accent);"></i>
+                            <span>{{ userRoleFilter() === 'All' ? 'All Roles' : userRoleFilter() }}</span>
+                            <i class="fa-solid fa-chevron-down"
+                                [style.transform]="showRoleDropdown() ? 'rotate(180deg)' : 'none'"
+                                style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                        </div>
+                        @if (showRoleDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showRoleDropdown.set(false)">
+                            @for (role of rolesList(); track role) {
+                            <div class="vims-dropdown-item" [class.active]="userRoleFilter() === role"
+                                (click)="userRoleFilter.set(role); showRoleDropdown.set(false)">
+                                {{ role === 'All' ? 'All Roles' : role }}
+                            </div>
+                            }
+                        </div>
                         }
-                    </select>
+                    </div>
                     <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
                     <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
                         style="background: var(--accent);">+ Provision Officer</button>

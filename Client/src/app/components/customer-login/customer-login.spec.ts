@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CustomerLogin } from './customer-login';
 import { AuthService } from '../../services/auth.service';
+import { CaptchaService } from '../../services/captcha.service';
 import { Router, ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -10,11 +11,13 @@ describe('CustomerLogin', () => {
     let component: CustomerLogin;
     let fixture: ComponentFixture<CustomerLogin>;
     let authServiceSpy: jasmine.SpyObj<AuthService>;
+    let captchaServiceSpy: jasmine.SpyObj<CaptchaService>;
     let routerSpy: jasmine.SpyObj<Router>;
     let routeMock: any;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'getRoleFromToken', 'getSecurityQuestion', 'resetPassword']);
+        authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'getRoleFromToken']);
+        captchaServiceSpy = jasmine.createSpyObj('CaptchaService', ['generateCaptcha', 'validateCaptcha']);
         routerSpy = jasmine.createSpyObj('Router', ['navigate']);
         routeMock = {
             snapshot: {
@@ -22,10 +25,14 @@ describe('CustomerLogin', () => {
             }
         };
 
+        captchaServiceSpy.generateCaptcha.and.returnValue('ABC123');
+        captchaServiceSpy.validateCaptcha.and.returnValue(true);
+
         await TestBed.configureTestingModule({
             imports: [CustomerLogin, FormsModule, CommonModule],
             providers: [
                 { provide: AuthService, useValue: authServiceSpy },
+                { provide: CaptchaService, useValue: captchaServiceSpy },
                 { provide: Router, useValue: routerSpy },
                 { provide: ActivatedRoute, useValue: routeMock }
             ]
@@ -40,43 +47,52 @@ describe('CustomerLogin', () => {
         expect(component).toBeTruthy();
     });
 
-    it('should show error if email or password missing on login', () => {
+    it('should navigate to /error if email or password missing', () => {
         component.email = '';
         component.password = '';
         component.login();
-        expect(component.errorMessage()).toBe('Please enter both email and password.');
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/error'], jasmine.objectContaining({
+            state: jasmine.objectContaining({ status: 400 })
+        }));
     });
 
-    it('should navigate on successful login as Admin', () => {
-        const mockResponse = { token: 'admin-token' };
-        authServiceSpy.login.and.returnValue(of(mockResponse));
-        authServiceSpy.getRoleFromToken.and.returnValue('Admin');
+    it('should navigate to /error if CAPTCHA is invalid', () => {
+        captchaServiceSpy.validateCaptcha.and.returnValue(false);
+        component.email = 'test@test.com';
+        component.password = 'password';
+        component.userCaptcha = 'wrong';
+        component.login();
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/error'], jasmine.objectContaining({
+            state: jasmine.objectContaining({ title: 'Security Check' })
+        }));
+    });
 
-        component.email = 'admin@vims.com';
-        component.password = 'AdminPass';
+    it('should navigate to dashboard on successful login', () => {
+        const mockResponse = { token: 'fake-token' };
+        authServiceSpy.login.and.returnValue(of(mockResponse));
+        authServiceSpy.getRoleFromToken.and.returnValue('Customer');
+
+        component.email = 'customer@vims.com';
+        component.password = 'password';
+        component.userCaptcha = 'ABC123';
         component.login();
 
-        expect(sessionStorage.getItem('token')).toBe('admin-token');
-        expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin-dashboard']);
+        expect(sessionStorage.getItem('token')).toBe('fake-token');
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/customer-dashboard']);
     });
 
-    it('should handle login error correctly', fakeAsync(() => {
-        const errorMsg = 'Invalid credentials';
-        authServiceSpy.login.and.returnValue(throwError({ error: errorMsg }));
+    it('should navigate to /error on login failure', () => {
+        authServiceSpy.login.and.returnValue(throwError({ status: 401, error: { message: 'Invalid' } }));
 
         component.email = 'wrong@vims.com';
-        component.password = 'WrongPass';
+        component.password = 'password';
         component.login();
 
-        expect(component.errorMessage()).toBe(errorMsg);
-
-        tick(5000); // Test auto-hide
-        expect(component.errorMessage()).toBe('');
-    }));
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/error'], jasmine.any(Object));
+    });
 
     it('should switch to forgot password mode', () => {
         component.openForgotPassword();
         expect(component.isForgotPasswordMode()).toBeTrue();
-        expect(component.forgotPasswordStep()).toBe(1);
     });
 });

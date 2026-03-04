@@ -10,6 +10,7 @@ import { AgentDashboard } from './components/agent-dashboard/agent-dashboard';
 import { ClaimsOfficerDashboard } from './components/claims-officer-dashboard/claims-officer-dashboard';
 import { CustomerDashboard } from './components/customer-dashboard/customer-dashboard';
 import { ExplorePlans } from './components/explore-plans/explore-plans';
+import { ErrorPage } from './components/error-page/error-page';
 
 import { authGuard } from './guards/auth.guard';
 
@@ -20,6 +21,7 @@ export const routes: Routes = [
   { path: 'admin-login', component: AdminLogin },
   { path: 'agent-login', component: AgentLogin },
   { path: 'claims-login', component: ClaimsLogin },
+  { path: 'error', component: ErrorPage },
   {
     path: 'customer-dashboard',
     component: CustomerDashboard,

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -16,6 +16,12 @@ export class ExplorePlans implements OnInit {
   // Data stores
   plans = signal<any[]>([]);
   filteredPlans = signal<any[]>([]);
+
+  // Selection Computed
+  selectedPlanDetails = computed(() => {
+    const id = this.selectedPlanForQuote();
+    return this.plans().find(p => p.planId === id) || null;
+  });
 
   // Filter State
   searchQuery = signal('');
@@ -73,7 +79,7 @@ export class ExplorePlans implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       const savedPlanId = params.get('open_quote');
       if (savedPlanId) {
-        this.openQuoteForm(Number(savedPlanId));
+        this.onGetQuote(Number(savedPlanId));
       }
     });
   }
@@ -182,32 +188,50 @@ export class ExplorePlans implements OnInit {
   }
 
   // --- Quotes & Applications ---
-  openQuoteForm(planId: number) {
+  onGetQuote(planId: number) {
+    if (!this.checkAuth(planId)) return;
+    this.selectedPlanForQuote.set(planId);
+    this.quoteForm.PlanId = planId;
+    this.isApplying.set(false);
+    this.calculatedQuote.set(null);
+  }
+
+  onBuyNow(planId: number) {
+    if (!this.checkAuth(planId)) return;
+    this.selectedPlanForQuote.set(planId);
+    this.quoteForm.PlanId = planId;
+    this.isApplying.set(true);
+    this.calculatedQuote.set(null);
+  }
+
+  private checkAuth(planId: number): boolean {
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login'], { queryParams: { quote_intent: planId } });
-      return;
+      return false;
     }
 
     const role = this.authService.getRoleFromStoredToken();
     const restrictedRoles = ['Admin', 'Agent', 'ClaimsOfficer', 'Claims'];
 
     if (restrictedRoles.includes(role || '')) {
-      this.errorMessage.set("Staff members (Admin/Agent/Claims) cannot purchase policies. Please register as a customer.");
-      this.autoHideToast();
-      setTimeout(() => {
-        this.router.navigate(['/register']);
-      }, 2000);
-      return;
+      this.router.navigate(['/error'], {
+        state: {
+          status: 403,
+          message: "Staff members (Admin/Agent/Claims) cannot purchase policies. Please register as a customer.",
+          title: 'Access Restricted'
+        }
+      });
+      return false;
     }
-
-    this.selectedPlanForQuote.set(planId);
-    this.quoteForm.PlanId = planId;
+    return true;
   }
 
   cancelQuoteProcess() {
     this.selectedPlanForQuote.set(null);
     this.calculatedQuote.set(null);
     this.isApplying.set(false);
+    this.invoiceFile = null;
+    this.rcFile = null;
   }
 
   calculateQuote() {
@@ -224,8 +248,9 @@ export class ExplorePlans implements OnInit {
     };
 
     if (!payload.InvoiceAmount || !payload.PlanId) {
-      this.errorMessage.set("Please enter the Invoice Amount and select a Plan.");
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please enter the Invoice Amount and select a Plan.", title: 'Quotation Error' }
+      });
       return;
     }
 
@@ -233,9 +258,11 @@ export class ExplorePlans implements OnInit {
       next: (res) => {
         this.calculatedQuote.set(res);
       },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || "Failed to calculate quote.");
-        this.autoHideToast();
+      error: (err: any) => {
+        // Interceptor will handle the redirect, but we can set a specific title here if we want
+        this.router.navigate(['/error'], {
+          state: { status: err.status, message: err.error?.message || "Failed to calculate quote.", title: 'Calculation Error' }
+        });
       }
     });
   }
@@ -255,14 +282,16 @@ export class ExplorePlans implements OnInit {
     this.successMessage.set('');
 
     if (!this.applicationForm.RegistrationNumber || !this.applicationForm.Make || !this.applicationForm.Model) {
-      this.errorMessage.set("Please fill in all vehicle details.");
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please fill in all vehicle details.", title: 'Application Error' }
+      });
       return;
     }
 
     if (!this.invoiceFile || !this.rcFile) {
-      this.errorMessage.set("Please upload both the Invoice and RC documents.");
-      this.autoHideToast();
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please upload both the Invoice and RC documents.", title: 'Missing Documents' }
+      });
       return;
     }
 
@@ -291,9 +320,14 @@ export class ExplorePlans implements OnInit {
           this.router.navigate(['/customer-dashboard']);
         }, 3000);
       },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || typeof err.error === 'string' ? err.error : "Submission failed.");
-        this.autoHideToast();
+      error: (err: any) => {
+        this.router.navigate(['/error'], {
+          state: {
+            status: err.status,
+            message: err.error?.message || typeof err.error === 'string' ? err.error : "Submission failed.",
+            title: 'Submission Error'
+          }
+        });
       }
     });
   }

@@ -4,12 +4,7 @@
         <span>←</span> Return to Home
     </a>
 
-    <!-- Error/Success Toast Components -->
-    @if (errorMessage()) {
-    <div class="error-toast">
-        ⚠️ {{ errorMessage() }}
-    </div>
-    }
+    <!-- Success Toast Component -->
     @if (successMessage()) {
     <div class="success-toast">
         ✅ {{ successMessage() }}

@@ -28,7 +28,9 @@ namespace VIMS.Infrastructure
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IJwtService,JwtService>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
             return services;
+
         }
     }
 }
