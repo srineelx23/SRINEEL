@@ -18,6 +18,9 @@ namespace VIMS.Application.Tests
         private readonly Mock<IAuthRepository> _authRepoMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IAuditService> _auditServiceMock;
+        private readonly Mock<IClaimsRepository> _claimsRepoMock;
+        private readonly Mock<IPaymentRepository> _paymentRepoMock;
+        private readonly Mock<IPolicyRepository> _policyRepoMock;
         private readonly AdminService _adminService;
 
         public AdminServiceTests()
@@ -26,7 +29,18 @@ namespace VIMS.Application.Tests
             _authRepoMock = new Mock<IAuthRepository>();
             _mapperMock = new Mock<IMapper>();
             _auditServiceMock = new Mock<IAuditService>();
-            _adminService = new AdminService(_adminRepoMock.Object, _authRepoMock.Object, _mapperMock.Object, _auditServiceMock.Object);
+            _claimsRepoMock = new Mock<IClaimsRepository>();
+            _paymentRepoMock = new Mock<IPaymentRepository>();
+            _policyRepoMock = new Mock<IPolicyRepository>();
+
+            _adminService = new AdminService(
+                _adminRepoMock.Object,
+                _authRepoMock.Object,
+                _mapperMock.Object,
+                _auditServiceMock.Object,
+                _claimsRepoMock.Object,
+                _paymentRepoMock.Object,
+                _policyRepoMock.Object);
         }
 
         [Fact]

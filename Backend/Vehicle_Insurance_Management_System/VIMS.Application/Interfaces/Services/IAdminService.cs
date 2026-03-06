@@ -16,5 +16,10 @@ namespace VIMS.Application.Interfaces.Services
         public Task<List<PolicyPlan>> GetAllPolicyPlansAsync();
         public Task<PolicyPlan?> GetPolicyPlanByIdAsync(int planId);
         public Task<List<User>> GetAllUsersAsync();
+
+        // Admin-level read operations (previously pulled from repos directly in controller)
+        Task<List<Claims>> GetAllClaimsAsync();
+        Task<List<Payment>> GetAllPaymentsAsync();
+        Task<List<Policy>> GetAllPoliciesAsync();
     }
 }

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Linq;
-using VIMS.Application.Interfaces.Repositories;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Application.DTOs;
 
@@ -13,12 +12,10 @@ namespace VIMS.API.Controllers
     [ApiController]
     public class ClaimsOfficerController : ControllerBase
     {
-        private readonly IClaimsRepository _claimsRepository;
         private readonly IClaimsService _claimsService;
 
-        public ClaimsOfficerController(IClaimsRepository claimsRepository, IClaimsService claimsService)
+        public ClaimsOfficerController(IClaimsService claimsService)
         {
-            _claimsRepository = claimsRepository;
             _claimsService = claimsService;
         }
 
@@ -31,7 +28,7 @@ namespace VIMS.API.Controllers
 
             int officerId = int.Parse(userIdValue);
 
-            var claim = await _claimsRepository.GetByIdAsync(id);
+            var claim = await _claimsService.GetClaimByIdAsync(id);
             if (claim == null)
                 return NotFound(new { message = "Claim not found" });
 
@@ -65,7 +62,15 @@ namespace VIMS.API.Controllers
                     claim.Policy.Vehicle.Make,
                     claim.Policy.Vehicle.Model,
                     claim.Policy.Vehicle.Year,
-                    Application = claim.Policy.Vehicle.VehicleApplication == null ? null : new { claim.Policy.Vehicle.VehicleApplication.Make, claim.Policy.Vehicle.VehicleApplication.Model, claim.Policy.Vehicle.VehicleApplication.Year, Documents = claim.Policy.Vehicle.VehicleApplication.Documents == null ? null : claim.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath) }
+                    Application = claim.Policy.Vehicle.VehicleApplication == null ? null : new
+                    {
+                        claim.Policy.Vehicle.VehicleApplication.Make,
+                        claim.Policy.Vehicle.VehicleApplication.Model,
+                        claim.Policy.Vehicle.VehicleApplication.Year,
+                        Documents = claim.Policy.Vehicle.VehicleApplication.Documents == null
+                            ? null
+                            : claim.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath)
+                    }
                 }
             };
 
@@ -76,7 +81,7 @@ namespace VIMS.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllClaims()
         {
-            var claims = await _claimsRepository.GetAllAsync();
+            var claims = await _claimsService.GetAllClaimsAsync();
             return Ok(claims);
         }
 
@@ -89,7 +94,7 @@ namespace VIMS.API.Controllers
 
             int officerId = int.Parse(userIdValue);
 
-            var claims = await _claimsRepository.GetByOfficerIdAsync(officerId);
+            var claims = await _claimsService.GetClaimsByOfficerIdAsync(officerId);
 
             var result = claims.Select(c => new
             {
@@ -119,7 +124,15 @@ namespace VIMS.API.Controllers
                     c.Policy.Vehicle.Model,
                     c.Policy.Vehicle.Year,
                     InvoiceAmount = c.Policy.InvoiceAmount,
-                    Application = c.Policy.Vehicle.VehicleApplication == null ? null : new { c.Policy.Vehicle.VehicleApplication.Make, c.Policy.Vehicle.VehicleApplication.Model, c.Policy.Vehicle.VehicleApplication.Year, Documents = c.Policy.Vehicle.VehicleApplication.Documents == null ? null : c.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath) }
+                    Application = c.Policy.Vehicle.VehicleApplication == null ? null : new
+                    {
+                        c.Policy.Vehicle.VehicleApplication.Make,
+                        c.Policy.Vehicle.VehicleApplication.Model,
+                        c.Policy.Vehicle.VehicleApplication.Year,
+                        Documents = c.Policy.Vehicle.VehicleApplication.Documents == null
+                            ? null
+                            : c.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath)
+                    }
                 }
             });
 

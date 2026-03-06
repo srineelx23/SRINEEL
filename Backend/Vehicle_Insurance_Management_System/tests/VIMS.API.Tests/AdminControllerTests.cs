@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using VIMS.API.Controllers;
 using VIMS.Application.DTOs;
-using VIMS.Application.Interfaces.Repositories;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Domain.Entities;
 using Xunit;
@@ -15,9 +14,7 @@ namespace VIMS.API.Tests
     {
         private readonly Mock<IAdminService> _adminServiceMock;
         private readonly Mock<IPolicyPlanService> _planServiceMock;
-        private readonly Mock<IClaimsRepository> _claimsRepoMock;
-        private readonly Mock<IPaymentRepository> _payRepoMock;
-        private readonly Mock<IPolicyRepository> _polRepoMock;
+        private readonly Mock<IClaimsService> _claimsServiceMock;
         private readonly Mock<IAuditService> _auditMock;
         private readonly AdminController _adminController;
 
@@ -25,14 +22,14 @@ namespace VIMS.API.Tests
         {
             _adminServiceMock = new Mock<IAdminService>();
             _planServiceMock = new Mock<IPolicyPlanService>();
-            _claimsRepoMock = new Mock<IClaimsRepository>();
-            _payRepoMock = new Mock<IPaymentRepository>();
-            _polRepoMock = new Mock<IPolicyRepository>();
+            _claimsServiceMock = new Mock<IClaimsService>();
             _auditMock = new Mock<IAuditService>();
 
             _adminController = new AdminController(
-                _adminServiceMock.Object, _planServiceMock.Object, _claimsRepoMock.Object,
-                _payRepoMock.Object, _polRepoMock.Object, _auditMock.Object);
+                _adminServiceMock.Object,
+                _planServiceMock.Object,
+                _claimsServiceMock.Object,
+                _auditMock.Object);
         }
 
         [Fact]

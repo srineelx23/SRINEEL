@@ -50,10 +50,16 @@
                     </div>
 
                     <!-- Email Row -->
-                    <div class="form-group">
+                    <div class="form-group" [class.field-error]="emailTouched() && email && !isValidEmail(email)">
                         <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
-                            placeholder="" required>
+                            placeholder="" required (blur)="emailTouched.set(true)"
+                            [class.input-invalid]="emailTouched() && email && !isValidEmail(email)">
                         <label for="email" class="floating-label">Email Address</label>
+                        @if (emailTouched() && email && !isValidEmail(email)) {
+                        <span class="field-hint-error">
+                            <i class="fas fa-exclamation-circle"></i> Enter a valid email (e.g. user&#64;example.com)
+                        </span>
+                        }
                     </div>
 
                     <!-- Passwords Row -->
@@ -87,17 +93,6 @@
                             <label for="securityAnswer" class="floating-label">Secret Answer</label>
                         </div>
                     </div>
-
-                    <!-- Terms -->
-                    <div class="form-options" style="margin-bottom: 8px;">
-                        <label class="checkbox-container">
-                            <input type="checkbox" required>
-                            <span class="checkmark"></span>
-                            I agree to the <a href="#" class="link-styled" style="font-size: 0.875rem;">Terms &
-                                Conditions</a>
-                        </label>
-                    </div>
-
                     <button type="submit" class="btn-primary full-width-btn" style="margin-top: 8px;">Complete
                         Registration</button>
                 </form>

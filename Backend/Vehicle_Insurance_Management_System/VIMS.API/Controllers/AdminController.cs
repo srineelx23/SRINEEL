@@ -4,77 +4,77 @@ using Microsoft.AspNetCore.Mvc;
 using VIMS.Application.DTOs;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Domain.Entities;
-using VIMS.Application.Interfaces.Repositories;
-using VIMS.Domain.Enums;
 
 namespace VIMS.API.Controllers
 {
-    [Authorize(Roles ="Admin")]
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _adminService;
-        private readonly IPolicyPlanService _service;
-        private readonly IClaimsRepository _claimsRepository;
-        private readonly IPaymentRepository _paymentRepository;
-        private readonly IPolicyRepository _policyRepository;
+        private readonly IPolicyPlanService _policyPlanService;
+        private readonly IClaimsService _claimsService;
         private readonly IAuditService _auditService;
 
-        public AdminController(IAdminService adminService, IPolicyPlanService service, IClaimsRepository claimsRepository, IPaymentRepository paymentRepository, IPolicyRepository policyRepository, IAuditService auditService)
+        public AdminController(
+            IAdminService adminService,
+            IPolicyPlanService policyPlanService,
+            IClaimsService claimsService,
+            IAuditService auditService)
         {
             _adminService = adminService;
-            _service = service;
-            _claimsRepository = claimsRepository;
-            _paymentRepository = paymentRepository;
-            _policyRepository = policyRepository;
+            _policyPlanService = policyPlanService;
+            _claimsService = claimsService;
             _auditService = auditService;
         }
+
         [HttpPost("createAgent")]
         public async Task<IActionResult> CreateAgentAsync(RegisterDTO registerDTO)
         {
-                var res = await _adminService.CreateAgentAsync(registerDTO);
-                return Ok(res);
+            var res = await _adminService.CreateAgentAsync(registerDTO);
+            return Ok(res);
         }
+
         [HttpPost("createClaimsOfficer")]
         public async Task<IActionResult> CreateClaimsOfficer(RegisterDTO registerDTO)
         {
-           
-                var res = await _adminService.CreateClaimsOfficerAsync(registerDTO);
-                return Ok(res);
-           
-         
+            var res = await _adminService.CreateClaimsOfficerAsync(registerDTO);
+            return Ok(res);
         }
+
         [HttpPost("createPolicyPlan")]
         public async Task<IActionResult> CreatePolicyPlanAsync(PolicyPlan policyPlan)
         {
-            
-                var res = await _adminService.CreatePolicyPlanAsync(policyPlan);
-                return Ok(res);
-           
+            var res = await _adminService.CreatePolicyPlanAsync(policyPlan);
+            return Ok(res);
         }
+
         [HttpGet("policy-plans")]
         public async Task<IActionResult> GetAllPolicyPlans()
         {
             var plans = await _adminService.GetAllPolicyPlansAsync();
             return Ok(plans);
         }
+
         [HttpGet("policy-plan/{id}")]
         public async Task<IActionResult> GetPolicyPlanById(int id)
         {
             var plan = await _adminService.GetPolicyPlanByIdAsync(id);
             return Ok(plan);
         }
+
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _adminService.GetAllUsersAsync();
             return Ok(users);
         }
+
         [HttpGet("claims")]
         public async Task<IActionResult> GetAllClaims()
         {
-            var claims = await _claimsRepository.GetAllAsync();
+            var claims = await _adminService.GetAllClaimsAsync();
             var result = claims.Select(c => new
             {
                 c.ClaimId,
@@ -95,7 +95,7 @@ namespace VIMS.API.Controllers
         [HttpGet("payments")]
         public async Task<IActionResult> GetAllPayments()
         {
-            var payments = await _paymentRepository.GetAllAsync();
+            var payments = await _adminService.GetAllPaymentsAsync();
             var result = payments.Select(p => new
             {
                 p.PaymentId,
@@ -111,12 +111,12 @@ namespace VIMS.API.Controllers
         [HttpGet("policies")]
         public async Task<IActionResult> GetAllPolicies()
         {
-            var policies = await _policyRepository.GetAllAsync();
+            var policies = await _adminService.GetAllPoliciesAsync();
             var result = policies.Select(p => new
             {
                 p.PolicyId,
                 p.PolicyNumber,
-                p.PlanId, // Added PlanId for frontend mapping
+                p.PlanId,
                 Status = p.Status.ToString(),
                 p.PremiumAmount,
                 p.InvoiceAmount,
@@ -130,7 +130,9 @@ namespace VIMS.API.Controllers
                     p.Vehicle.Model,
                     p.Vehicle.Year,
                     p.Vehicle.RegistrationNumber,
-                    Documents = p.Vehicle.VehicleApplication != null ? p.Vehicle.VehicleApplication.Documents.Select(d => new { d.DocumentType, d.FilePath }) : null
+                    Documents = p.Vehicle.VehicleApplication != null
+                        ? p.Vehicle.VehicleApplication.Documents.Select(d => new { d.DocumentType, d.FilePath })
+                        : null
                 },
                 Customer = p.Customer == null ? null : new
                 {
@@ -140,19 +142,21 @@ namespace VIMS.API.Controllers
             });
             return Ok(result);
         }
+
         [HttpPut("deactivate/{id}")]
         public async Task<IActionResult> DeactivatePlan(int id)
         {
-            var result = await _service.DeactivatePlanAsync(id);
+            var result = await _policyPlanService.DeactivatePlanAsync(id);
             return Ok(new { message = result });
         }
 
         [HttpPut("activate/{id}")]
         public async Task<IActionResult> ActivatePlan(int id)
         {
-            var result=await _service.ActivatePlanAsync(id);
+            var result = await _policyPlanService.ActivatePlanAsync(id);
             return Ok(new { message = result });
         }
+
         [HttpGet("audit-logs")]
         public async Task<IActionResult> GetAuditLogs()
         {

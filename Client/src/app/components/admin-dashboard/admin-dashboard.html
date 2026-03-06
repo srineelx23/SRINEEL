@@ -195,7 +195,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (v of filteredVehicles(); track v.vehicleId) {
+                        @for (v of filteredVehicles(); track (v.vehicleId || $index)) {
                         <tr (click)="viewVehicleDetails(v)" style="cursor: pointer;" title="Click for Insights">
                             <td>{{ v.registrationNumber }}</td>
                             <td>{{ v.make }} {{ v.model }}</td>
@@ -245,7 +245,7 @@
                             <th>Premium</th>
                             <th>Status</th>
                         </tr>
-                        @for (p of vehiclePolicies(); track p.policyId) {
+                        @for (p of vehiclePolicies(); track (p.policyId || $index)) {
                         <tr>
                             <td>{{ p.policyId }}</td>
                             <td>{{ p.policyPlan?.planName || 'Standard' }}</td>
@@ -267,7 +267,7 @@
                             <th>Amount</th>
                             <th>Status</th>
                         </tr>
-                        @for (pmt of vehicleTransactions(); track pmt.id) {
+                        @for (pmt of vehicleTransactions(); track (pmt.id || $index)) {
                         <tr>
                             <td style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ pmt.id
                                 || 'N/A' }}</td>
@@ -309,7 +309,7 @@
                             <th>Approved</th>
                             <th>Status</th>
                         </tr>
-                        @for (c of vehicleClaims(); track c.claimId) {
+                        @for (c of vehicleClaims(); track (c.claimId || $index)) {
                         <tr>
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.claimType }}</td>
@@ -367,7 +367,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of claims(); track c.claimId) {
+                        @for (c of claims(); track (c.claimId || $index)) {
                         <tr>
                             <td style="font-family: monospace; font-size: 0.9rem;">{{ c.claimNumber || '#' + c.claimId
                                 }}</td>
@@ -446,7 +446,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (t of allTransactions(); track t.id) {
+                        @for (t of allTransactions(); track (t.id || $index)) {
                         <tr>
                             <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ t.id
                                 }}</td>
@@ -568,7 +568,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (u of filteredUsers(); track u.userId) {
+                        @for (u of filteredUsers(); track (u.userId || $index)) {
                         <tr>
                             <td>#{{ u.userId }}</td>
                             <td>{{ u.fullName }}</td>
@@ -627,7 +627,7 @@
                         <div class="form-group">
                             <label>Policy Duration (Months)</label>
                             <input type="number" name="policyDurationMonths" class="form-control"
-                                [(ngModel)]="planForm.policyDurationMonths" required>
+                                [(ngModel)]="planForm.policyDurationMonths" required min="12">
                         </div>
                         <div class="form-group">
                             <label>Applicable Vehicle Classification</label>
@@ -692,7 +692,7 @@
                 }
                 @if (orderedPlans().length > 0) {
                 <div style="display: flex; flex-direction: column; gap: 16px;">
-                    @for (p of orderedPlans(); track p.planId) {
+                    @for (p of orderedPlans(); track (p.planId || $index)) {
                     <div class="glass-panel"
                         style="background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); padding: 24px; box-shadow: none; display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -774,7 +774,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (log of auditLogs(); track log.id) {
+                        @for (log of auditLogs(); track (log.id || $index)) {
                         <tr>
                             <td>#{{ log.id }}</td>
                             <td style="white-space: nowrap;">{{ log.timestamp | date:'short' }}</td>

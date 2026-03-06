@@ -40,5 +40,19 @@ namespace VIMS.Infrastructure.Repositories
                 .Where(p => p.PolicyId == policyId)
                 .ToListAsync();
         }
+
+        public async Task<Payment?> GetByIdWithDetailsAsync(int paymentId)
+        {
+            return await _context.Payments
+                .Include(p => p.Policy)
+                    .ThenInclude(po => po.Customer)
+                .Include(p => p.Policy)
+                    .ThenInclude(po => po.Vehicle)
+                        .ThenInclude(v => v.VehicleApplication)
+                .Include(p => p.Policy)
+                    .ThenInclude(po => po.Plan)
+                .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
+        }
     }
 }
+

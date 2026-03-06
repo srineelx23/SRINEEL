@@ -43,6 +43,16 @@ namespace VIMS.Application.Services
             return await _claimsRepository.GetByCustomerIdAsync(customerId);
         }
 
+        public async Task<Claims?> GetClaimByIdAsync(int claimId)
+        {
+            return await _claimsRepository.GetByIdAsync(claimId);
+        }
+
+        public async Task<List<Claims>> GetClaimsByOfficerIdAsync(int officerId)
+        {
+            return await _claimsRepository.GetByOfficerIdAsync(officerId);
+        }
+
         public async Task<string> SubmitClaimAsync(SubmitClaimDTO dto, int customerId)
         {
             var policy = await _policyRepository.GetByIdAsync(dto.PolicyId);
@@ -293,10 +303,10 @@ namespace VIMS.Application.Services
                 }
 
                 await _policyRepository.UpdateAsync(policy);
-            }
+        }
             catch
             {
-                // ignore policy update errors here
+                 //ignore policy update errors here
             }
 
             // log payment record

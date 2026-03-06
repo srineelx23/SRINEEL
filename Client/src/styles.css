@@ -961,3 +961,38 @@ select.form-control option:checked {
     color: var(--accent);
     transform: rotate(180deg);
 }
+/* ========================================
+   EMAIL / FIELD VALIDATION STYLES
+   ======================================== */
+
+.input-invalid {
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15) !important;
+    background: rgba(255, 107, 107, 0.04) !important;
+}
+
+.input-invalid:focus {
+    border-color: #ff4d4d !important;
+    box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.2) !important;
+}
+
+.field-hint-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: #ff6b6b;
+    font-weight: 500;
+    animation: fadeInDown 0.2s ease;
+}
+
+.field-hint-error i {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

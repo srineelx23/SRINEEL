@@ -9,5 +9,6 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<bool> HasUnpaidAsync(int policyId);
         Task<List<Payment>> GetAllAsync();
         Task<List<Payment>> GetByPolicyIdAsync(int policyId);
+        Task<Payment?> GetByIdWithDetailsAsync(int paymentId);
     }
 }

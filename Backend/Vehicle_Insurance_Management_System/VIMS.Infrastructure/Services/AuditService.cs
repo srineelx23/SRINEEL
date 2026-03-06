@@ -1,24 +1,22 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using VIMS.Application.Interfaces.Repositories;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Domain.Entities;
-using VIMS.Infrastructure.Persistence;
 
 namespace VIMS.Infrastructure.Services
 {
     public class AuditService : IAuditService
     {
-        private readonly VehicleInsuranceContext _context;
+        private readonly IAuditLogRepository _auditLogRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuditService(VehicleInsuranceContext context, IHttpContextAccessor httpContextAccessor)
+        public AuditService(IAuditLogRepository auditLogRepository, IHttpContextAccessor httpContextAccessor)
         {
-            _context = context;
+            _auditLogRepository = auditLogRepository;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -29,7 +27,6 @@ namespace VIMS.Infrastructure.Services
             string email = "System";
             string role = "System";
 
-
             if (httpContext?.User?.Identity?.IsAuthenticated == true)
             {
                 var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
@@ -37,11 +34,11 @@ namespace VIMS.Infrastructure.Services
                 {
                     userId = id;
                 }
-                
-                email = httpContext.User.FindFirst(ClaimTypes.Email)?.Value ?? 
+
+                email = httpContext.User.FindFirst(ClaimTypes.Email)?.Value ??
                         httpContext.User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown";
-                
-                role = httpContext.User.FindFirst(ClaimTypes.Role)?.Value ?? 
+
+                role = httpContext.User.FindFirst(ClaimTypes.Role)?.Value ??
                        httpContext.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value ?? "User";
             }
 
@@ -58,15 +55,11 @@ namespace VIMS.Infrastructure.Services
                 Timestamp = DateTime.UtcNow,
             };
 
-            await _context.AuditLogs.AddAsync(auditLog);
-            await _context.SaveChangesAsync();
+            await _auditLogRepository.AddAsync(auditLog);
         }
 
         public async Task LogActionWithUserAsync(string action, string category, string details, int? userId, string email, string role, string? entityName = null, string? entityId = null)
         {
-            var httpContext = _httpContextAccessor.HttpContext;
-
-
             var auditLog = new AuditLog
             {
                 Action = action,
@@ -80,13 +73,12 @@ namespace VIMS.Infrastructure.Services
                 Timestamp = DateTime.UtcNow,
             };
 
-            await _context.AuditLogs.AddAsync(auditLog);
-            await _context.SaveChangesAsync();
+            await _auditLogRepository.AddAsync(auditLog);
         }
 
         public async Task<List<AuditLog>> GetAuditLogsAsync()
         {
-            return await _context.AuditLogs.OrderByDescending(x => x.Timestamp).ToListAsync();
+            return await _auditLogRepository.GetAllAsync();
         }
     }
 }

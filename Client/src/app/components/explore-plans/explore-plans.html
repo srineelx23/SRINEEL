@@ -138,7 +138,7 @@
             <!-- Plans Grid -->
             <div class="plans-grid-container">
                 <div class="plans-grid fade-in">
-                    @for (plan of filteredPlans(); track plan.planId) {
+                    @for (plan of filteredPlans(); track (plan.planId || $index)) {
                     <div class="plan-card glass-panel">
                         @if (plan.policyType === 'Comprehensive') {
                         <div class="plan-badge">Popular</div>
@@ -151,7 +151,9 @@
                             </div>
                         </div>
 
-                        <p class="plan-desc">{{ plan.description || 'Premium protection coverage tier.' }}</p>
+                        @if (plan.description) {
+                        <p class="plan-desc">{{ plan.description }}</p>
+                        }
 
                         <div class="plan-features">
                             <h4 class="features-title">What's included:</h4>
@@ -280,7 +282,7 @@
                                 <option value="2">2 Years Protection (5% Discount)</option>
                                 <option value="3">3 Years Protection (8% Discount)</option>
                                 <option value="4">4 Years Protection (10% Discount)</option>
-                                <option value="5">5 Years Protection (10% Discount)</option>
+                                <option value="5">5 Years Protection (12% Discount)</option>
                             </select>
                             <label class="floating-label">Coverage Duration</label>
                         </div>
@@ -335,11 +337,13 @@
                             <label class="floating-label">Vehicle Value (₹)</label>
                         </div>
                         <div class="form-group">
-                            <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
+                            <select id="policyYearsDirect" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
                                 class="form-control">
                                 <option value="1">1 Year</option>
-                                <option value="2">2 Years</option>
-                                <option value="3">3 Years</option>
+                                <option value="2">2 Years (5% Discount)</option>
+                                <option value="3">3 Years (8% Discount)</option>
+                                <option value="4">4 Years (10% Discount)</option>
+                                <option value="5">5 Years (12% Discount)</option>
                             </select>
                             <label class="floating-label">Duration</label>
                         </div>
@@ -436,28 +440,38 @@
                             style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
                             Premium Breakdown</p>
 
-                        <div class="breakdown-row" *ngIf="calculatedQuote().tpComponent">
-                            <span class="breakdown-label">Third Party liability</span>
+                        @if (calculatedQuote().tpComponent > 0) {
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Third Party Liability</span>
                             <span class="breakdown-value">{{ calculatedQuote().tpComponent | currency:'INR' }}</span>
                         </div>
-                        <div class="breakdown-row" *ngIf="calculatedQuote().odComponent">
+                        }
+                        @if (calculatedQuote().odComponent > 0) {
+                        <div class="breakdown-row">
                             <span class="breakdown-label">Own Damage (OD)</span>
                             <span class="breakdown-value">{{ calculatedQuote().odComponent | currency:'INR' }}</span>
                         </div>
-                        <div class="breakdown-row" *ngIf="calculatedQuote().riskLoadingAmount">
-                            <span class="breakdown-label">Risk Loading</span>
+                        }
+                        @if (calculatedQuote().riskLoadingAmount != null) {
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Risk / Coverage Loading</span>
                             <span class="breakdown-value">{{ calculatedQuote().riskLoadingAmount | currency:'INR'
                                 }}</span>
                         </div>
-                        <div class="breakdown-row" *ngIf="calculatedQuote().discountAmount">
+                        }
+                        @if (calculatedQuote().discountAmount > 0) {
+                        <div class="breakdown-row">
                             <span class="breakdown-label">Applied Discounts</span>
                             <span class="breakdown-value discount">- {{ calculatedQuote().discountAmount |
                                 currency:'INR' }}</span>
                         </div>
-                        <div class="breakdown-row" *ngIf="calculatedQuote().taxAmount">
+                        }
+                        @if (calculatedQuote().taxAmount > 0) {
+                        <div class="breakdown-row">
                             <span class="breakdown-label">GST (18%)</span>
                             <span class="breakdown-value">{{ calculatedQuote().taxAmount | currency:'INR' }}</span>
                         </div>
+                        }
 
                         <div class="breakdown-row total-net">
                             <span class="breakdown-label">Final Premium</span>

@@ -14,18 +14,33 @@ using VIMS.Domain.Enums;
 
 namespace VIMS.Application.Services
 {
-    public class AdminService:IAdminService
+    public class AdminService : IAdminService
     {
         private readonly IAdminRepository _adminRepository;
         private readonly IAuthRepository _authRepository;
         private readonly IMapper _mapper;
         private readonly IAuditService _auditService;
         private readonly PasswordHasher<User> _passwordHasher;
-        public AdminService(IAdminRepository repository, IAuthRepository authRepository, IMapper mapper, IAuditService auditService) {
+        private readonly IClaimsRepository _claimsRepository;
+        private readonly IPaymentRepository _paymentRepository;
+        private readonly IPolicyRepository _policyRepository;
+
+        public AdminService(
+            IAdminRepository repository,
+            IAuthRepository authRepository,
+            IMapper mapper,
+            IAuditService auditService,
+            IClaimsRepository claimsRepository,
+            IPaymentRepository paymentRepository,
+            IPolicyRepository policyRepository)
+        {
             _authRepository = authRepository;
             _adminRepository = repository;
             _mapper = mapper;
             _auditService = auditService;
+            _claimsRepository = claimsRepository;
+            _paymentRepository = paymentRepository;
+            _policyRepository = policyRepository;
             _passwordHasher = new PasswordHasher<User>();
         }
 
@@ -36,16 +51,18 @@ namespace VIMS.Application.Services
             {
                 throw new BadRequestException("Agent already Exists");
             }
-            var createdAgent=_mapper.Map<User>(registerDTO);
+            var createdAgent = _mapper.Map<User>(registerDTO);
             createdAgent.Role = UserRole.Agent;
-            createdAgent.PasswordHash = _passwordHasher.HashPassword(createdAgent,registerDTO.Password);
-            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+            createdAgent.PasswordHash = _passwordHasher.HashPassword(createdAgent, registerDTO.Password);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer))
+            {
                 createdAgent.SecurityAnswerHash = _passwordHasher.HashPassword(createdAgent, registerDTO.SecurityAnswer.Trim().ToLower());
             }
             var result = await _adminRepository.CreateAgentAsync(createdAgent);
             await _auditService.LogActionAsync("AgentCreated", "Admin", $"Admin created agent: {result.Email}", "User", result.UserId.ToString());
             return result;
         }
+
         public async Task<User> CreateClaimsOfficerAsync(RegisterDTO registerDTO)
         {
             var res = await _authRepository.UserExistsAsync(registerDTO.Email);
@@ -55,8 +72,9 @@ namespace VIMS.Application.Services
             }
             var createdClaimsOfficer = _mapper.Map<User>(registerDTO);
             createdClaimsOfficer.Role = UserRole.ClaimsOfficer;
-            createdClaimsOfficer.PasswordHash=_passwordHasher.HashPassword(createdClaimsOfficer,registerDTO.Password);
-            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
+            createdClaimsOfficer.PasswordHash = _passwordHasher.HashPassword(createdClaimsOfficer, registerDTO.Password);
+            if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer))
+            {
                 createdClaimsOfficer.SecurityAnswerHash = _passwordHasher.HashPassword(createdClaimsOfficer, registerDTO.SecurityAnswer.Trim().ToLower());
             }
             var result = await _adminRepository.CreateClaimsOfficerAsync(createdClaimsOfficer);
@@ -70,22 +88,40 @@ namespace VIMS.Application.Services
             await _auditService.LogActionAsync("PolicyPlanCreated", "Admin", $"Admin created policy plan: {result.PlanName}", "PolicyPlan", result.PlanId.ToString());
             return result;
         }
+
         public async Task<List<PolicyPlan>> GetAllPolicyPlansAsync()
         {
             return await _adminRepository.GetAllPolicyPlansAsync();
         }
+
         public async Task<PolicyPlan?> GetPolicyPlanByIdAsync(int planId)
         {
-            var res= await _adminRepository.GetPolicyPlanByIdAsync(planId);
+            var res = await _adminRepository.GetPolicyPlanByIdAsync(planId);
             if (res == null)
             {
                 throw new NotFoundException("Plan does not exist");
             }
             return res;
         }
+
         public async Task<List<User>> GetAllUsersAsync()
         {
             return await _adminRepository.GetAllUsersAsync();
+        }
+
+        public async Task<List<Claims>> GetAllClaimsAsync()
+        {
+            return await _claimsRepository.GetAllAsync();
+        }
+
+        public async Task<List<Payment>> GetAllPaymentsAsync()
+        {
+            return await _paymentRepository.GetAllAsync();
+        }
+
+        public async Task<List<Policy>> GetAllPoliciesAsync()
+        {
+            return await _policyRepository.GetAllAsync();
         }
     }
 }

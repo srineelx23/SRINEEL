@@ -19,6 +19,7 @@ export class CustomerLogin implements OnInit {
   errorMessage = signal('');
   captchaCode = signal('');
   userCaptcha = '';
+  emailTouched = signal(false);
 
   private authService = inject(AuthService);
   private captchaService = inject(CaptchaService);
@@ -34,11 +35,24 @@ export class CustomerLogin implements OnInit {
     this.userCaptcha = '';
   }
 
+  isValidEmail(email: string): boolean {
+    return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+  }
+
   login() {
     this.errorMessage.set('');
+    this.emailTouched.set(true);
+
     if (!this.email || !this.password) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: 'Please enter both email and password.', title: 'Validation Error' }
+      });
+      return;
+    }
+
+    if (!this.isValidEmail(this.email)) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Please enter a valid email address (e.g. user@example.com).', title: 'Validation Error' }
       });
       return;
     }
@@ -184,6 +198,11 @@ export class CustomerLogin implements OnInit {
     this.errorMessage.set('');
     if (!this.forgotEmail) {
       this.errorMessage.set('Please enter your email.');
+      this.autoHideToast();
+      return;
+    }
+    if (!this.isValidEmail(this.forgotEmail)) {
+      this.errorMessage.set('Please enter a valid email address (e.g. user@example.com).');
       this.autoHideToast();
       return;
     }

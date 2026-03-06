@@ -115,8 +115,8 @@ namespace VIMS.Application.Services
             // ==========================
             if (app.IsTransfer)
             {
-                try 
-                {
+                //try 
+                //{
                     // Find the matching PolicyTransfer record
                     var transfers = await _policyTransferRepository.GetByNewVehicleApplicationIdAsync(applicationId);
                     var transfer = transfers.FirstOrDefault();
@@ -180,12 +180,12 @@ namespace VIMS.Application.Services
                     await _vehicleApplicationRepository.SaveChangesAsync();
                     await _auditService.LogActionAsync("PolicyApplicationApproved", "Policy", $"Agent approved transfer application: {app.RegistrationNumber}", "VehicleApplication", app.VehicleApplicationId.ToString());
                     return; // EXIT EARLY IF IT WAS A TRANSFER
-                } 
-                catch (Exception ex) 
-                {
-                    System.IO.File.WriteAllText("C:\\Temp\\agent_transfer.log", "Transfer Error: " + ex.ToString());
-                    throw;
-                }
+                //} 
+                //catch (Exception ex) 
+                //{
+                    //System.IO.File.WriteAllText("C:\\Temp\\agent_transfer.log", "Transfer Error: " + ex.ToString());
+                    //throw;
+                //}
             }
 
             // ==========================

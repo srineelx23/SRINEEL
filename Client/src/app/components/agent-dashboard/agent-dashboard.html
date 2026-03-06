@@ -131,7 +131,7 @@
                 }
                 @if (pendingApps().length > 0) {
                 <div class="overview-list">
-                    @for (a of pendingApps().slice(0,5); track a.applicationId) {
+                    @for (a of pendingApps().slice(0,5); track (a.applicationId || $index)) {
                     <div class="overview-list-item" (click)="switchTab('applications')">
                         <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
                         <div class="oli-body">
@@ -175,7 +175,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (app of pendingApps(); track app.applicationId) {
+                        @for (app of pendingApps(); track (app.applicationId || $index)) {
                         <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
@@ -234,7 +234,7 @@
 
                         @if (selectedApp().documents && selectedApp().documents.length > 0) {
                         <div style="display: flex; flex-direction: column; gap: 12px;">
-                            @for (doc of selectedApp().documents; track doc.documentId) {
+                            @for (doc of selectedApp().documents; track (doc.documentId || $index)) {
                             <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
                                 style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
                                 <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
@@ -365,7 +365,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (app of reviewedApps(); track app.applicationId) {
+                        @for (app of reviewedApps(); track (app.applicationId || $index)) {
                         <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }}</td>
@@ -488,7 +488,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of customers(); track c.policyNumber) {
+                        @for (c of customers(); track ($index)) {
                         <tr (click)="openCustomerDetails(c)" style="cursor: pointer;">
                             <td>{{ c.customerName }}</td>
                             <td>{{ c.registrationNumber }}</td>

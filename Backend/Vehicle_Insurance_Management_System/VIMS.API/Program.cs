@@ -37,7 +37,7 @@ namespace VIMS.API
             builder.Services.AddScoped<IAdminRepository, AdminRepository>();
             builder.Services.AddScoped<IAdminService, AdminService>();
             builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
-            builder.Services.AddScoped<ICustomerService , CustomerService>();
+            builder.Services.AddScoped<ICustomerService, CustomerService>();
             builder.Services.AddScoped<IClaimsRepository, ClaimsRepository>();
             builder.Services.AddScoped<VIMS.Application.Interfaces.Services.IClaimsService, VIMS.Application.Services.ClaimsService>();
             builder.Services.AddScoped<IVehicleApplicationRepository, VehicleApplicationRepository>();
@@ -49,6 +49,7 @@ namespace VIMS.API
             builder.Services.AddScoped<VIMS.Application.Interfaces.Repositories.IPaymentRepository, VIMS.Infrastructure.Repositories.PaymentRepository>();
             builder.Services.AddScoped<IPolicyPlanService, PolicyPlanService>();
             builder.Services.AddScoped<IPricingService, PricingService>();
+            builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             builder.Services.AddScoped<IAuditService, AuditService>();
             builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
             builder.Services.AddScoped<IFileStorageService, FileStorageService>();

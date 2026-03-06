@@ -33,10 +33,16 @@
             <div class="login-form-container">
                 <h2 class="form-title">Secure Login</h2>
                 <form class="vims-form" (ngSubmit)="login()">
-                    <div class="form-group">
+                    <div class="form-group" [class.field-error]="emailTouched() && email && !isValidEmail(email)">
                         <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
-                            placeholder="" required>
+                            placeholder="" required (blur)="emailTouched.set(true)"
+                            [class.input-invalid]="emailTouched() && email && !isValidEmail(email)">
                         <label for="email" class="floating-label">Email Address</label>
+                        @if (emailTouched() && email && !isValidEmail(email)) {
+                        <span class="field-hint-error">
+                            <i class="fas fa-exclamation-circle"></i> Enter a valid email (e.g. user&#64;example.com)
+                        </span>
+                        }
                     </div>
 
                     <div class="form-group">
@@ -85,10 +91,16 @@
                 <!-- Step 1: Email -->
                 @if (forgotPasswordStep() === 1) {
                 <form class="vims-form" (ngSubmit)="fetchSecurityQuestion()">
-                    <div class="form-group">
+                    <div class="form-group" [class.field-error]="forgotEmail && !isValidEmail(forgotEmail)">
                         <input type="email" id="forgotEmail" name="forgotEmail" [(ngModel)]="forgotEmail"
-                            class="form-control" placeholder="" required>
+                            class="form-control" placeholder="" required
+                            [class.input-invalid]="forgotEmail && !isValidEmail(forgotEmail)">
                         <label for="forgotEmail" class="floating-label">Email Address</label>
+                        @if (forgotEmail && !isValidEmail(forgotEmail)) {
+                        <span class="field-hint-error">
+                            <i class="fas fa-exclamation-circle"></i> Enter a valid email (e.g. user&#64;example.com)
+                        </span>
+                        }
                     </div>
 
                     <div style="display: flex; gap: 16px; margin-top: 16px;">

@@ -58,13 +58,23 @@ namespace VIMS.API.Controllers
             if (policy == null || policy.CustomerId != customerId)
                 return NotFound(new { message = "Policy not found" });
 
+            // Detect if this is a transfer fee pending payment (same logic as GetMyPolicies)
+            bool isFeePending = false;
+            var isTransfer = policy.Vehicle?.VehicleApplication?.IsTransfer == true;
+            if (isTransfer && policy.Status == VIMS.Domain.Enums.PolicyStatus.PendingPayment)
+            {
+                var payments = await _paymentRepository.GetByPolicyIdAsync(policy.PolicyId);
+                isFeePending = payments == null || !payments.Any();
+            }
+
             var result = new
             {
                 policyId = policy.PolicyId,
                 policyNumber = policy.PolicyNumber,
                 status = policy.Status.ToString(),
-                premiumAmount = policy.PremiumAmount,
+                premiumAmount = isFeePending ? 500 : policy.PremiumAmount,
                 invoiceAmount = policy.InvoiceAmount,
+                isFeePending,
                 startDate = policy.StartDate,
                 endDate = policy.EndDate,
                 vehicle = policy.Vehicle == null ? null : new { 
@@ -72,6 +82,7 @@ namespace VIMS.API.Controllers
                     make = policy.Vehicle.Make, 
                     model = policy.Vehicle.Model, 
                     year = policy.Vehicle.Year,
+                    vehicleType = policy.Vehicle.VehicleType,
                     registrationNumber = policy.Vehicle.RegistrationNumber,
                     documents = policy.Vehicle.VehicleApplication?.Documents?.Select(d => new { documentType = d.DocumentType, filePath = d.FilePath })
                 },
@@ -191,7 +202,7 @@ namespace VIMS.API.Controllers
             return Ok("Application submitted.");
         }
         [HttpGet("my-applications")]
-public async Task<IActionResult> GetMyApplications()
+        public async Task<IActionResult> GetMyApplications()
 {
     var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 

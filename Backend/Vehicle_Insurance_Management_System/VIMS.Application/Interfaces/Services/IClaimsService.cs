@@ -11,5 +11,9 @@ namespace VIMS.Application.Interfaces.Services
         Task<string> DecideClaimAsync(int claimId, ApproveClaimDTO dto, int officerId, bool approve);
         Task<List<Claims>> GetAllClaimsAsync();
         Task<List<Claims>> GetClaimsByCustomerAsync(int customerId);
+
+        // Methods previously handled by controller via repository directly
+        Task<Claims?> GetClaimByIdAsync(int claimId);
+        Task<List<Claims>> GetClaimsByOfficerIdAsync(int officerId);
     }
 }

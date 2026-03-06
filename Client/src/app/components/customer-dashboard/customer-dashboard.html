@@ -346,7 +346,8 @@
                                     <button class="btn-primary"
                                         style="padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(135deg, #ef4444, #dc2626);"
                                         (click)="payPremium(p.policyId); $event.stopPropagation()">
-                                        <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i> Pay Now
+                                        <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i>
+                                        {{ p.isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Annual Premium' }}
                                     </button>
                                 </td>
                             </tr>
@@ -423,6 +424,11 @@
                                     <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
                                 </td>
                                 <td>
+                                    @if (p.status === 'Expired') {
+                                    <span class="status-badge"
+                                        style="background: rgba(234,179,8,0.15); color: #EAB308; border: 1px solid rgba(234,179,8,0.3); margin-right: 6px; font-size: 0.7rem;">⏳
+                                        Buffer</span>
+                                    }
                                     <button class="btn-primary"
                                         style="padding: 6px 12px; font-size: 0.85rem; background: var(--success);"
                                         (click)="startRenew(p.policyId); $event.stopPropagation()">
@@ -494,7 +500,7 @@
                                     Documents:</strong></p>
                             <ul
                                 style="list-style-type: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                                @for (doc of selectedPolicy().vehicle?.documents; track doc.documentId) {
+                                @for (doc of selectedPolicy().vehicle?.documents; track (doc.documentId || $index)) {
                                 <li class="btn-outline"
                                     style="padding: 8px 16px; border-radius: 6px; display: inline-block; width: fit-content; margin-bottom: 0;">
                                     <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType }}
@@ -515,10 +521,13 @@
                         @if (selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' &&
                         selectedPolicy().status !== 'Expired' && selectedPolicy().status !== 'Claimed') {
                         <button class="btn-primary" style="padding: 10px 24px;"
-                            (click)="payPremium(selectedPolicy().policyId)">Pay Outstanding Premium</button>
+                            (click)="payPremium(selectedPolicy().policyId)">
+                            {{ selectedPolicy().isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Outstanding Premium' }}
+                        </button>
                         }
-                        @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired' &&
-                        selectedPolicy().status !== 'Claimed') {
+                        @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Claimed' &&
+                        (selectedPolicy().status !== 'Expired' || renewablePolicies().some(r => r.policyId ===
+                        selectedPolicy().policyId))) {
                         <button class="btn-primary"
                             style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
                             (click)="startRenew(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
@@ -561,7 +570,7 @@
                                     <option value="1">Extend by 1 Year</option>
                                     <option value="2">Extend by 2 Years</option>
                                     <option value="3">Extend by 3 Years</option>
-                                    <option value="5">Extend by 5 Years</option>
+                                    <option value="4">Extend by 4 Years</option>
                                 </select>
                             </div>
                         </div>
@@ -686,7 +695,7 @@
                             <select id="claimPolicy" name="claimPolicy" [(ngModel)]="claimForm.PolicyId"
                                 class="form-control" required>
                                 <option [ngValue]="null" disabled selected>Select Affected Policy</option>
-                                @for (p of claimablePolicies(); track p.policyId) {
+                                @for (p of claimablePolicies(); track (p.policyId || $index)) {
                                 <option [value]="p.policyId">{{ p.policyNumber }} ({{ p.vehicleModel }})</option>
                                 }
                             </select>
@@ -871,13 +880,13 @@
                                 <a [href]="'https://localhost:7257/' + doc.document1" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View
+                                    <i class="fa-solid fa-eye"></i> View Document 1
                                 </a>
                                 @if (doc.document2) {
                                 <a [href]="'https://localhost:7257/' + doc.document2" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View 2
+                                    <i class="fa-solid fa-eye"></i> View Document 2
                                 </a>
                                 }
                             </div>
@@ -1093,16 +1102,24 @@
                     </div>
                     }
 
-                    @for (t of incomingTransfers(); track t.policyTransferId) {
+                    @for (t of incomingTransfers(); track (t.policyTransferId || $index)) {
                     <div class="transfer-card glass-panel" style="background: rgba(255,255,255,0.03);">
                         <div class="transfer-card-info">
                             <div class="transfer-icon"><i class="fa-solid fa-key"></i></div>
                             <div>
-                                <div class="transfer-policy-no">Policy #{{ t.policyNumber }}</div>
-                                <div class="transfer-vehicle">{{ t.vehicleRegistrationNumber }} ({{ t.vehicleModel }})
+                                <div class="transfer-policy-no">Policy #{{ t.policy?.policyNumber }}</div>
+                                <div class="transfer-vehicle">
+                                    {{ t.policy?.vehicle?.registrationNumber }}
+                                    @if (t.policy?.vehicle?.make || t.policy?.vehicle?.model) {
+                                    &nbsp;({{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }})
+                                    }
                                 </div>
-                                <div class="transfer-meta" style="color: var(--accent); font-weight: 600;">Sender: {{
-                                    t.senderEmail }}</div>
+                                <div class="transfer-meta" style="color: var(--accent); font-weight: 600;">
+                                    Sender: {{ t.senderName || t.senderEmail }}
+                                </div>
+                                <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
+                                    Received {{ t.createdAt | date:'dd MMM yyyy' }}
+                                </div>
                             </div>
                         </div>
                         <div class="transfer-card-actions">
@@ -1133,16 +1150,25 @@
                     </div>
                     }
 
-                    @for (t of outgoingTransfers(); track t.policyTransferId) {
+                    @for (t of outgoingTransfers(); track (t.policyTransferId || $index)) {
                     <div class="transfer-card glass-panel" style="background: rgba(255,255,255,0.03);">
                         <div class="transfer-card-info">
                             <div class="transfer-icon outgoing"><i class="fa-solid fa-right-from-bracket"></i></div>
                             <div>
-                                <div class="transfer-policy-no">Policy #{{ t.policyNumber }}</div>
+                                <div class="transfer-policy-no">Policy #{{ t.policy?.policyNumber }}</div>
+                                <div class="transfer-vehicle">
+                                    {{ t.policy?.vehicle?.registrationNumber }}
+                                    @if (t.policy?.vehicle?.make || t.policy?.vehicle?.model) {
+                                    &nbsp;({{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }})
+                                    }
+                                </div>
                                 <div class="transfer-vehicle">Recipient: <span style="color: var(--text-main);">{{
-                                        t.recipientEmail }}</span></div>
+                                        t.recipientName || t.recipientEmail }}</span></div>
                                 <div class="transfer-meta">Status: <span class="status-badge"
-                                        [ngClass]="t.status.toLowerCase()">{{ t.status }}</span></div>
+                                        [ngClass]="t.status?.toLowerCase()">{{ t.status }}</span></div>
+                                <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
+                                    Sent {{ t.createdAt | date:'dd MMM yyyy' }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1314,7 +1340,7 @@
             </div>
             <div>
                 <h3 class="modal-title">Accept Policy Transfer</h3>
-                <p class="modal-subtitle">Claiming Policy #{{ pendingAcceptTransfer()?.policyNumber }}</p>
+                <p class="modal-subtitle">Claiming Policy #{{ pendingAcceptTransfer()?.policy?.policyNumber }}</p>
             </div>
         </div>
 

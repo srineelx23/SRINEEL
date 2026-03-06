@@ -19,5 +19,7 @@ namespace VIMS.Application.DTOs
         public DateTime EndDate { get; set; }
         public string Status { get; set; }
         public bool IsRenewed { get; set; }
+        public bool IsFeePending { get; set; }
+        public string VehicleType { get; set; }
     }
 }

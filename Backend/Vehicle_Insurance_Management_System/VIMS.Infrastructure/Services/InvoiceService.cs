@@ -1,23 +1,20 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using VIMS.Application.Interfaces.Repositories;
 using VIMS.Application.Interfaces.Services;
-using VIMS.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using VIMS.Domain.Enums;
 using System;
-using System.Linq;
 
 namespace VIMS.Infrastructure.Services
 {
     public class InvoiceService : IInvoiceService
     {
-        private readonly VehicleInsuranceContext _context;
+        private readonly IPaymentRepository _paymentRepository;
         private readonly IPricingService _pricingService;
 
-        public InvoiceService(VehicleInsuranceContext context, IPricingService pricingService)
+        public InvoiceService(IPaymentRepository paymentRepository, IPricingService pricingService)
         {
-            _context = context;
+            _paymentRepository = paymentRepository;
             _pricingService = pricingService;
             // Set license for QuestPDF (Community version)
             QuestPDF.Settings.License = LicenseType.Community;
@@ -25,15 +22,7 @@ namespace VIMS.Infrastructure.Services
 
         public byte[] GenerateInvoicePdf(int paymentId)
         {
-            var payment = _context.Payments
-                .Include(p => p.Policy)
-                    .ThenInclude(po => po.Customer)
-                .Include(p => p.Policy)
-                    .ThenInclude(po => po.Vehicle)
-                        .ThenInclude(v => v.VehicleApplication)
-                .Include(p => p.Policy)
-                    .ThenInclude(po => po.Plan)
-                .FirstOrDefault(p => p.PaymentId == paymentId);
+            var payment = _paymentRepository.GetByIdWithDetailsAsync(paymentId).GetAwaiter().GetResult();
 
             if (payment == null) return Array.Empty<byte>();
 
@@ -43,15 +32,14 @@ namespace VIMS.Infrastructure.Services
             var policyNumber = payment.Policy.PolicyNumber;
             var vehicleNumber = payment.Policy.Vehicle.RegistrationNumber;
             var totalPaidAmount = payment.Amount;
-            
+
             var policy = payment.Policy;
             var plan = policy.Plan;
             var vehicle = policy.Vehicle;
 
             // Re-calculate the exact breakdown using PricingService
-            // Note: We use the same parameters that were used during policy application/renewal
             bool isRenewal = policy.IsRenewed;
-            
+
             var pricingDto = new VIMS.Application.DTOs.CalculateQuoteDTO
             {
                 InvoiceAmount = policy.InvoiceAmount,

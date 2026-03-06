@@ -22,6 +22,7 @@ export class CustomerRegister {
 
   errorMessage = signal('');
   successMessage = signal('');
+  emailTouched = signal(false);
 
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -34,13 +35,25 @@ export class CustomerRegister {
     "Pet's Name"
   ];
 
+  isValidEmail(email: string): boolean {
+    return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+  }
+
   register() {
     this.errorMessage.set('');
     this.successMessage.set('');
+    this.emailTouched.set(true);
 
     if (!this.firstName || !this.lastName || !this.email || !this.password || !this.securityQuestion || !this.securityAnswer) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: 'Please fill out all required fields.', title: 'Registration Error' }
+      });
+      return;
+    }
+
+    if (!this.isValidEmail(this.email)) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: 'Please enter a valid email address (e.g. user@example.com).', title: 'Validation Error' }
       });
       return;
     }

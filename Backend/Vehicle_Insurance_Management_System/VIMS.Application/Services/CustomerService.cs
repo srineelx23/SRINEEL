@@ -194,7 +194,9 @@ namespace VIMS.Application.Services
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
                     Status = p.Status.ToString(),
-                    IsRenewed = p.IsRenewed
+                    IsRenewed = p.IsRenewed,
+                    IsFeePending = isFeePending,
+                    VehicleType = p.Vehicle?.VehicleType ?? "N/A"
                 });
             }
 

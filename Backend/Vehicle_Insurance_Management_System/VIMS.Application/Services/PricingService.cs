@@ -52,7 +52,8 @@ namespace VIMS.Application.Services
             {
                 2 => 0.05m,
                 3 => 0.08m,
-                >= 4 => 0.10m,
+                4 => 0.10m,
+                >= 5 => 0.12m,
                 _ => 0m
             };
 

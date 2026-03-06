@@ -132,7 +132,7 @@
                 }
                 @if (pendingClaims().length > 0) {
                 <div class="overview-list">
-                    @for (c of pendingClaims().slice(0,5); track c.claimId) {
+                    @for (c of pendingClaims().slice(0,5); track (c.claimId || $index)) {
                     <div class="overview-list-item" (click)="openClaimReview(c)">
                         <div class="oli-icon"><i class="fa-solid fa-file-shield"></i></div>
                         <div class="oli-body">
@@ -174,7 +174,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of pendingClaims(); track c.claimId) {
+                        @for (c of pendingClaims(); track (c.claimId || $index)) {
                         <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
@@ -344,14 +344,14 @@
                                 <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Primary
+                                    <i class="fa-solid fa-eye"></i> View Document 1
                                 </a>
                                 }
                                 @if (docPair.document2) {
                                 <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Secondary
+                                    <i class="fa-solid fa-eye"></i> View Document 2
                                 </a>
                                 }
                             </div>
@@ -444,21 +444,19 @@
                         </div>
                         }
 
-                        <!-- Decision Comments / Reason -->
-                        <div class="form-group slide-in" style="margin-bottom: 24px;">
+
+
+                        @if (!decisionForm.approved) {
+                        <div class="form-group slide-in" style="margin-bottom: 20px;">
                             <label for="rejectionReason"
                                 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">
-                                Decision Reason / Internal Comments
-                                @if(!decisionForm.approved) { <span style="color: var(--error);">* (Mandatory for
-                                    rejection)</span> }
+                                Rejection Reason <span style="color: var(--error);">* (Required)</span>
                             </label>
                             <textarea id="rejectionReason" name="rejectionReason" class="form-control"
                                 [(ngModel)]="decisionForm.rejectionReason"
-                                placeholder="Explain the decision or add investigative notes..."
-                                style="min-height: 100px; resize: vertical;"></textarea>
+                                placeholder="Provide a clear reason for rejecting this claim..."
+                                style="min-height: 100px; resize: vertical;" required></textarea>
                         </div>
-
-                        @if (!decisionForm.approved) {
                         <div class="form-group slide-in">
                             <p style="color: var(--error); font-style: italic; margin-bottom: 16px;">Warning: Rejecting
                                 this claim permanently closes the case.</p>
@@ -544,7 +542,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of reviewedClaims(); track c.claimId) {
+                        @for (c of reviewedClaims(); track (c.claimId || $index)) {
                         <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
