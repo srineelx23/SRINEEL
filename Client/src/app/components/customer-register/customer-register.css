@@ -135,13 +135,16 @@
 }
 
 .form-control:focus~.floating-label,
-.form-control:not(:placeholder-shown)~.floating-label {
+.form-control:not(:placeholder-shown)~.floating-label,
+select.form-control~.floating-label {
     top: 0;
-    font-size: 0.75rem;
-    padding: 0 4px;
-    background: var(--bg-card);
-    /* Mimicking label breaking line */
+    left: 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: var(--accent);
+    background: var(--bg-card);
+    transform: translateY(-50%);
+    opacity: 1;
 }
 
 /* Form Options */
@@ -250,6 +253,28 @@
     .form-title {
         font-size: 1.75rem;
     }
+}
+
+/* Validation Styles */
+.field-error .form-control {
+    border-color: var(--error) !important;
+}
+
+.field-error .floating-label {
+    color: var(--error) !important;
+}
+
+.field-hint-error {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--error);
+    margin-top: 4px;
+    padding-left: 4px;
+    font-weight: 500;
+}
+
+.input-invalid {
+    border-color: var(--error) !important;
 }
 
 /* Toasts REMOVED - Using global styles.css */

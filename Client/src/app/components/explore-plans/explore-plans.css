@@ -163,7 +163,7 @@
 
 .filter-input-pill:focus {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--card-inner-bg);
 }
 
 .custom-filter-dropdown {
@@ -189,7 +189,7 @@
 
 .filter-trigger:hover {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--card-inner-bg);
     transform: translateY(-1px);
 }
 
@@ -288,7 +288,7 @@
 
 .addon-pill:hover {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--card-inner-bg);
 }
 
 .addon-pill.active {
@@ -357,7 +357,7 @@
     transition: var(--transition);
     height: 100%;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-light);
 }
 
 .plan-card:hover {
@@ -385,7 +385,7 @@
 
 .plan-header h3 {
     font-size: 1.5rem;
-    color: #fff;
+    color: var(--text-main);
     margin-bottom: 8px;
     font-family: var(--font-heading);
 }
@@ -480,7 +480,7 @@
 .plan-actions .btn-text {
     flex: 1;
     color: var(--text-light);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 10px;
 }
@@ -537,7 +537,7 @@
 }
 
 .form-control:focus {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--card-inner-bg);
     border-color: var(--accent);
     box-shadow: 0 0 0 4px var(--accent-glow);
 }
@@ -625,8 +625,8 @@ select.form-control~.floating-label {
 }
 
 .file-input-container {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1.5px dashed rgba(255, 255, 255, 0.15);
+    background: var(--card-inner-bg);
+    border: 1.5px dashed var(--border-light);
     border-radius: 12px;
     padding: 14px 20px;
     display: flex;

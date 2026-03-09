@@ -419,7 +419,7 @@
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.policyNumber }}</td>
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.planName }}</td>
                                 <td (click)="viewPolicyDetails(p.policyId)">{{ p.vehicleRegistrationNumber }}</td>
-                                <td (click)="viewPolicyDetails(p.policyId)">{{ p.endDate | date:'mediumDate' }}</td>
+                                <td (click)="viewPolicyDetails(p.policyId)">{{ p.endDate | date:'medium':'+0530' }}</td>
                                 <td (click)="viewPolicyDetails(p.policyId)">
                                     <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
                                 </td>
@@ -468,10 +468,10 @@
                                     Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
                             <p style="margin-bottom: 8px;"><strong
                                     style="color: var(--text-muted); display: inline-block; width: 140px;">Start
-                                    Date:</strong> {{ selectedPolicy().startDate | date:'mediumDate' }}</p>
+                                    Date:</strong> {{ selectedPolicy().startDate | date:'medium':'+0530' }}</p>
                             <p style="margin-bottom: 8px;"><strong
                                     style="color: var(--text-muted); display: inline-block; width: 140px;">Expiry
-                                    Date:</strong> {{ selectedPolicy().endDate | date:'mediumDate' }}</p>
+                                    Date:</strong> {{ selectedPolicy().endDate | date:'medium':'+0530' }}</p>
                             <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
                             <p style="margin-bottom: 8px;"><strong
                                     style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
@@ -616,7 +616,7 @@
                         <tr>
                             <td>#{{ a.vehicleApplicationId }}</td>
                             <td>{{ a.registrationNumber }}</td>
-                            <td>{{ a.createdAt | date:'mediumDate' }}</td>
+                            <td>{{ a.createdAt | date:'medium':'+0530' }}</td>
                             <td>
                                 <span class="status-badge" [ngClass]="a.status ? a.status.toLowerCase() : ''">{{
                                     a.status === 'Pending' ? 'Under Review' : a.status }}</span>
@@ -821,7 +821,7 @@
                             style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px;">
                             Date Filed</p>
                         <p style="font-weight: 700; color: var(--text-main); margin: 0;">{{ selectedClaim().createdAt |
-                            date:'dd MMM yyyy' }}</p>
+                            date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
                     </div>
 
                     <!-- Settlement — full width -->
@@ -973,9 +973,9 @@
                             <td>
                                 <div style="display: flex; flex-direction: column;">
                                     <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
-                                        yyyy' }}</span>
+                                        yyyy':'+0530' }}</span>
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
-                                        date:'shortTime' }}</span>
+                                        date:'shortTime':'+0530' }}</span>
                                 </div>
                             </td>
                             <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span>
@@ -1025,7 +1025,14 @@
                                 <span style="font-weight: 800; color: var(--success);">
                                     +{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }} </span>
                             </td>
-                            <td>{{ p.paymentDate | date:'dd MMM yyyy' }}</td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
+                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
+                                        date:'shortTime':'+0530' }}</span>
+                                </div>
+                            </td>
                             <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span>
                             </td>
                         </tr>
@@ -1061,11 +1068,30 @@
                     <tbody>
                         @for (p of transferPayments(); track (p.paymentId || $index)) {
                         <tr>
-                            <td><span style="font-family: monospace;">#{{ p.paymentId }}</span></td>
-                            <td>{{ p.transactionReference }}</td>
-                            <td>{{ p.amount | currency:'INR' }}</td>
-                            <td>{{ p.paymentDate | date:'dd MMM yyyy' }}</td>
-                            <td><span class="status-badge info">{{ p.amount > 0 ? 'Credit' : 'Debit' }}</span></td>
+                            <td><span style="font-family: monospace; font-size: 0.9rem; color: var(--accent);">#{{
+                                    p.paymentId }}</span></td>
+                            <td><span style="font-weight: 700; color: var(--text-main);">{{ p.transactionReference
+                                    }}</span></td>
+                            <td>
+                                @if (p.transactionReference && p.transactionReference.toLowerCase().includes('fee')) {
+                                <span style="font-weight: 800; color: var(--error);">
+                                    -{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }} </span>
+                                        } @else {
+                                        <span style="font-weight: 700; color: var(--text-main);">
+                                            {{ p.amount | currency:'INR' }}
+                                        </span>
+                                        }
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
+                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
+                                        date:'shortTime':'+0530' }}</span>
+                                </div>
+                            </td>
+                            <td><span class="status-badge" [ngClass]="p.amount > 0 ? 'success' : 'info'">{{ p.amount > 0
+                                    ? 'Credit' : 'Debit' }}</span></td>
                         </tr>
                         }
                     </tbody>
@@ -1118,7 +1144,7 @@
                                     Sender: {{ t.senderName || t.senderEmail }}
                                 </div>
                                 <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
-                                    Received {{ t.createdAt | date:'dd MMM yyyy' }}
+                                    Received {{ t.createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}
                                 </div>
                             </div>
                         </div>
@@ -1167,7 +1193,7 @@
                                 <div class="transfer-meta">Status: <span class="status-badge"
                                         [ngClass]="t.status?.toLowerCase()">{{ t.status }}</span></div>
                                 <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
-                                    Sent {{ t.createdAt | date:'dd MMM yyyy' }}
+                                    Sent {{ t.createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}
                                 </div>
                             </div>
                         </div>

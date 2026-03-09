@@ -22,7 +22,15 @@ export class CustomerRegister {
 
   errorMessage = signal('');
   successMessage = signal('');
+
+  // Field interaction tracking
+  firstNameTouched = signal(false);
+  lastNameTouched = signal(false);
   emailTouched = signal(false);
+  passwordTouched = signal(false);
+  confirmPasswordTouched = signal(false);
+  securityQuestionTouched = signal(false);
+  securityAnswerTouched = signal(false);
 
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -39,29 +47,52 @@ export class CustomerRegister {
     return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email.trim());
   }
 
+  isPasswordStrong(password: string): boolean {
+    return password.length >= 6;
+  }
+
+  passwordsMatch(): boolean {
+    return this.password === this.confirmPassword && this.password !== '';
+  }
+
   register() {
     this.errorMessage.set('');
     this.successMessage.set('');
     this.emailTouched.set(true);
 
     if (!this.firstName || !this.lastName || !this.email || !this.password || !this.securityQuestion || !this.securityAnswer) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: 'Please fill out all required fields.', title: 'Registration Error' }
-      });
+      const missingFields = [];
+      if (!this.firstName) missingFields.push('First Name');
+      if (!this.lastName) missingFields.push('Last Name');
+      if (!this.email) missingFields.push('Email');
+      if (!this.password) missingFields.push('Password');
+      if (!this.securityQuestion) missingFields.push('Security Question');
+      if (!this.securityAnswer) missingFields.push('Security Answer');
+
+      this.errorMessage.set(`Missing required fields: ${missingFields.join(', ')}`);
+
+      this.firstNameTouched.set(true);
+      this.lastNameTouched.set(true);
+      this.emailTouched.set(true);
+      this.passwordTouched.set(true);
+      this.confirmPasswordTouched.set(true);
+      this.securityQuestionTouched.set(true);
+      this.securityAnswerTouched.set(true);
       return;
     }
 
     if (!this.isValidEmail(this.email)) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: 'Please enter a valid email address (e.g. user@example.com).', title: 'Validation Error' }
-      });
+      this.errorMessage.set('Please enter a valid email address.');
+      return;
+    }
+
+    if (!this.isPasswordStrong(this.password)) {
+      this.errorMessage.set('Password must be at least 6 characters long.');
       return;
     }
 
     if (this.password !== this.confirmPassword) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: 'Passwords do not match.', title: 'Validation Error' }
-      });
+      this.errorMessage.set('Passwords do not match.');
       return;
     }
 
@@ -87,16 +118,10 @@ export class CustomerRegister {
         }, 2500);
       },
       error: (err: any) => {
-        const errorStatus = err.status || 500;
-        const errorMessage = typeof err.error === 'string' ? err.error : (err.error?.message || 'Registration failed. Please check your details.');
-
-        this.router.navigate(['/error'], {
-          state: {
-            status: errorStatus,
-            message: errorMessage,
-            title: 'Registration Rejected'
-          }
-        });
+        // Extract message from the structured error response or fallback to generic
+        const msg = err.error?.message || (typeof err.error === 'string' ? err.error : 'Registration failed. Please check your details.');
+        this.errorMessage.set(msg);
+        this.autoHideToast();
       }
     });
   }
@@ -105,5 +130,13 @@ export class CustomerRegister {
     setTimeout(() => {
       this.errorMessage.set('');
     }, 5000);
+  }
+
+  clearError() {
+    this.errorMessage.set('');
+  }
+
+  clearSuccess() {
+    this.successMessage.set('');
   }
 }

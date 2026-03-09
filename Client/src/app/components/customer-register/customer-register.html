@@ -4,10 +4,19 @@
         <span>←</span> Return to Home
     </a>
 
-    <!-- Success Toast Component -->
+    <!-- Error/Success Toasts -->
+    @if (errorMessage()) {
+    <div class="error-toast" style="display: flex; align-items: center; justify-content: flex-start; gap: 15px;">
+        <i class="fas fa-times" (click)="clearError()" style="cursor: pointer; opacity: 0.7; transition: 0.2s;"
+            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7"></i>
+        <span> {{ errorMessage() }}</span>
+    </div>
+    }
     @if (successMessage()) {
-    <div class="success-toast">
-        ✅ {{ successMessage() }}
+    <div class="success-toast" style="display: flex; align-items: center; justify-content: flex-start; gap: 15px;">
+        <i class="fas fa-times" (click)="clearSuccess()" style="cursor: pointer; opacity: 0.7; transition: 0.2s;"
+            onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7"></i>
+        <span>✅ {{ successMessage() }}</span>
     </div>
     }
 
@@ -37,25 +46,34 @@
                 <form class="vims-form" (ngSubmit)="register()" style="gap: 16px;">
                     <!-- Names Row -->
                     <div style="display: flex; gap: 16px; width: 100%;">
-                        <div class="form-group" style="flex: 1;">
+                        <div class="form-group" style="flex: 1;" [class.field-error]="firstNameTouched() && !firstName">
                             <input type="text" id="firstName" name="firstName" [(ngModel)]="firstName"
-                                class="form-control" placeholder="" required>
+                                class="form-control" placeholder="" required (blur)="firstNameTouched.set(true)">
                             <label for="firstName" class="floating-label">First Name</label>
+                            @if (firstNameTouched() && !firstName) {
+                            <span class="field-hint-error">First name required</span>
+                            }
                         </div>
-                        <div class="form-group" style="flex: 1;">
+                        <div class="form-group" style="flex: 1;" [class.field-error]="lastNameTouched() && !lastName">
                             <input type="text" id="lastName" name="lastName" [(ngModel)]="lastName" class="form-control"
-                                placeholder="" required>
+                                placeholder="" required (blur)="lastNameTouched.set(true)">
                             <label for="lastName" class="floating-label">Last Name</label>
+                            @if (lastNameTouched() && !lastName) {
+                            <span class="field-hint-error">Last name required</span>
+                            }
                         </div>
                     </div>
 
                     <!-- Email Row -->
-                    <div class="form-group" [class.field-error]="emailTouched() && email && !isValidEmail(email)">
+                    <div class="form-group" [class.field-error]="emailTouched() && (!email || !isValidEmail(email))">
                         <input type="email" id="email" name="email" [(ngModel)]="email" class="form-control"
                             placeholder="" required (blur)="emailTouched.set(true)"
-                            [class.input-invalid]="emailTouched() && email && !isValidEmail(email)">
+                            [class.input-invalid]="emailTouched() && (!email || !isValidEmail(email))">
                         <label for="email" class="floating-label">Email Address</label>
-                        @if (emailTouched() && email && !isValidEmail(email)) {
+                        @if (emailTouched() && !email) {
+                        <span class="field-hint-error">Email is required</span>
+                        }
+                        @else if (emailTouched() && email && !isValidEmail(email)) {
                         <span class="field-hint-error">
                             <i class="fas fa-exclamation-circle"></i> Enter a valid email (e.g. user&#64;example.com)
                         </span>
@@ -64,34 +82,47 @@
 
                     <!-- Passwords Row -->
                     <div style="display: flex; gap: 16px; width: 100%;">
-                        <div class="form-group" style="flex: 1;">
+                        <div class="form-group" style="flex: 1;"
+                            [class.field-error]="passwordTouched() && !isPasswordStrong(password)">
                             <input type="password" id="password" name="password" [(ngModel)]="password"
-                                class="form-control" placeholder="" required>
+                                class="form-control" placeholder="" required (blur)="passwordTouched.set(true)">
                             <label for="password" class="floating-label">Create Password</label>
+                            @if (passwordTouched() && !isPasswordStrong(password)) {
+                            <span class="field-hint-error">Min 6 characters</span>
+                            }
                         </div>
-                        <div class="form-group" style="flex: 1;">
+                        <div class="form-group" style="flex: 1;"
+                            [class.field-error]="confirmPasswordTouched() && !passwordsMatch()">
                             <input type="password" id="confirmPassword" name="confirmPassword"
-                                [(ngModel)]="confirmPassword" class="form-control" placeholder="" required>
+                                [(ngModel)]="confirmPassword" class="form-control" placeholder="" required
+                                (blur)="confirmPasswordTouched.set(true)">
                             <label for="confirmPassword" class="floating-label">Confirm Password</label>
+                            @if (confirmPasswordTouched() && password && !passwordsMatch()) {
+                            <span class="field-hint-error">Passwords don't match</span>
+                            }
                         </div>
                     </div>
 
                     <!-- Security Question Row -->
-                    <div style="display: flex; gap: 16px; width: 100%; margin-bottom: 8px;">
-                        <div class="form-group" style="flex: 1;">
-                            <select id="securityQuestion" name="securityQuestion" [(ngModel)]="securityQuestion"
-                                class="form-control" required>
-                                <option value="" disabled selected>Select a Security Question</option>
-                                @for (q of securityQuestions; track q) {
-                                <option [value]="q">{{ q }}</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <input type="text" id="securityAnswer" name="securityAnswer" [(ngModel)]="securityAnswer"
-                                class="form-control" placeholder="" required>
-                            <label for="securityAnswer" class="floating-label">Secret Answer</label>
-                        </div>
+                    <!-- Security Question Row -->
+                    <div class="form-group" [class.field-error]="securityQuestionTouched() && !securityQuestion">
+                        <select id="securityQuestion" name="securityQuestion" [(ngModel)]="securityQuestion"
+                            class="form-control" required (blur)="securityQuestionTouched.set(true)">
+                            <option value="" disabled selected>Select a Security Question</option>
+                            @for (q of securityQuestions; track q) {
+                            <option [value]="q">{{ q }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Security Answer Row -->
+                    <div class="form-group" [class.field-error]="securityAnswerTouched() && !securityAnswer">
+                        <input type="text" id="securityAnswer" name="securityAnswer" [(ngModel)]="securityAnswer"
+                            class="form-control" placeholder="" required (blur)="securityAnswerTouched.set(true)">
+                        <label for="securityAnswer" class="floating-label">Secret Answer</label>
+                        @if (securityAnswerTouched() && !securityAnswer) {
+                        <span class="field-hint-error">Answer required</span>
+                        }
                     </div>
                     <button type="submit" class="btn-primary full-width-btn" style="margin-top: 8px;">Complete
                         Registration</button>

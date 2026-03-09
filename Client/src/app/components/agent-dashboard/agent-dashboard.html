@@ -180,7 +180,14 @@
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
                             <td>{{ app.registrationNumber }}</td>
-                            <td>{{ app.createdAt | date }}</td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM
+                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt |
+                                        date:'shortTime':'+0530' }}</span>
+                                </div>
+                            </td>
                             <td><span class="status-badge pending">Pending Review</span></td>
                         </tr>
                         }
@@ -221,7 +228,7 @@
                             {{ selectedApp().kilometersDriven }} km</p>
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
-                            {{ selectedApp().createdAt | date }}</p>
+                            {{ selectedApp().createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
                     </div>
 
                     <!-- Documents -->
@@ -370,7 +377,14 @@
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }}</td>
                             <td>{{ app.registrationNumber }}</td>
-                            <td>{{ app.createdAt | date }}</td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM
+                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt |
+                                        date:'shortTime':'+0530' }}</span>
+                                </div>
+                            </td>
                             <td>
                                 <span class="status-badge" [ngClass]="app.status.toLowerCase()"
                                     style="display: inline-block;">{{ app.status }}</span>
@@ -415,7 +429,7 @@
                             {{ selectedApp().kilometersDriven }} km</p>
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
-                            {{ selectedApp().createdAt | date }}</p>
+                            {{ selectedApp().createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
                     </div>
 
                     <!-- Documents (Hidden for Past Applications per requirement) -->

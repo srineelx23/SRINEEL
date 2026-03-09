@@ -5,7 +5,6 @@
                 <span class="logo-text">VIMS</span>
             </div>
             <nav class="nav-links">
-                <a (click)="goHome()" style="cursor: pointer;">Home</a>
             </nav>
             <div class="nav-actions">
                 @if (userName()) {
@@ -34,9 +33,9 @@
                     }
                 </div>
                 } @else {
-                <button (click)="router.navigate(['/login'])" class="btn-text">Sign In</button>
-                <button (click)="router.navigate(['/register'])" class="btn-primary" style="padding: 8px 16px;">Join
-                    Now</button>
+                <button (click)="router.navigate(['/login'])" class="btn-text">Log In</button>
+                <button (click)="router.navigate(['/register'])" class="btn-primary"
+                    style="padding: 8px 16px;">Register</button>
                 }
             </div>
         </div>
