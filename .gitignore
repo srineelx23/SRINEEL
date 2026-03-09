@@ -181,5 +181,5 @@ $RECYCLE.BIN/
 *.orig
 *.patch
 
-#
-wwwroot/uploads/
+# Ignore uploads folder in Backend
+Backend/Vehicle_Insurance_Management_System/VIMS.API/wwwroot/uploads/
