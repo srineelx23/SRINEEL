@@ -68,7 +68,7 @@ coverage*.info
 *.pubxml
 *.publishproj
 *.pubxml.user
-web.config
+# web.config
 
 ## Secrets and local configuration — NEVER commit these
 appsettings.Development.json
@@ -112,7 +112,7 @@ Client/src/environments/environment.local.ts
 ## NPM / Yarn / PNPM lock files (keep ONE, ignore the others)
 # yarn.lock
 # pnpm-lock.yaml
-package-lock.json
+# package-lock.json
 
 ## Vite / esbuild cache
 .vite/
@@ -180,3 +180,6 @@ $RECYCLE.BIN/
 *.bak
 *.orig
 *.patch
+
+#
+wwwroot/uploads/
