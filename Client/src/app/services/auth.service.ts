@@ -60,9 +60,7 @@ export class AuthService {
     }
 
     changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
-        const token = sessionStorage.getItem('token');
         return this.http.put(`${this.backendUrl}/change-password`, data, {
-            headers: { Authorization: `Bearer ${token}` },
             responseType: 'text'
         });
     }
@@ -76,9 +74,7 @@ export class AuthService {
     }
 
     setSecurityQuestion(data: any): Observable<any> {
-        const token = sessionStorage.getItem('token');
         return this.http.post(`${this.backendUrl}/set-security-question`, data, {
-            headers: { Authorization: `Bearer ${token}` },
             responseType: 'text'
         });
     }

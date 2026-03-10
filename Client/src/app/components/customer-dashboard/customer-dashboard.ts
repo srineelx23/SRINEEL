@@ -19,12 +19,18 @@ export class CustomerDashboard implements OnInit {
 
   // Data stores
   customerName = signal('Customer');
+  userRole = signal('Customer');
   policies = signal<any[]>([]);
   claims = signal<any[]>([]);
   applications = signal<any[]>([]);
   payments = signal<any[]>([]);
   plans = signal<any[]>([]); // needed for renewing policies
   showUserDropdown = signal(false);
+
+  // Sorting State
+  claimsSortOption = signal('dateDesc');
+  paymentsSortOption = signal('dateDesc');
+  applicationsSortOption = signal('dateDesc');
 
   // Categorization
   policyFilter = signal('Active');
@@ -103,23 +109,50 @@ export class CustomerDashboard implements OnInit {
   selectedPolicy = signal<any>(null);
 
   // Claims State
-  approvedClaims = computed(() => this.claims().filter(c => c.status === 'Approved' || c.status === 1));
-  rejectedClaims = computed(() => this.claims().filter(c => c.status === 'Rejected' || c.status === 2));
-  pendingClaimsList = computed(() => this.claims().filter(c => c.status === 'Submitted' || c.status === 'UnderReview' || c.status === 0));
   // Payments & Claims
+  sortedClaims = computed(() => {
+    const data = [...this.claims()];
+    const option = this.claimsSortOption();
+    return data.sort((a, b) => {
+      if (option === 'dateDesc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (option === 'dateAsc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (option === 'amountDesc') return (b.approvedAmount || 0) - (a.approvedAmount || 0);
+      if (option === 'amountAsc') return (a.approvedAmount || 0) - (b.approvedAmount || 0);
+      return 0;
+    });
+  });
+
+  approvedClaims = computed(() => this.sortedClaims().filter(c => c.status === 'Approved' || c.status === 1));
+  rejectedClaims = computed(() => this.sortedClaims().filter(c => c.status === 'Rejected' || c.status === 2));
+  pendingClaimsList = computed(() => this.sortedClaims().filter(c => c.status === 'Submitted' || c.status === 'UnderReview' || c.status === 0));
+
+  sortedPayments = computed(() => {
+    const data = [...this.payments()];
+    const option = this.paymentsSortOption();
+    return data.sort((a, b) => {
+      const amountA = Math.abs(a.amount || 0);
+      const amountB = Math.abs(b.amount || 0);
+      if (option === 'dateDesc') return new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime();
+      if (option === 'dateAsc') return new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime();
+      if (option === 'amountDesc') return amountB - amountA;
+      if (option === 'amountAsc') return amountA - amountB;
+      return 0;
+    });
+  });
+
   premiumPayments = computed(() =>
-    this.payments().filter((p: any) =>
+    this.sortedPayments().filter((p: any) =>
       !p.transactionReference ||
       (!p.transactionReference.toLowerCase().includes('claim') && !p.transactionReference.toLowerCase().includes('transfer'))
     )
   );
 
   claimPayments = computed(() =>
-    this.payments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('claim'))
+    this.sortedPayments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('claim'))
   );
 
   transferPayments = computed(() =>
-    this.payments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('transfer'))
+    this.sortedPayments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('transfer'))
   );
 
   totalPremiumPaid = computed(() =>
@@ -133,6 +166,53 @@ export class CustomerDashboard implements OnInit {
       .filter((p: any) => p.status === 'Paid' || p.status === 1)
       .reduce((sum: number, p: any) => sum + (Math.abs(p.amount) || 0), 0)
   );
+
+  sortedApplications = computed(() => {
+    const data = [...this.applications()];
+    const option = this.applicationsSortOption();
+    return data.sort((a, b) => {
+      if (option === 'dateDesc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (option === 'dateAsc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return 0;
+    });
+  });
+
+  filteredRenewPlans = computed(() => {
+    const policyId = this.renewingPolicyId();
+    if (!policyId) return [];
+    
+    // Try to find the policy in the current list or use selectedPolicy if it matches
+    let policy = this.policies().find(p => p.policyId == policyId);
+    if (!policy && this.selectedPolicy()?.policyId == policyId) {
+      policy = this.selectedPolicy();
+    }
+    
+    if (!policy) return this.plans();
+
+    // Find the current plan in the loaded plans list to determine its ApplicableVehicleType
+    let currentPlan = undefined;
+    const planIdToMatch = policy.planId || policy.plan?.planId || policy.policyPlan?.planId || policy.PlanId;
+    
+    if (planIdToMatch) {
+      currentPlan = this.plans().find(p => p.planId == planIdToMatch || p.id == planIdToMatch);
+    }
+    
+    if (!currentPlan && policy.planName) {
+      currentPlan = this.plans().find(p => p.planName === policy.planName);
+    }
+
+    const vType = currentPlan ? (currentPlan.applicableVehicleType || currentPlan.ApplicableVehicleType)?.toString().trim() : null;
+
+    if (!vType || vType === "N/A") {
+      // Fallback if current plan not found, but this should rarely happen
+      return this.plans();
+    }
+
+    return this.plans().filter(p => {
+      const planVType = (p.applicableVehicleType || p.ApplicableVehicleType)?.toString().trim();
+      return planVType && planVType.toLowerCase() === vType.toLowerCase();
+    });
+  });
 
   // Unique vehicles derived from policies — for the overview vehicles section
   myVehicles = computed(() => {
@@ -223,6 +303,12 @@ export class CustomerDashboard implements OnInit {
           decodedToken.Name ||
           'Customer';
         this.customerName.set(name);
+
+        const role = this.authService.getRoleFromStoredToken();
+        if (role === 'Admin') this.userRole.set('Executive Admin');
+        else if (role === 'Agent') this.userRole.set('Agent');
+        else if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+        else this.userRole.set(role || 'Customer');
       } catch (error) {
         console.error('Failed to parse token for name', error);
       }
@@ -303,9 +389,71 @@ export class CustomerDashboard implements OnInit {
     });
   }
 
+  availableClaimTypes = signal<{value: string, label: string}[]>([
+    { value: 'Damage', label: 'Vehicle Damage / Accident' },
+    { value: 'Theft', label: 'Total Theft' },
+    { value: 'ThirdParty', label: 'Third-Party Liability' }
+  ]);
+
+  onClaimPolicyChange() {
+    const policyId = this.claimForm.PolicyId;
+    let types = [
+      { value: 'Damage', label: 'Vehicle Damage / Accident' },
+      { value: 'Theft', label: 'Total Theft' },
+      { value: 'ThirdParty', label: 'Third-Party Liability' }
+    ];
+
+    if (policyId) {
+      let policy = this.policies().find(p => p.policyId == policyId);
+      if (policy) {
+        let currentPlan = undefined;
+        const planId = policy.planId || policy.plan?.planId || policy.policyPlan?.planId || policy.PlanId;
+        if (planId) currentPlan = this.plans().find(p => p.planId == planId || p.id == planId);
+        if (!currentPlan && policy.planName) currentPlan = this.plans().find(p => p.planName === policy.planName);
+
+        if (currentPlan) {
+          const typeArray = [];
+          if (currentPlan.coversThirdParty || currentPlan.CoversThirdParty || currentPlan.policyType?.toLowerCase() === 'thirdparty' || currentPlan.PolicyType?.toLowerCase() === 'thirdparty') {
+             typeArray.push({ value: 'ThirdParty', label: 'Third-Party Liability' });
+          }
+          if (currentPlan.coversOwnDamage || currentPlan.CoversOwnDamage || (currentPlan.policyType && currentPlan.policyType.toLowerCase() !== 'thirdparty')) {
+             typeArray.push({ value: 'Damage', label: 'Vehicle Damage / Accident' });
+          }
+          if (currentPlan.coversTheft || currentPlan.CoversTheft || (currentPlan.policyType && currentPlan.policyType.toLowerCase() !== 'thirdparty')) {
+             typeArray.push({ value: 'Theft', label: 'Total Theft' });
+          }
+          if (typeArray.length > 0) types = typeArray;
+        }
+      }
+    }
+
+    this.availableClaimTypes.set(types);
+
+    const isValid = types.some(t => t.value === this.claimForm.ClaimType);
+    if (!isValid && types.length > 0) {
+      this.claimForm.ClaimType = types[0].value;
+    }
+  }
+
   // --- Claims ---
   startClaim() {
     this.isFilingClaim.set(true);
+    // Reset to defaults
+    this.claimForm.PolicyId = null;
+    this.claimForm.ClaimType = 'Damage';
+    
+    // Ensure plans are loaded so we can find coverage details for filtering claim types
+    if (!this.plans() || this.plans().length === 0) {
+      this.customerService.getAllPolicyPlans().subscribe({
+        next: (res) => {
+          this.plans.set(res);
+          this.onClaimPolicyChange();
+        },
+        error: (err) => console.error(err)
+      });
+    } else {
+      this.onClaimPolicyChange();
+    }
   }
 
   onClaimFileChange(event: any, field: 'doc1' | 'doc2') {
@@ -321,6 +469,27 @@ export class CustomerDashboard implements OnInit {
     if (!this.claimForm.PolicyId || !this.claimForm.ClaimType) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please fill in policy and claim type.", title: 'Claim Error' }
+      });
+      return;
+    }
+
+    if (this.claimForm.ClaimType === 'Theft' && !this.claimDoc1) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "FIR document is required for theft claims.", title: 'Validation Error' }
+      });
+      return;
+    }
+
+    if (this.claimForm.ClaimType === 'ThirdParty' && (!this.claimDoc1 || !this.claimDoc2)) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Both repair bill and vehicle invoice are required for third party claims.", title: 'Validation Error' }
+      });
+      return;
+    }
+
+    if (this.claimForm.ClaimType === 'Damage' && !this.claimDoc1) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Repair bill is required for own damage claims.", title: 'Validation Error' }
       });
       return;
     }
@@ -412,6 +581,8 @@ export class CustomerDashboard implements OnInit {
     this.renewingPolicyId.set(policyId);
     this.renewForm.NewPlanId = null;
     this.renewForm.SelectedYears = 1;
+
+    // Load available plans if not already loaded, they'll be filtered by computed
 
     if (!this.plans() || this.plans().length === 0) {
       this.customerService.getAllPolicyPlans().subscribe({

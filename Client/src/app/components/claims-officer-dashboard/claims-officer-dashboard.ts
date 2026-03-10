@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ClaimsOfficerService } from '../../services/claims-officer.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
 
 @Component({
@@ -23,12 +24,42 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     // Data
     officerName = signal('Officer');
+    userRole = signal('Claims Officer');
     pendingClaims = signal<any[]>([]);
     reviewedClaims = signal<any[]>([]);
+
+    // Sorting State
+    claimsSortOption = signal('dateDesc');
 
     // Computed Totals
     totalPending = computed(() => this.pendingClaims().length);
     totalReviewed = computed(() => this.reviewedClaims().length);
+
+    sortedPendingClaims = computed(() => {
+        const data = [...this.pendingClaims()];
+        const option = this.claimsSortOption();
+        return data.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            if (option === 'dateDesc') return dateB - dateA;
+            if (option === 'dateAsc') return dateA - dateB;
+            return 0;
+        });
+    });
+
+    sortedReviewedClaims = computed(() => {
+        const data = [...this.reviewedClaims()];
+        const option = this.claimsSortOption();
+        return data.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            if (option === 'dateDesc') return dateB - dateA;
+            if (option === 'dateAsc') return dateA - dateB;
+            if (option === 'amountDesc') return (b.approvedAmount || 0) - (a.approvedAmount || 0);
+            if (option === 'amountAsc') return (a.approvedAmount || 0) - (b.approvedAmount || 0);
+            return 0;
+        });
+    });
 
     // UI State
     selectedClaim = signal<any>(null);
@@ -43,6 +74,17 @@ export class ClaimsOfficerDashboard implements OnInit {
         manufactureYear: null as number | null,
         rejectionReason: ''
     };
+
+    // Settings - Change Password
+    changePasswordForm = {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    };
+    changePwdLoading = signal(false);
+    showCurrentPwd = false;
+    showNewPwd = false;
+    showConfirmPwd = false;
 
     errorMessage = signal('');
     successMessage = signal('');
@@ -63,6 +105,11 @@ export class ClaimsOfficerDashboard implements OnInit {
                     decodedToken.Name ||
                     'Officer';
                 this.officerName.set(name);
+
+                const role = this.authService.getRoleFromStoredToken();
+                if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+                else if (role === 'Admin') this.userRole.set('Executive Admin');
+                else this.userRole.set(role || 'Claims Officer');
             } catch (error) {
                 console.error('Failed to parse token for name', error);
             }
@@ -72,8 +119,13 @@ export class ClaimsOfficerDashboard implements OnInit {
     loadDashboardData() {
         this.claimsService.getMyAssignedClaims().subscribe({
             next: (res) => {
-                // Map Status Enums to Strings just like Agent Dashboard if received as ints/mapped string
-                const mapped = res.map((c: any) => ({ ...c, status: this.mapStatus(c.status) }));
+                // Controller now returns explicit camelCase strings
+                const mapped = res.map((c: any) => ({
+                    ...c,
+                    status: this.mapStatus(c.status),
+                    createdAt: c.createdAt,
+                    claimType: c.claimType
+                }));
 
                 // Filter out pending vs history
                 this.pendingClaims.set(mapped.filter((c: any) => c.status === 'Submitted'));
@@ -176,5 +228,40 @@ export class ClaimsOfficerDashboard implements OnInit {
         setTimeout(() => {
             this.errorMessage.set('');
         }, 4000);
+    }
+
+    changePassword() {
+        const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm;
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            this.errorMessage.set('All password fields are required.');
+            this.autoHideToast();
+            return;
+        }
+        if (newPassword.length < 6) {
+            this.errorMessage.set('New password must be at least 6 characters.');
+            this.autoHideToast();
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            this.errorMessage.set('New password and confirm password do not match.');
+            this.autoHideToast();
+            return;
+        }
+
+        this.changePwdLoading.set(true);
+        this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+            next: () => {
+                this.successMessage.set('Password changed successfully!');
+                this.changePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+                this.changePwdLoading.set(false);
+                setTimeout(() => this.successMessage.set(''), 4000);
+            },
+            error: (err: any) => {
+                this.changePwdLoading.set(false);
+                this.errorMessage.set(err.error || 'Failed to change password');
+                this.autoHideToast();
+            }
+        });
     }
 }

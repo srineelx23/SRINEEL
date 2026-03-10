@@ -51,8 +51,10 @@ export class ExplorePlans implements OnInit {
   calculatedQuote = signal<any>(null);
   isLoggedIn = signal(false);
   userName = signal<string | null>(null);
+  userRole = signal<string | null>(null);
   showDropdown = false;
   showVehicleDropdown = signal(false);
+  isEVPlan = signal(false);
 
   // Application State
   isApplying = signal(false);
@@ -61,6 +63,7 @@ export class ExplorePlans implements OnInit {
     Make: '',
     Model: ''
   };
+  currentYear = new Date().getFullYear();
   invoiceFile: File | null = null;
   rcFile: File | null = null;
 
@@ -94,10 +97,15 @@ export class ExplorePlans implements OnInit {
     });
     this.isLoggedIn.set(this.authService.isLoggedIn());
     this.userName.set(this.authService.getUserName());
+
+    const role = this.authService.getRoleFromStoredToken();
+    if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+    else if (role === 'Admin') this.userRole.set('Executive Admin');
+    else this.userRole.set(role);
   }
 
   applyFilters() {
-    let results = this.plans();
+    let results = this.plans().filter(p => p.status === 1 || p.status === 'Active');
 
     // Text search
     if (this.searchQuery()) {
@@ -179,18 +187,30 @@ export class ExplorePlans implements OnInit {
   // --- Quotes & Applications ---
   onGetQuote(planId: number) {
     if (!this.checkAuth(planId)) return;
-    this.selectedPlanForQuote.set(planId);
-    this.quoteForm.PlanId = planId;
+    this.setupPlanForm(planId);
     this.isApplying.set(false);
     this.calculatedQuote.set(null);
   }
 
   onBuyNow(planId: number) {
     if (!this.checkAuth(planId)) return;
-    this.selectedPlanForQuote.set(planId);
-    this.quoteForm.PlanId = planId;
+    this.setupPlanForm(planId);
     this.isApplying.set(true);
     this.calculatedQuote.set(null);
+  }
+
+  private setupPlanForm(planId: number) {
+    this.selectedPlanForQuote.set(planId);
+    this.quoteForm.PlanId = planId;
+    
+    const plan = this.plans().find(p => p.planId === planId || p.id === planId);
+    if (plan && plan.applicableVehicleType && plan.applicableVehicleType.includes('EV')) {
+      this.isEVPlan.set(true);
+      this.quoteForm.FuelType = 'EV';
+    } else {
+      this.isEVPlan.set(false);
+      this.quoteForm.FuelType = 'Petrol'; // Default for non-EV
+    }
   }
 
   private checkAuth(planId: number): boolean {
@@ -219,6 +239,7 @@ export class ExplorePlans implements OnInit {
     this.selectedPlanForQuote.set(null);
     this.calculatedQuote.set(null);
     this.isApplying.set(false);
+    this.isEVPlan.set(false);
     this.invoiceFile = null;
     this.rcFile = null;
   }
@@ -239,6 +260,14 @@ export class ExplorePlans implements OnInit {
     if (!payload.InvoiceAmount || !payload.PlanId) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please enter the Invoice Amount and select a Plan.", title: 'Quotation Error' }
+      });
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    if (payload.InvoiceAmount < 0 || payload.KilometersDriven < 0 || payload.ManufactureYear < 0 || payload.ManufactureYear > currentYear) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
       });
       return;
     }
@@ -280,6 +309,18 @@ export class ExplorePlans implements OnInit {
     if (!this.invoiceFile || !this.rcFile) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please upload both the Invoice and RC documents.", title: 'Missing Documents' }
+      });
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const invoiceAmount = Number(this.quoteForm.InvoiceAmount);
+    const kilometersDriven = Number(this.quoteForm.KilometersDriven);
+    const manufactureYear = Number(this.quoteForm.ManufactureYear);
+
+    if (invoiceAmount < 0 || kilometersDriven < 0 || manufactureYear < 0 || manufactureYear > currentYear) {
+      this.router.navigate(['/error'], {
+        state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
       });
       return;
     }

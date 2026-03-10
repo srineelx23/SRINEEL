@@ -54,6 +54,10 @@
     opacity: 1;
 }
 
+.nav-profile-container {
+    position: relative;
+}
+
 /* Profile Trigger Styling */
 .nav-profile-trigger {
     display: flex;
@@ -63,12 +67,12 @@
     border-radius: 30px;
     cursor: pointer;
     transition: var(--transition);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
 }
 
 .nav-profile-trigger:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     border-color: var(--accent);
 }
 
@@ -83,6 +87,7 @@
     justify-content: center;
     font-weight: 700;
     font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .profile-info {
@@ -91,7 +96,7 @@
     text-align: left;
 }
 
-.profile-meta {
+.profile-role {
     font-size: 0.7rem;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -510,70 +515,6 @@
     color: var(--text-main);
     margin-bottom: 32px;
     letter-spacing: -0.5px;
-}
-
-.vims-form {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-}
-
-.form-group {
-    position: relative;
-    width: 100%;
-}
-
-.form-control {
-    width: 100%;
-    padding: 16px 20px;
-    background: var(--card-inner-bg);
-    border: 1.5px solid var(--border-light);
-    border-radius: 12px;
-    color: var(--text-main);
-    font-size: 1rem;
-    font-family: var(--font-body);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
-}
-
-.form-control:focus {
-    background: var(--card-inner-bg);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-glow);
-}
-
-/* Floating Label Logic */
-.floating-label {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 1rem;
-    pointer-events: none;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    background: transparent;
-    padding: 0 4px;
-}
-
-/* Move label up on focus or when input has content */
-.form-control:focus~.floating-label,
-.form-control:not(:placeholder-shown)~.floating-label,
-select.form-control~.floating-label {
-    top: 0;
-    left: 14px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--accent);
-    background: var(--bg-card);
-    transform: translateY(-50%);
-    opacity: 1;
-}
-
-/* Special Case for Selects - always up since they have default value or arrow */
-select.form-control~.floating-label {
-    top: 0;
-    background: var(--bg-card);
 }
 
 .full-width-btn {

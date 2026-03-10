@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -111,6 +111,7 @@ namespace VIMS.API.Controllers
                 ApprovedAmount = claim.ApprovedAmount,
                 claim.RejectionReason,
                 DecisionType = claim.DecisionType,
+                claim.CreatedAt,
                 Documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
                 Policy = claim.Policy == null ? null : new { claim.Policy.PolicyId, claim.Policy.PolicyNumber, claim.Policy.InvoiceAmount }
             };
@@ -217,6 +218,13 @@ namespace VIMS.API.Controllers
 
             if (plan == null)
                 return BadRequest("Invalid plan");
+
+            // Validate EV Conflict
+            bool isEVPlan = plan.ApplicableVehicleType != null && plan.ApplicableVehicleType.Contains("EV");
+            if (isEVPlan && dto.FuelType != "EV")
+                return BadRequest("Incorrect fuel type for EV plan.");
+            if (!isEVPlan && dto.FuelType == "EV")
+                return BadRequest("'EV' fuel type is restricted for specialized plans.");
 
             // Pricing service expects the DTO and plan per its interface signature
             var result = _pricingService.CalculateAnnualPremium(dto, plan, false);

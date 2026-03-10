@@ -14,19 +14,40 @@ namespace VIMS.Infrastructure.Services
 
             var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             
-            // Build folder structure e.g., uploads/user_1/policydocuments/invoice
-            var userFolder = Path.Combine(basePath, $"{baseType}_{identifier}");
-            var docsFolder = Path.Combine(userFolder, documentType);
+            // identifier can contain sub-paths now, like "user_1/transfer_policies/transfer_10"
+            var targetFolder = Path.Combine(basePath, $"{baseType}_{identifier}", documentType);
             
-            Directory.CreateDirectory(docsFolder);
+            Directory.CreateDirectory(targetFolder);
 
             var fileName = Guid.NewGuid() + "_" + file.FileName;
-            var fullPath = Path.Combine(docsFolder, fileName);
+            var fullPath = Path.Combine(targetFolder, fileName);
 
             using (var stream = new FileStream(fullPath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
+
+            return Path.Combine("uploads", $"{baseType}_{identifier}", documentType, fileName).Replace("\\", "/");
+        }
+
+        public async Task<string> CopyFileAsync(string existingRelativePath, string baseType, string identifier, string documentType)
+        {
+            if (string.IsNullOrEmpty(existingRelativePath)) return null;
+
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var sourcePath = Path.Combine(basePath, existingRelativePath);
+
+            if (!File.Exists(sourcePath)) return null;
+
+            var uploadsPath = Path.Combine(basePath, "uploads");
+            var targetFolder = Path.Combine(uploadsPath, $"{baseType}_{identifier}", documentType);
+            
+            Directory.CreateDirectory(targetFolder);
+
+            var fileName = Guid.NewGuid() + "_" + Path.GetFileName(existingRelativePath);
+            var fullPath = Path.Combine(targetFolder, fileName);
+
+            File.Copy(sourcePath, fullPath, true);
 
             return Path.Combine("uploads", $"{baseType}_{identifier}", documentType, fileName).Replace("\\", "/");
         }

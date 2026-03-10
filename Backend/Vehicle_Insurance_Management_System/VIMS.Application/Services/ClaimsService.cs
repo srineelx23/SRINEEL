@@ -76,17 +76,36 @@ namespace VIMS.Application.Services
                 throw new BadRequestException("This policy does not cover third-party claims");
 
 
+            if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Theft && dto.Document1 == null)
+                throw new BadRequestException("FIR is required for theft claims");
+
+            if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Damage)
+            {
+                if (dto.Document1 == null)
+                    throw new BadRequestException("Repair bill is required for own damage claims");
+                if (dto.Document2 == null && dto.Document1 == null) // Checking logically if invoice is strictly required initially, wait, previous code had: if (doc2Path == null && dto.Document2 != null) and then if doc2Path == null throw. Basically Document2 was required unless fallback. Simplest is to just check dto if that was the intent.
+                    throw new BadRequestException("Invoice required for own damage claims");
+            }
+
+            if (parsedClaimType == VIMS.Domain.Enums.ClaimType.ThirdParty)
+            {
+                if (dto.Document1 == null || dto.Document2 == null)
+                    throw new BadRequestException("Both repair bill and vehicle invoice are required for third party claims");
+            }
+
+            // assign claims officer: find least loaded claims officer and set before create
+            var officer = await _userRepository.GetLeastLoadedClaimsOfficerAsync();
+
             var claim = new Claims
             {
                 ClaimNumber = $"CLM-{DateTime.UtcNow.Year}-{Guid.NewGuid().ToString()[..6].ToUpper()}",
                 PolicyId = dto.PolicyId,
                 CustomerId = customerId,
                 claimType = parsedClaimType,
-                Status = ClaimStatus.Submitted
+                Status = ClaimStatus.Submitted,
+                CreatedAt = DateTime.UtcNow
             };
 
-            // assign claims officer: find least loaded claims officer and set before create
-            var officer = await _userRepository.GetLeastLoadedClaimsOfficerAsync();
             if (officer != null)
                 claim.ClaimsOfficerId = officer.UserId;
 
@@ -100,35 +119,18 @@ namespace VIMS.Application.Services
 
             if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Theft)
             {
-                if (dto.Document1 == null)
-                    throw new BadRequestException("FIR is required for theft claims");
-
                 doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
             }
             else if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Damage)
             {
-                // need repair bill and invoice
-                if (dto.Document1 == null)
-                    throw new BadRequestException("Repair bill is required for own damage claims");
-
                 doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
-
-                // Assuming user has uploaded an invoice in policy documents,
-                // but for simplicity, we fallback to dto.Document2
-                if (doc2Path == null && dto.Document2 != null)
+                if (dto.Document2 != null)
                 {
                     doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
                 }
-
-                if (doc2Path == null)
-                    throw new BadRequestException("Invoice required for own damage claims");
             }
             else if (parsedClaimType == VIMS.Domain.Enums.ClaimType.ThirdParty)
             {
-                // need invoice of the car and repair bill of that car
-                if (dto.Document1 == null || dto.Document2 == null)
-                    throw new BadRequestException("Both repair bill and vehicle invoice are required for third party claims");
-
                 doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
                 doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
             }
@@ -228,43 +230,37 @@ namespace VIMS.Application.Services
                     throw new BadRequestException("Repair cost, invoice amount and manufacture year required for third party claims");
 
                 var repair = dto.RepairCost.Value;
+                var engine = dto.EngineCost ?? 0m;
                 var invoice = dto.InvoiceAmount.Value;
 
                 // compute idv using shared pricing service
                 var idv = _pricingService.CalculateIDV(invoice, dto.ManufactureYear.Value);
 
-                if (repair > idv * 0.75m)
+                var totalCost = repair + engine;
+
+                if (totalCost > idv * 0.75m)
                 {
                     // large repair - pay up to IDV
                     payout = idv;
                 }
                 else
                 {
-                    // apply depreciation to repair
-                    // Determine depreciation percent from age grid (recommended grid)
-                    decimal depreciationPercent;
-                    if (plan.ZeroDepreciationAvailable)
+                    // apply depreciation to total repair cost (Zero Dep is NOT applicable for 3rd Party)
+                    int age = DateTime.UtcNow.Year - dto.ManufactureYear.Value;
+                    decimal depreciationPercent = age switch
                     {
-                        depreciationPercent = 0m;
-                    }
-                    else
-                    {
-                        int age = DateTime.UtcNow.Year - dto.ManufactureYear.Value;
-                        depreciationPercent = age switch
-                        {
-                            0 => 0.05m, // 0-6 months approximated as 0
-                            1 => 0.10m,
-                            2 => 0.15m,
-                            3 => 0.25m,
-                            4 => 0.35m,
-                            5 => 0.45m,
-                            >= 6 and <= 7 => 0.55m, // 5-7 years
-                            >= 8 and <= 10 => 0.65m, // 7-10 years
-                            _ => 0.75m
-                        };
-                    }
+                        0 => 0.05m, 
+                        1 => 0.10m,
+                        2 => 0.15m,
+                        3 => 0.25m,
+                        4 => 0.35m,
+                        5 => 0.45m,
+                        >= 6 and <= 7 => 0.55m, 
+                        >= 8 and <= 10 => 0.65m, 
+                        _ => 0.75m
+                    };
 
-                    payout = repair - (repair * depreciationPercent);
+                    payout = totalCost - (totalCost * depreciationPercent);
                 }
 
                 // remove deductible

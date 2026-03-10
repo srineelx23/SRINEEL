@@ -26,6 +26,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   // Data Stores
   adminName = signal('Admin');
+  userRole = signal('Executive Admin');
   users = signal<any[]>([]);
   policies = signal<any[]>([]);
   claims = signal<any[]>([]);
@@ -34,6 +35,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
   auditLogs = signal<any[]>([]);
   showUserDropdown = signal(false);
   showRoleDropdown = signal(false);
+
+  // Sorting State
+  claimsSortOption = signal('dateDesc');
+  paymentsSortOption = signal('dateDesc');
+  auditSortOption = signal('dateDesc');
 
   // Aggregate Computations
 
@@ -109,9 +115,23 @@ export class AdminDashboard implements OnInit, OnDestroy {
     return this.policies().filter(p => p.vehicle?.vehicleId === v.vehicleId);
   });
 
+  sortedClaims = computed(() => {
+    const data = [...this.claims()];
+    const option = this.claimsSortOption();
+    return data.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      if (option === 'dateDesc') return dateB - dateA;
+      if (option === 'dateAsc') return dateA - dateB;
+      if (option === 'amountDesc') return (b.approvedAmount || 0) - (a.approvedAmount || 0);
+      if (option === 'amountAsc') return (a.approvedAmount || 0) - (b.approvedAmount || 0);
+      return 0;
+    });
+  });
+
   vehicleClaims = computed(() => {
     const policyIds = this.vehiclePolicies().map(p => p.policyId);
-    return this.claims().filter(c => policyIds.includes(c.policyId));
+    return this.sortedClaims().filter(c => policyIds.includes(c.policyId));
   });
 
   vehiclePayments = computed(() => {
@@ -258,10 +278,30 @@ export class AdminDashboard implements OnInit, OnDestroy {
       });
     });
 
+    const option = this.paymentsSortOption();
     return txns.sort((a, b) => {
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      const amountA = Math.abs(a.amount || 0);
+      const amountB = Math.abs(b.amount || 0);
+
+      if (option === 'dateDesc') return dateB - dateA;
+      if (option === 'dateAsc') return dateA - dateB;
+      if (option === 'amountDesc') return amountB - amountA;
+      if (option === 'amountAsc') return amountA - amountB;
+      return 0;
+    });
+  });
+
+  sortedAuditLogs = computed(() => {
+    const data = [...this.auditLogs()];
+    const option = this.auditSortOption();
+    return data.sort((a, b) => {
+      const dateA = new Date(a.timestamp || 0).getTime();
+      const dateB = new Date(b.timestamp || 0).getTime();
+      if (option === 'dateDesc') return dateB - dateA;
+      if (option === 'dateAsc') return dateA - dateB;
+      return 0;
     });
   });
 
@@ -512,6 +552,17 @@ export class AdminDashboard implements OnInit, OnDestroy {
   errorMessage = signal('');
   successMessage = signal('');
 
+  // Settings - Change Password
+  changePasswordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+  changePwdLoading = signal(false);
+  showCurrentPwd = false;
+  showNewPwd = false;
+  showConfirmPwd = false;
+
   ngOnInit() {
     this.extractName();
     this.checkTheme();
@@ -533,6 +584,12 @@ export class AdminDashboard implements OnInit, OnDestroy {
           decodedToken.Name ||
           'Admin';
         this.adminName.set(name);
+
+        const role = this.authService.getRoleFromStoredToken();
+        if (role === 'Admin') this.userRole.set('Executive Admin');
+        else if (role === 'Agent') this.userRole.set('Agent');
+        else if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+        else this.userRole.set(role || 'Admin');
       } catch (error) {
         console.error('Failed to parse token for name', error);
       }
@@ -862,6 +919,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.registerForm.email)) {
       this.errorMessage.set('Please provide a valid email address.');
+      setTimeout(() => this.errorMessage.set(''), 5000);
       return;
     }
 
@@ -890,6 +948,32 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   submitPlanRegistration() {
     this.errorMessage.set('');
+
+    if (!this.planForm.planName || this.planForm.planName.trim().length < 3) {
+      this.showValidationMessage('Plan Name must be at least 3 characters.');
+      return;
+    }
+    if (!this.planForm.policyType) {
+      this.showValidationMessage('Please select a Policy Type.');
+      return;
+    }
+    if (this.planForm.basePremium <= 0) {
+      this.showValidationMessage('Base Premium must be greater than zero.');
+      return;
+    }
+    if (this.planForm.policyDurationMonths < 12) {
+      this.showValidationMessage('Minimum policy duration is 12 months.');
+      return;
+    }
+    if (!this.planForm.applicableVehicleType) {
+      this.showValidationMessage('Please select a Vehicle Classification.');
+      return;
+    }
+    if (this.planForm.deductibleAmount < 0) {
+      this.showValidationMessage('Deductible amount cannot be negative.');
+      return;
+    }
+
     this.adminService.createPolicyPlan(this.planForm).subscribe({
       next: () => {
         this.successMessage.set('New Policy Plan Generated Successfully!');
@@ -899,6 +983,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
       },
       error: (err: any) => this.showError(err)
     });
+  }
+
+  private showValidationMessage(msg: string) {
+    this.errorMessage.set(msg);
+    setTimeout(() => this.errorMessage.set(''), 5000);
   }
 
   openUserForm(role: string) {
@@ -931,11 +1020,37 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   private showError(err: any) {
-    this.router.navigate(['/error'], {
-      state: {
-        status: err.status || 500,
-        message: extractErrorMessage(err),
-        title: 'Administrative Action Error'
+    this.errorMessage.set(extractErrorMessage(err));
+    setTimeout(() => this.errorMessage.set(''), 5000);
+  }
+
+  changePassword() {
+    const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      this.errorMessage.set('All password fields are required.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      this.errorMessage.set('New password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      this.errorMessage.set('New password and confirm password do not match.');
+      return;
+    }
+
+    this.changePwdLoading.set(true);
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: () => {
+        this.successMessage.set('Password changed successfully!');
+        this.changePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.changePwdLoading.set(false);
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: (err) => {
+        this.changePwdLoading.set(false);
+        this.errorMessage.set(extractErrorMessage(err));
       }
     });
   }

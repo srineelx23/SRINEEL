@@ -3,6 +3,9 @@
     @if (successMessage()) {
     <div class="success-toast">{{ successMessage() }}</div>
     }
+    @if (errorMessage()) {
+    <div class="error-toast">{{ errorMessage() }}</div>
+    }
 
     <!-- Navigation Sidebar -->
     <nav class="hover-navbar">
@@ -28,7 +31,7 @@
                 <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
                     <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
                     <div class="profile-info">
-                        <span class="profile-role">Executive Admin</span>
+                        <span class="profile-role">{{ userRole() }}</span>
                         <span class="profile-name">{{ adminName() }}</span>
                     </div>
                     <i class="fa-solid fa-chevron-down"
@@ -167,12 +170,10 @@
                     <h1 class="page-title">Vehicle Registry</h1>
                     <p class="page-subtitle">Track and filter all high-value insulated assets currently protected.</p>
                 </div>
-                <div class="form-group" style="width: 300px;">
-                    <label
-                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Filter
-                        Minimum Assessed Value (INR)</label>
+                <div class="form-group" style="width: 320px;">
+                    <label class="static-label">Filter Minimum Assessed Value (INR)</label>
                     <input type="number" class="form-control" [(ngModel)]="vehicleIdvFilter"
-                        placeholder="Filter by Assessed Value >=">
+                        placeholder="Min. Assessed Value (e.g. 500000)">
                 </div>
             </header>
 
@@ -312,6 +313,7 @@
                     <table class="vims-table">
                         <tr>
                             <th>Claim No.</th>
+                            <th>Filed On</th>
                             <th>Incident Type</th>
                             <th>Approved</th>
                             <th>Status</th>
@@ -319,6 +321,12 @@
                         @for (c of vehicleClaims(); track (c.claimId || $index)) {
                         <tr>
                             <td>{{ c.claimNumber }}</td>
+                            <td>
+                                <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
+                                    a' }}</div>
+                            </td>
                             <td>{{ c.claimType }}</td>
                             <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
                                 : 'Pending' }}</td>
@@ -357,11 +365,22 @@
                 <p class="page-subtitle">Platform-wide insurance claims and their resolution status.</p>
             </header>
             <div class="glass-panel" style="padding: 24px;">
-                @if (claims().length === 0) {
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <div class="sort-control">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                        <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
+                            <option value="dateDesc">Newest First</option>
+                            <option value="dateAsc">Oldest First</option>
+                            <option value="amountDesc">Amount High to Low</option>
+                            <option value="amountAsc">Amount Low to High</option>
+                        </select>
+                    </div>
+                </div>
+                @if (sortedClaims().length === 0) {
                 <p style="color: var(--text-muted); font-style: italic;">No claims found.
                 </p>
                 }
-                @if (claims().length > 0) {
+                @if (sortedClaims().length > 0) {
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -374,7 +393,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of claims(); track (c.claimId || $index)) {
+                        @for (c of sortedClaims(); track (c.claimId || $index)) {
                         <tr>
                             <td style="font-family: monospace; font-size: 0.9rem;">{{ c.claimNumber || '#' + c.claimId
                                 }}</td>
@@ -442,6 +461,17 @@
             </div>
 
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <div class="sort-control">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                        <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
+                            <option value="dateDesc">Newest First</option>
+                            <option value="dateAsc">Oldest First</option>
+                            <option value="amountDesc">Amount High to Low</option>
+                            <option value="amountAsc">Amount Low to High</option>
+                        </select>
+                    </div>
+                </div>
                 @if (allTransactions().length === 0) {
                 <p style="color: var(--text-muted); font-style: italic;">No
                     transactions found.</p>
@@ -466,10 +496,10 @@
                                 }}</td>
                             <td>
                                 <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ t.date | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ t.date |
-                                        date:'shortTime':'+0530' }}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ t.date | date:'MMM d, y'
+                                        }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ t.date | date:'h:mm
+                                        a' }}</span>
                                 </div>
                             </td>
                             <td>{{ t.customer }}</td>
@@ -627,12 +657,12 @@
                 <form class="vims-form" (ngSubmit)="submitPlanRegistration()">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                         <div class="form-group" style="grid-column: span 2;">
-                            <label>Plan Commercial Name</label>
+                            <label>Plan Commercial Name <span style="color: var(--error);">*</span></label>
                             <input type="text" name="planName" class="form-control" [(ngModel)]="planForm.planName"
-                                required>
+                                required placeholder="e.g. Premium Protection Gold">
                         </div>
                         <div class="form-group">
-                            <label>Policy Category / Type</label>
+                            <label>Policy Category / Type <span style="color: var(--error);">*</span></label>
                             <select name="policyType" class="form-control" [(ngModel)]="planForm.policyType" required>
                                 <option value="" disabled selected>Select Policy Type</option>
                                 @for (cat of policyCategories; track cat) {
@@ -641,17 +671,17 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Base Premium (INR)</label>
+                            <label>Base Premium (INR) <span style="color: var(--error);">*</span></label>
                             <input type="number" name="basePremium" class="form-control"
-                                [(ngModel)]="planForm.basePremium" required>
+                                [(ngModel)]="planForm.basePremium" required min="1">
                         </div>
                         <div class="form-group">
-                            <label>Policy Duration (Months)</label>
+                            <label>Policy Duration (Months) <span style="color: var(--error);">*</span></label>
                             <input type="number" name="policyDurationMonths" class="form-control"
                                 [(ngModel)]="planForm.policyDurationMonths" required min="12">
                         </div>
                         <div class="form-group">
-                            <label>Applicable Vehicle Classification</label>
+                            <label>Applicable Vehicle Classification <span style="color: var(--error);">*</span></label>
                             <select name="applicableVehicleType" class="form-control"
                                 [(ngModel)]="planForm.applicableVehicleType" required>
                                 <option value="" disabled selected>Select Vehicle Class</option>
@@ -662,14 +692,14 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Statutory Deductible (INR)</label>
+                            <label>Statutory Deductible (INR) <span style="color: var(--error);">*</span></label>
                             <input type="number" name="deductibleAmount" class="form-control"
-                                [(ngModel)]="planForm.deductibleAmount" required>
+                                [(ngModel)]="planForm.deductibleAmount" required min="0">
                         </div>
 
                     </div>
                     <div
-                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--bg-dark); padding: 16px; border-radius: 8px;">
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--card-inner-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-light);">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                             <input type="checkbox" name="coversThirdParty" [(ngModel)]="planForm.coversThirdParty"
                                 style="accent-color: var(--accent); width: 18px; height: 18px;"> 3rd Party Liability
@@ -767,6 +797,99 @@
         </div>
         }
 
+        <!-- Settings Tab -->
+        @if (activeTab() === 'settings') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Account Settings</h1>
+                <p class="page-subtitle">Manage your administrative security and preferences.</p>
+            </header>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start;">
+                <!-- Password Change Panel -->
+                <div class="glass-panel" style="padding: 32px;">
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 32px;">
+                        <div
+                            style="width: 44px; height: 44px; border-radius: 12px; background: rgba(220,38,38,0.1); color: var(--error); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="fa-solid fa-shield-lock"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem;">Security & Password</h3>
+                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Change your administrative
+                                password periodically.</p>
+                        </div>
+                    </div>
+
+                    <form class="vims-form" (ngSubmit)="changePassword()">
+                        <div class="form-group">
+                            <input [type]="showCurrentPwd ? 'text' : 'password'" id="currentPwd" name="currentPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
+                                required>
+                            <label for="currentPwd" class="floating-label">Current Password</label>
+                            <i class="fa-solid" [ngClass]="showCurrentPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showCurrentPwd = !showCurrentPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showNewPwd ? 'text' : 'password'" id="newPwd" name="newPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
+                                required>
+                            <label for="newPwd" class="floating-label">New Password</label>
+                            <i class="fa-solid" [ngClass]="showNewPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showNewPwd = !showNewPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showConfirmPwd ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
+                                required>
+                            <label for="confirmPwd" class="floating-label">Confirm New Password</label>
+                            <i class="fa-solid" [ngClass]="showConfirmPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showConfirmPwd = !showConfirmPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <button type="submit" class="btn-primary" [disabled]="changePwdLoading()"
+                            style="margin-top: 8px; width: 100%;">
+                            @if (changePwdLoading()) {
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
+                            } @else {
+                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
+                            }
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Profile Info Box -->
+                <div class="glass-panel" style="padding: 32px; background: rgba(91, 192, 190, 0.03);">
+                    <h3 style="margin-bottom: 24px; color: var(--accent);">Administrative Profile</h3>
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Full Name</p>
+                            <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ adminName() }}</p>
+                        </div>
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Authority Level</p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="status-badge active" style="background: rgba(91, 192, 190, 0.1); color: var(--accent);">{{ userRole() }}</span>
+                            </div>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 8px 0;">
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                            As an administrator, you have full access to system records. Ensure your credentials are kept secure and never shared.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+
         <!-- Audit Logs Tab -->
         @if (activeTab() === 'audit') {
         <div class="tab-content fade-in">
@@ -777,11 +900,20 @@
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
-                @if (auditLogs().length === 0) {
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                    <div class="sort-control">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                        <select [ngModel]="auditSortOption()" (ngModelChange)="auditSortOption.set($event)" class="vims-select-sm">
+                            <option value="dateDesc">Newest First</option>
+                            <option value="dateAsc">Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+                @if (sortedAuditLogs().length === 0) {
                 <p style="color: var(--text-muted); font-style: italic;">No audit logs
                     recorded yet.</p>
                 }
-                @if (auditLogs().length > 0) {
+                @if (sortedAuditLogs().length > 0) {
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -795,15 +927,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (log of auditLogs(); track (log.id || $index)) {
+                        @for (log of sortedAuditLogs(); track log.id) {
                         <tr>
                             <td>#{{ log.id }}</td>
                             <td style="white-space: nowrap;">
                                 <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ log.timestamp | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ log.timestamp | date:'MMM d,
+                                        y' }}</span>
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">{{ log.timestamp |
-                                        date:'shortTime':'+0530' }}</span>
+                                        date:'h:mm a' }}</span>
                                 </div>
                             </td>
                             <td>

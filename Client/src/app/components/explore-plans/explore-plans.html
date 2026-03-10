@@ -8,11 +8,11 @@
             </nav>
             <div class="nav-actions">
                 @if (userName()) {
-                <div class="nav-profile-container" style="position: relative;">
+                <div class="nav-profile-container">
                     <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown">
                         <div class="profile-avatar">{{ userName()!.charAt(0) }}</div>
                         <div class="profile-info">
-                            <span class="profile-meta">Account</span>
+                            <span class="profile-role">{{ userRole() || 'Account' }}</span>
                             <span class="profile-name">{{ userName() }}</span>
                         </div>
                         <i class="fa-solid fa-chevron-down"
@@ -239,23 +239,27 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="form-group">
                             <input type="number" id="manufactureYear" name="manufactureYear"
-                                [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" " required>
+                                [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" "
+                                min="1900" [max]="currentYear" required>
                             <label for="manufactureYear" class="floating-label">Manufacture Year</label>
                         </div>
 
                         <div class="form-group">
-                            <select id="fuelType" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control">
-                                <option value="Petrol">Petrol Engine</option>
-                                <option value="Diesel">Diesel Engine</option>
-                                <option value="EV">Electric Vehicle (EV)</option>
-                                <option value="Hybrid">Hybrid System</option>
+                            <select id="fuelType" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control" [disabled]="isEVPlan()">
+                                @if (isEVPlan()) {
+                                    <option value="EV">Electric Vehicle (EV)</option>
+                                } @else {
+                                    <option value="Petrol">Petrol Engine</option>
+                                    <option value="Diesel">Diesel Engine</option>
+                                    <option value="Hybrid">Hybrid System</option>
+                                }
                             </select>
                             <label class="floating-label">Engine / Fuel Type</label>
                         </div>
 
                         <div class="form-group">
                             <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven"
-                                class="form-control" placeholder=" " required>
+                                class="form-control" placeholder=" " min="0" required>
                             <label for="kms" class="floating-label">KMs Driven (Cumulative)</label>
                         </div>
 
@@ -270,7 +274,7 @@
 
                         <div class="form-group">
                             <input type="number" id="invoiceAmount" name="invoiceAmount"
-                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " required>
+                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " min="0" required>
                             <label for="invoiceAmount" class="floating-label">Current Vehicle Value (₹)</label>
                         </div>
 
@@ -311,10 +315,14 @@
                             <label class="floating-label">Manufacture Year</label>
                         </div>
                         <div class="form-group">
-                            <select name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control">
-                                <option value="Petrol">Petrol</option>
-                                <option value="Diesel">Diesel</option>
-                                <option value="EV">Electric</option>
+                            <select id="fuelTypeDirect" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control" [disabled]="isEVPlan()">
+                                @if (isEVPlan()) {
+                                    <option value="EV">Electric Vehicle (EV)</option>
+                                } @else {
+                                    <option value="Petrol">Petrol Engine</option>
+                                    <option value="Diesel">Diesel Engine</option>
+                                    <option value="Hybrid">Hybrid System</option>
+                                }
                             </select>
                             <label class="floating-label">Fuel Type</label>
                         </div>

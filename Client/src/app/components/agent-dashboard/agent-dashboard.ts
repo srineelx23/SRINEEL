@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { AgentService } from '../../services/agent.service';
+import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
 
 @Component({
@@ -23,12 +24,53 @@ export class AgentDashboard implements OnInit {
 
   // Data
   agentName = signal('Agent');
+  userRole = signal('Field Agent');
   pendingApps = signal<any[]>([]);
   reviewedApps = signal<any[]>([]);
   customers = signal<any[]>([]);
 
+  // Sorting State
+  appsSortOption = signal('dateDesc');
+  customersSortOption = signal('dateDesc');
+
   pendingPaymentCount = computed(() => {
     return this.customers().filter(c => c.policyStatus === 'PendingPayment').length;
+  });
+
+  sortedPendingApps = computed(() => {
+    const data = [...this.pendingApps()];
+    const option = this.appsSortOption();
+    return data.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      if (option === 'dateDesc') return dateB - dateA;
+      if (option === 'dateAsc') return dateA - dateB;
+      return 0;
+    });
+  });
+
+  sortedReviewedApps = computed(() => {
+    const data = [...this.reviewedApps()];
+    const option = this.appsSortOption();
+    return data.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      if (option === 'dateDesc') return dateB - dateA;
+      if (option === 'dateAsc') return dateA - dateB;
+      return 0;
+    });
+  });
+
+  sortedCustomers = computed(() => {
+    const data = [...this.customers()];
+    const option = this.customersSortOption();
+    return data.sort((a, b) => {
+      if (option === 'nameAsc') return (a.customerName || '').localeCompare(b.customerName || '');
+      if (option === 'nameDesc') return (b.customerName || '').localeCompare(a.customerName || '');
+      if (option === 'amountDesc') return (b.premiumAmount || 0) - (a.premiumAmount || 0);
+      if (option === 'amountAsc') return (a.premiumAmount || 0) - (b.premiumAmount || 0);
+      return 0;
+    });
   });
 
   // UI State
@@ -41,6 +83,17 @@ export class AgentDashboard implements OnInit {
     rejectionReason: '',
     invoiceAmount: null as number | null
   };
+
+  // Settings - Change Password
+  changePasswordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+  changePwdLoading = signal(false);
+  showCurrentPwd = false;
+  showNewPwd = false;
+  showConfirmPwd = false;
 
   errorMessage = signal('');
   successMessage = signal('');
@@ -61,6 +114,11 @@ export class AgentDashboard implements OnInit {
           decodedToken.Name ||
           'Agent';
         this.agentName.set(name);
+
+        const role = this.authService.getRoleFromStoredToken();
+        if (role === 'Agent') this.userRole.set('Agent');
+        else if (role === 'Admin') this.userRole.set('Executive Admin');
+        else this.userRole.set(role || 'Agent');
       } catch (error) {
         console.error('Failed to parse token for name', error);
       }
@@ -217,5 +275,40 @@ export class AgentDashboard implements OnInit {
     setTimeout(() => {
       this.errorMessage.set('');
     }, 5000);
+  }
+
+  changePassword() {
+    const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      this.errorMessage.set('All password fields are required.');
+      this.autoHideToast();
+      return;
+    }
+    if (newPassword.length < 6) {
+      this.errorMessage.set('New password must be at least 6 characters.');
+      this.autoHideToast();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      this.errorMessage.set('New password and confirm password do not match.');
+      this.autoHideToast();
+      return;
+    }
+
+    this.changePwdLoading.set(true);
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: () => {
+        this.successMessage.set('Password changed successfully!');
+        this.changePasswordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.changePwdLoading.set(false);
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: (err: any) => {
+        this.changePwdLoading.set(false);
+        this.errorMessage.set(err.error || 'Failed to change password');
+        this.autoHideToast();
+      }
+    });
   }
 }

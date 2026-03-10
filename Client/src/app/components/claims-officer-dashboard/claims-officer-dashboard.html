@@ -31,7 +31,7 @@
                 <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
                     <div class="profile-avatar">{{ officerName().charAt(0) }}</div>
                     <div class="profile-info">
-                        <span class="profile-role">Claims Officer</span>
+                        <span class="profile-role">{{ userRole() }}</span>
                         <span class="profile-name">{{ officerName() }}</span>
                     </div>
                     <i class="fa-solid fa-chevron-down"
@@ -132,12 +132,19 @@
                 }
                 @if (pendingClaims().length > 0) {
                 <div class="overview-list">
-                    @for (c of pendingClaims().slice(0,5); track (c.claimId || $index)) {
+                    @for (c of sortedPendingClaims().slice(0,5); track (c.claimId || $index)) {
                     <div class="overview-list-item" (click)="openClaimReview(c)">
                         <div class="oli-icon"><i class="fa-solid fa-file-shield"></i></div>
                         <div class="oli-body">
                             <div class="oli-title">{{ c.claimNumber }}</div>
-                            <div class="oli-sub">{{ c.customer?.fullName || 'Customer' }} &bull; {{ c.claimType }}</div>
+                            <div class="oli-sub">
+                                <span>{{ c.customer?.fullName || 'Customer' }} &bull; {{ c.claimType }}</span>
+                                <span
+                                    style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">
+                                    <i class="fa-regular fa-clock" style="margin-right: 4px;"></i>
+                                    {{ c.createdAt | date:'MMM d, y, h:mm a' }}
+                                </span>
+                            </div>
                         </div>
                         <span class="status-badge pending">Under Review</span>
                     </div>
@@ -157,6 +164,15 @@
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Newest First</option>
+                          <option value="dateAsc">Oldest First</option>
+                      </select>
+                  </div>
+                </div>
                 @if (pendingClaims().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No pending
                     claims at the moment. Great job!</p>
@@ -167,19 +183,28 @@
                     <thead>
                         <tr>
                             <th>Claim No.</th>
-                            <th>Customer</th>
+                            <th>Customer Name</th>
+                            <th>Registration No.</th>
                             <th>Policy Number</th>
                             <th>Claim Type</th>
+                            <th>Filed On</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of pendingClaims(); track (c.claimId || $index)) {
+                        @for (c of sortedPendingClaims(); track (c.claimId || $index)) {
                         <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
+                            <td>{{ c.vehicle?.registrationNumber }}</td>
                             <td>{{ c.policy?.policyNumber }}</td>
                             <td>{{ c.claimType }}</td>
+                            <td>
+                                <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
+                                    a' }}</div>
+                            </td>
                             <td><span class="status-badge pending">Under Review</span></td>
                         </tr>
                         }
@@ -240,6 +265,12 @@
                             <h2
                                 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.02em;">
                                 Case #{{ selectedClaim().claimNumber }}</h2>
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-regular fa-calendar-days"></i>
+                                Filed on {{ selectedClaim().createdAt | date:'fullDate' }} at {{
+                                selectedClaim().createdAt | date:'shortTime' }}
+                            </div>
                         </div>
                     </div>
                     <button class="btn-outline" (click)="closeClaimReview()"
@@ -402,13 +433,17 @@
                                         [(ngModel)]="decisionForm.repairCost" placeholder="Verified repair cost amount"
                                         required>
                                 </div>
-                                @if (selectedClaim().claimType === 'Damage') {
+                                @if (selectedClaim().claimType === 'Damage' || selectedClaim().claimType ===
+                                'ThirdParty') {
                                 <div>
                                     <label for="engineCost"
-                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Engine
-                                        Parts Cost (Optional)</label>
+                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">
+                                        {{ selectedClaim().claimType === 'ThirdParty' ? 'Engine Repair Amount' : 'Engine
+                                        Parts Cost (Optional)' }}
+                                    </label>
                                     <input type="number" id="engineCost" name="engineCost" class="form-control"
-                                        [(ngModel)]="decisionForm.engineCost" placeholder="If applicable">
+                                        [(ngModel)]="decisionForm.engineCost"
+                                        [placeholder]="selectedClaim().claimType === 'ThirdParty' ? 'Include if assessed' : 'If applicable'">
                                 </div>
                                 }
                             </div>
@@ -526,6 +561,17 @@
             </header>
 
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Newest First</option>
+                          <option value="dateAsc">Oldest First</option>
+                          <option value="amountDesc">Amount High to Low</option>
+                          <option value="amountAsc">Amount Low to High</option>
+                      </select>
+                  </div>
+                </div>
                 @if (reviewedClaims().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No history
                     records available.</p>
@@ -536,17 +582,36 @@
                     <thead>
                         <tr>
                             <th>Claim No.</th>
-                            <th>Customer</th>
-                            <th>Type</th>
+                            <th>Customer Name</th>
+                            <th>Registration No.</th>
+                            <th>Policy Number</th>
+                            <th>Claim Type</th>
+                            <th>Filed On</th>
+                            <th>Approved Amount</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of reviewedClaims(); track (c.claimId || $index)) {
+                        @for (c of sortedReviewedClaims(); track (c.claimId || $index)) {
                         <tr (click)="openClaimReview(c)" style="cursor: pointer;">
                             <td>{{ c.claimNumber }}</td>
                             <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
+                            <td>{{ c.vehicle?.registrationNumber }}</td>
+                            <td>{{ c.policy?.policyNumber }}</td>
                             <td>{{ c.claimType }}</td>
+                            <td>
+                                <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
+                                     a' }}</div>
+                            </td>
+                            <td>
+                                @if (c.status === 'Approved') {
+                                    <span style="font-weight: 600; color: var(--success);">{{ c.approvedAmount | currency:'INR' }}</span>
+                                } @else {
+                                    <span style="color: var(--text-muted);">--</span>
+                                }
+                            </td>
                             <td>
                                 <span class="status-badge" [ngClass]="c.status?.toLowerCase()"
                                     style="display: inline-block;">{{
@@ -560,5 +625,98 @@
             </div>
         </div>
         }
+        <!-- Settings Tab -->
+        @if (activeTab() === 'settings') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Account Settings</h1>
+                <p class="page-subtitle">Manage your core security and profile preferences.</p>
+            </header>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start;">
+                <!-- Password Change Panel -->
+                <div class="glass-panel" style="padding: 32px;">
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 32px;">
+                        <div
+                            style="width: 44px; height: 44px; border-radius: 12px; background: rgba(220,38,38,0.1); color: var(--error); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="fa-solid fa-shield-lock"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem;">Security & Password</h3>
+                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Change your claims officer
+                                password periodically.</p>
+                        </div>
+                    </div>
+
+                    <form class="vims-form" (ngSubmit)="changePassword()">
+                        <div class="form-group">
+                            <input [type]="showCurrentPwd ? 'text' : 'password'" id="currentPwd" name="currentPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
+                                required>
+                            <label for="currentPwd" class="floating-label">Current Password</label>
+                            <i class="fa-solid" [ngClass]="showCurrentPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showCurrentPwd = !showCurrentPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showNewPwd ? 'text' : 'password'" id="newPwd" name="newPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
+                                required>
+                            <label for="newPwd" class="floating-label">New Password</label>
+                            <i class="fa-solid" [ngClass]="showNewPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showNewPwd = !showNewPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showConfirmPwd ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
+                                required>
+                            <label for="confirmPwd" class="floating-label">Confirm New Password</label>
+                            <i class="fa-solid" [ngClass]="showConfirmPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showConfirmPwd = !showConfirmPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <button type="submit" class="btn-primary" [disabled]="changePwdLoading()"
+                            style="margin-top: 8px; width: 100%;">
+                            @if (changePwdLoading()) {
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
+                            } @else {
+                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
+                            }
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Profile Info Box -->
+                <div class="glass-panel" style="padding: 32px; background: rgba(99, 102, 241, 0.03);">
+                    <h3 style="margin-bottom: 24px; color: var(--accent);">Claims Officer</h3>
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Officer Name</p>
+                            <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ officerName() }}</p>
+                        </div>
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Department</p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="status-badge active" style="background: rgba(99, 102, 241, 0.1); color: var(--accent);">{{ userRole() }}</span>
+                            </div>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 8px 0;">
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                            Your role is critical in maintaining the integrity of claim processes. Ensure your account remains confidential and follow verification protocols.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+
     </main>
 </div>

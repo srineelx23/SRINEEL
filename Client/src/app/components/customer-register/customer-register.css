@@ -94,59 +94,6 @@
     text-align: center;
 }
 
-.vims-form {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-/* Floating Label Inputs */
-.form-group {
-    position: relative;
-}
-
-.form-control {
-    width: 100%;
-    padding: 16px 20px;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 12px;
-    color: var(--text-main);
-    font-family: var(--font-body);
-    font-size: 1rem;
-    transition: var(--transition);
-    outline: none;
-}
-
-.form-control:focus {
-    border-color: var(--accent);
-    background: var(--bg-card);
-    box-shadow: 0 0 0 4px var(--accent-glow);
-}
-
-.floating-label {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    transition: var(--transition);
-    pointer-events: none;
-}
-
-.form-control:focus~.floating-label,
-.form-control:not(:placeholder-shown)~.floating-label,
-select.form-control~.floating-label {
-    top: 0;
-    left: 14px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--accent);
-    background: var(--bg-card);
-    transform: translateY(-50%);
-    opacity: 1;
-}
-
 /* Form Options */
 .form-options {
     display: flex;

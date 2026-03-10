@@ -33,7 +33,7 @@
                 <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
                     <div class="profile-avatar">{{ agentName().charAt(0) }}</div>
                     <div class="profile-info">
-                        <span class="profile-role">Agent</span>
+                        <span class="profile-role">{{ userRole() }}</span>
                         <span class="profile-name">{{ agentName() }}</span>
                     </div>
                     <i class="fa-solid fa-chevron-down"
@@ -131,7 +131,7 @@
                 }
                 @if (pendingApps().length > 0) {
                 <div class="overview-list">
-                    @for (a of pendingApps().slice(0,5); track (a.applicationId || $index)) {
+                    @for (a of sortedPendingApps().slice(0,5); track (a.applicationId || $index)) {
                     <div class="overview-list-item" (click)="switchTab('applications')">
                         <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
                         <div class="oli-body">
@@ -158,12 +158,20 @@
 
             @if (!selectedApp()) {
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="appsSortOption()" (ngModelChange)="appsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Newest First</option>
+                          <option value="dateAsc">Oldest First</option>
+                      </select>
+                  </div>
+                </div>
                 @if (pendingApps().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No pending
-                    applications in your queue.</p>
+                    applications at the moment. Great job!</p>
                 }
 
-                @if (pendingApps().length > 0) {
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -175,7 +183,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (app of pendingApps(); track (app.applicationId || $index)) {
+                        @for (app of sortedPendingApps(); track (app.applicationId || $index)) {
                         <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
@@ -193,7 +201,6 @@
                         }
                     </tbody>
                 </table>
-                }
             </div>
             }
 
@@ -224,7 +231,7 @@
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
                                 Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
                         <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Mileage:</strong>
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers Driven:</strong>
                             {{ selectedApp().kilometersDriven }} km</p>
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
@@ -355,12 +362,19 @@
 
             @if (!selectedApp()) {
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="appsSortOption()" (ngModelChange)="appsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Newest First</option>
+                          <option value="dateAsc">Oldest First</option>
+                      </select>
+                  </div>
+                </div>
                 @if (reviewedApps().length === 0) {
-                <p style="color: var(--text-muted); padding: 16px;">No applications
-                    have been reviewed yet.</p>
+                <p style="color: var(--text-muted); padding: 16px;">No history records available.</p>
                 }
 
-                @if (reviewedApps().length > 0) {
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -372,7 +386,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (app of reviewedApps(); track (app.applicationId || $index)) {
+                        @for (app of sortedReviewedApps(); track (app.applicationId || $index)) {
                         <tr (click)="openAppReview(app)" style="cursor: pointer;">
                             <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
                             <td>{{ app.make }} {{ app.model }}</td>
@@ -393,7 +407,6 @@
                         }
                     </tbody>
                 </table>
-                }
             </div>
             }
 
@@ -425,7 +438,7 @@
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
                                 Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
                         <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Mileage:</strong>
+                                style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers Driven:</strong>
                             {{ selectedApp().kilometersDriven }} km</p>
                         <p style="margin-bottom: 8px;"><strong
                                 style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
@@ -486,6 +499,17 @@
 
             @if (!selectedCustomerRecord()) {
             <div class="glass-panel" style="padding: 24px;">
+                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="customersSortOption()" (ngModelChange)="customersSortOption.set($event)" class="vims-select-sm">
+                          <option value="nameAsc">Name A-Z</option>
+                          <option value="nameDesc">Name Z-A</option>
+                          <option value="amountDesc">Premium High to Low</option>
+                          <option value="amountAsc">Premium Low to High</option>
+                      </select>
+                  </div>
+                </div>
                 @if (customers().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No customers
                     assigned yet.</p>
@@ -498,15 +522,19 @@
                             <th>Customer Name</th>
                             <th>Registration No.</th>
                             <th>Policy Number</th>
+                            <th>Premium</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @for (c of customers(); track ($index)) {
+                        @for (c of sortedCustomers(); track ($index)) {
                         <tr (click)="openCustomerDetails(c)" style="cursor: pointer;">
                             <td>{{ c.customerName }}</td>
                             <td>{{ c.registrationNumber }}</td>
                             <td>{{ c.policyNumber }}</td>
+                            <td>
+                                <span style="font-weight: 600; color: var(--accent);">{{ c.premiumAmount | currency:'INR' }}</span>
+                            </td>
                             <td>
                                 <span class="status-badge" [ngClass]="c.policyStatus?.toLowerCase()"
                                     style="display: inline-block;">{{ c.policyStatus }}</span>
@@ -581,6 +609,99 @@
                 </div>
             </div>
             }
+        </div>
+        }
+
+        <!-- Settings Tab -->
+        @if (activeTab() === 'settings') {
+        <div class="tab-content fade-in">
+            <header class="page-header">
+                <h1 class="page-title">Account Settings</h1>
+                <p class="page-subtitle">Manage your field agent security and preferences.</p>
+            </header>
+
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start;">
+                <!-- Password Change Panel -->
+                <div class="glass-panel" style="padding: 32px;">
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 32px;">
+                        <div
+                            style="width: 44px; height: 44px; border-radius: 12px; background: rgba(220,38,38,0.1); color: var(--error); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="fa-solid fa-shield-lock"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem;">Security & Password</h3>
+                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Change your agent
+                                password periodically.</p>
+                        </div>
+                    </div>
+
+                    <form class="vims-form" (ngSubmit)="changePassword()">
+                        <div class="form-group">
+                            <input [type]="showCurrentPwd ? 'text' : 'password'" id="currentPwd" name="currentPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
+                                required>
+                            <label for="currentPwd" class="floating-label">Current Password</label>
+                            <i class="fa-solid" [ngClass]="showCurrentPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showCurrentPwd = !showCurrentPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showNewPwd ? 'text' : 'password'" id="newPwd" name="newPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
+                                required>
+                            <label for="newPwd" class="floating-label">New Password</label>
+                            <i class="fa-solid" [ngClass]="showNewPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showNewPwd = !showNewPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <div class="form-group">
+                            <input [type]="showConfirmPwd ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
+                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
+                                required>
+                            <label for="confirmPwd" class="floating-label">Confirm New Password</label>
+                            <i class="fa-solid" [ngClass]="showConfirmPwd ? 'fa-eye-slash' : 'fa-eye'"
+                                (click)="showConfirmPwd = !showConfirmPwd"
+                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
+                        </div>
+
+                        <button type="submit" class="btn-primary" [disabled]="changePwdLoading()"
+                            style="margin-top: 8px; width: 100%;">
+                            @if (changePwdLoading()) {
+                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
+                            } @else {
+                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
+                            }
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Profile Info Box -->
+                <div class="glass-panel" style="padding: 32px; background: rgba(6, 182, 212, 0.03);">
+                    <h3 style="margin-bottom: 24px; color: #06b6d4;">Agent Profile</h3>
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Field Agent Name</p>
+                            <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ agentName() }}</p>
+                        </div>
+                        <div>
+                            <p
+                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                Official Role</p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="status-badge active" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">{{ userRole() }}</span>
+                            </div>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 8px 0;">
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                            As an agent, you help customers protect their valuable assets. Keep your account secure to maintain customer trust.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
         }
 

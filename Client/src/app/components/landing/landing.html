@@ -10,18 +10,14 @@
             <div class="nav-actions">
                 @if (userName()) {
                 <!-- Premium profile dropdown same as dashboard -->
-                <div class="nav-profile-container" style="position: relative;">
-                    <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown"
-                        style="display: flex; align-items: center; gap: 12px; padding: 6px 16px; border-radius: 30px; cursor: pointer; transition: var(--transition); background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);">
-                        <div class="profile-avatar"
-                            style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">
+                <div class="nav-profile-container">
+                    <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown">
+                        <div class="profile-avatar">
                             {{ userName()!.charAt(0) }}
                         </div>
-                        <div style="display: flex; flex-direction: column; text-align: left;">
-                            <span
-                                style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;">Account</span>
-                            <span style="color: var(--text-main); font-size: 0.9rem; font-weight: 600;">{{
-                                userName() }}</span>
+                        <div class="profile-info">
+                            <span class="profile-role">{{ userRole() || 'Account' }}</span>
+                            <span class="profile-name">{{ userName() }}</span>
                         </div>
                         <i class="fa-solid fa-chevron-down" [style.transform]="showDropdown ? 'rotate(180deg)' : 'none'"
                             style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>

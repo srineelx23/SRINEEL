@@ -16,6 +16,7 @@ export class Landing implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   userName = signal<string | null>(null);
+  userRole = signal<string | null>(null);
   isLoggedIn = signal<boolean>(false);
   showDropdown = false;
 
@@ -30,6 +31,11 @@ export class Landing implements OnInit {
           || decodedToken.FullName
           || 'User';
         this.userName.set(name);
+
+        const role = this.authService.getRoleFromStoredToken();
+        if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+        else if (role === 'Admin') this.userRole.set('Executive Admin');
+        else this.userRole.set(role);
       } catch { }
     }
   }

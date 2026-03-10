@@ -37,14 +37,15 @@ namespace VIMS.API.Controllers
 
             var result = new
             {
-                claim.ClaimId,
-                claim.ClaimNumber,
-                claim.PolicyId,
-                claim.CustomerId,
-                ClaimType = claim.claimType.ToString(),
-                Status = claim.Status.ToString(),
-                Documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
-                DecisionType = claim.DecisionType,
+                claimId = claim.ClaimId,
+                claimNumber = claim.ClaimNumber,
+                policyId = claim.PolicyId,
+                customerId = claim.CustomerId,
+                claimType = claim.claimType.ToString(),
+                status = claim.Status.ToString(),
+                createdAt = claim.CreatedAt,
+                documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
+                decisionType = claim.DecisionType,
                 Customer = claim.Customer == null ? null : new { claim.Customer.UserId, claim.Customer.FullName, claim.Customer.Email },
                 Policy = claim.Policy == null ? null : new
                 {
@@ -98,15 +99,16 @@ namespace VIMS.API.Controllers
 
             var result = claims.Select(c => new
             {
-                c.ClaimId,
-                c.ClaimNumber,
-                c.PolicyId,
-                c.CustomerId,
-                ClaimType = c.claimType.ToString(),
-                Status = c.Status.ToString(),
-                Documents = c.Documents == null ? null : c.Documents.Select(d => new { d.Document1, d.Document2 }),
-                Customer = c.Customer == null ? null : new { c.Customer.UserId, c.Customer.FullName, c.Customer.Email },
-                Policy = c.Policy == null ? null : new
+                claimId = c.ClaimId,
+                claimNumber = c.ClaimNumber,
+                policyId = c.PolicyId,
+                customerId = c.CustomerId,
+                claimType = c.claimType.ToString(),
+                status = c.Status.ToString(),
+                createdAt = c.CreatedAt,
+                documents = c.Documents == null ? null : c.Documents.Select(d => new { d.Document1, d.Document2 }),
+                customer = c.Customer == null ? null : new { c.Customer.UserId, c.Customer.FullName, c.Customer.Email },
+                policy = c.Policy == null ? null : new
                 {
                     c.Policy.PolicyId,
                     c.Policy.PolicyNumber,
@@ -114,22 +116,22 @@ namespace VIMS.API.Controllers
                     InvoiceAmount = c.Policy.InvoiceAmount,
                     c.Policy.StartDate,
                     c.Policy.EndDate,
-                    Plan = c.Policy.Plan == null ? null : new { c.Policy.Plan.PlanId, c.Policy.Plan.PlanName }
+                    plan = c.Policy.Plan == null ? null : new { c.Policy.Plan.PlanId, c.Policy.Plan.PlanName }
                 },
-                Vehicle = c.Policy?.Vehicle == null ? null : new
+                vehicle = c.Policy?.Vehicle == null ? null : new
                 {
                     c.Policy.Vehicle.VehicleId,
                     c.Policy.Vehicle.RegistrationNumber,
                     c.Policy.Vehicle.Make,
                     c.Policy.Vehicle.Model,
                     c.Policy.Vehicle.Year,
-                    InvoiceAmount = c.Policy.InvoiceAmount,
-                    Application = c.Policy.Vehicle.VehicleApplication == null ? null : new
+                    invoiceAmount = c.Policy.InvoiceAmount,
+                    application = c.Policy.Vehicle.VehicleApplication == null ? null : new
                     {
                         c.Policy.Vehicle.VehicleApplication.Make,
                         c.Policy.Vehicle.VehicleApplication.Model,
                         c.Policy.Vehicle.VehicleApplication.Year,
-                        Documents = c.Policy.Vehicle.VehicleApplication.Documents == null
+                        documents = c.Policy.Vehicle.VehicleApplication.Documents == null
                             ? null
                             : c.Policy.Vehicle.VehicleApplication.Documents.Select(d => d.FilePath)
                     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -48,6 +48,24 @@ namespace VIMS.Application.Services
         }
         public async Task CreateApplicationAsync(CreateVehicleApplicationDTO dto,int userId)
         {
+            if (dto.InvoiceAmount < 0 || dto.KilometersDriven < 0 || dto.Year < 0 || dto.Year > DateTime.UtcNow.Year)
+                throw new BadRequestException("Please enter valid field values.");
+
+            // ==============================
+            // 0️⃣ Validate EV Conflict
+            // ==============================
+            var plan = await _policyPlanService.GetPolicyPlanAsync(dto.PlanId);
+            if (plan == null) 
+                throw new BadRequestException("Selected insurance plan no longer exists.");
+
+            bool isEVPlan = plan.ApplicableVehicleType != null && plan.ApplicableVehicleType.Contains("EV");
+
+            if (isEVPlan && dto.FuelType != "EV")
+                throw new BadRequestException("This plan is exclusively for Electric Vehicles. Please select 'EV' as fuel type.");
+
+            if (!isEVPlan && dto.FuelType == "EV")
+                throw new BadRequestException("EV fuel type is not applicable for this vehicle category.");
+
             // ==============================
             // 1️⃣ Validate Registration Number
             // ==============================
@@ -525,25 +543,17 @@ namespace VIMS.Application.Services
             var vehicle = policy.Vehicle;
             var oldApp = vehicle.VehicleApplication;
 
-            // Save RC document via FileStorageService
-            var rcRelative = await _fileStorageService.SaveFileAsync(rcDocument, "transfer", transferId.ToString(), "rc");
+            // Define new storage identifier: user_{recipientId}/transfer_policies/transfer_{transferId}
+            string storageIdentifier = $"{recipientCustomerId}/transfer_policies/transfer_{transferId}";
 
-            // Find the oldest document (InvoiceDoc) from original application to copy its path
-            var invoicePath = oldApp?.Documents?.FirstOrDefault(d => d.DocumentType == "Invoice")?.FilePath ?? string.Empty;
+            // Save new RC document into the recipient's user folder structure
+            var rcRelative = await _fileStorageService.SaveFileAsync(rcDocument, "user", storageIdentifier, "rc");
 
-            // Determine assigned agent (reuse same agent if possible)
-            int? agentId = policy.AgentId;
-            if (agentId == null)
-            {
-                var agent = await _userRepository.GetLeastLoadedAgentAsync();
-                agentId = agent?.UserId;
-            }
-
-            // Create new VehicleApplication for recipient
+            // Prepare new application
             var newApp = new VehicleApplication
             {
                 CustomerId = recipientCustomerId,
-                AssignedAgentId = agentId,
+                AssignedAgentId = policy.AgentId ?? (await _userRepository.GetLeastLoadedAgentAsync())?.UserId,
                 PlanId = policy.PlanId,
                 RegistrationNumber = vehicle.RegistrationNumber,
                 Make = vehicle.Make,
@@ -563,9 +573,16 @@ namespace VIMS.Application.Services
                 }
             };
 
-            // Copy invoice document if it exists
-            if (!string.IsNullOrEmpty(invoicePath))
-                newApp.Documents.Add(new VehicleDocument { DocumentType = "Invoice", FilePath = invoicePath, UploadedAt = DateTime.UtcNow });
+            // Copy previous customer's invoice document into the new transfer folder
+            var oldInvoicePath = oldApp?.Documents?.FirstOrDefault(d => d.DocumentType == "Invoice")?.FilePath;
+            if (!string.IsNullOrEmpty(oldInvoicePath))
+            {
+                var newInvoicePath = await _fileStorageService.CopyFileAsync(oldInvoicePath, "user", storageIdentifier, "invoice");
+                if (!string.IsNullOrEmpty(newInvoicePath))
+                {
+                    newApp.Documents.Add(new VehicleDocument { DocumentType = "Invoice", FilePath = newInvoicePath, UploadedAt = DateTime.UtcNow });
+                }
+            }
 
             await _vehicleApplicationRepository.AddAsync(newApp);
             await _vehicleApplicationRepository.SaveChangesAsync();

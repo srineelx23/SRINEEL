@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -102,11 +102,15 @@ namespace VIMS.Application.Services
             {
                 tpPart = plan.BasePremium;
 
-                if (vehicleType == "HeavyVehicle")
+                if (vehicleType == "HeavyVehicle" || plan.ApplicableVehicleType == "HeavyVehicle")
                     tpPart *= 1.10m;
 
-                if (vehicleType.Contains("EV"))
+                if (vehicleType.Contains("EV") || plan.ApplicableVehicleType.Contains("EV"))
                     tpPart *= 0.95m;
+
+                // Commercial usage significantly increases third party and base premium risk
+                if (vehicleType == "Commercial")
+                    tpPart *= 1.15m;
             }
             else
             {
@@ -119,6 +123,10 @@ namespace VIMS.Application.Services
 
                 if (policyType == "zerodepreciation")
                     riskFactor *= 1.20m;
+                
+                // Commercial usage significantly increases holistic risk
+                if (vehicleType == "Commercial")
+                    riskFactor += 0.15m;
                 
                 decimal combined = tpPart + odPart;
                 riskPart = (combined * riskFactor) - combined;

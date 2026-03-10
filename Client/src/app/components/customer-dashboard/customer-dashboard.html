@@ -1,5 +1,10 @@
-﻿<div class="dashboard-layout">
-    <!-- Success Message -->
+<div class="dashboard-layout">
+    <!-- Display Error/Success Messages -->
+    @if (errorMessage()) {
+    <div class="error-toast">
+        {{ errorMessage() }}
+    </div>
+    }
     @if (successMessage()) {
     <div class="success-toast">
         {{ successMessage() }}
@@ -34,7 +39,7 @@
                 <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
                     <div class="profile-avatar">{{ customerName().charAt(0) }}</div>
                     <div class="profile-info">
-                        <span class="profile-role">Customer</span>
+                        <span class="profile-role">{{ userRole() }}</span>
                         <span class="profile-name">{{ customerName() }}</span>
                     </div>
                     <i class="fa-solid fa-chevron-down"
@@ -558,7 +563,7 @@
                                 <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId"
                                     class="form-control" required>
                                     <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
-                                    @for (plan of plans(); track (plan.planId || plan.id || $index)) {
+                                    @for (plan of filteredRenewPlans(); track (plan.planId || plan.id || $index)) {
                                     <option [value]="plan.planId">{{ plan.planName }}
                                     </option>
                                     }
@@ -602,6 +607,15 @@
                 }
 
                 @if (applications().length > 0) {
+                <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                      <select [ngModel]="applicationsSortOption()" (ngModelChange)="applicationsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Latest Applied</option>
+                          <option value="dateAsc">Oldest Applied</option>
+                      </select>
+                  </div>
+                </div>
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -612,11 +626,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (a of applications(); track (a.vehicleApplicationId || a.id || $index)) {
+                        @for (a of sortedApplications(); track (a.vehicleApplicationId || a.id || $index)) {
                         <tr>
                             <td>#{{ a.vehicleApplicationId }}</td>
                             <td>{{ a.registrationNumber }}</td>
-                            <td>{{ a.createdAt | date:'medium':'+0530' }}</td>
+                            <td>
+                                <div style="font-size: 0.85rem; font-weight: 500;">{{ a.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ a.createdAt | date:'h:mm
+                                    a' }}</div>
+                            </td>
                             <td>
                                 <span class="status-badge" [ngClass]="a.status ? a.status.toLowerCase() : ''">{{
                                     a.status === 'Pending' ? 'Under Review' : a.status }}</span>
@@ -658,10 +677,22 @@
                     }
 
                     @if (claims().length > 0) {
+                    <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                        <div class="sort-control">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort Claims:</label>
+                            <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
+                                <option value="dateDesc">Latest to First</option>
+                                <option value="dateAsc">Oldest to First</option>
+                                <option value="amountDesc">Amount: High to Low</option>
+                                <option value="amountAsc">Amount: Low to High</option>
+                            </select>
+                        </div>
+                    </div>
                     <table class="vims-table">
                         <thead>
                             <tr>
                                 <th>Claim No.</th>
+                                <th>Filed On</th>
                                 <th>Policy No.</th>
                                 <th>Type</th>
                                 <th>Approved Amt</th>
@@ -669,9 +700,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @for (c of claims(); track (c.claimId || $index)) {
+                            @for (c of sortedClaims(); track (c.claimId || $index)) {
                             <tr (click)="viewClaimDetails(c)" style="cursor: pointer;">
                                 <td>{{ c.claimNumber }}</td>
+                                <td>
+                                    <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y'
+                                        }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt |
+                                        date:'h:mm a' }}</div>
+                                </td>
                                 <td>{{ c.policy?.policyNumber }}</td>
                                 <td>{{ c.claimType }}</td>
                                 <td>{{ (getStatusString(c.status) === 'Rejected') ? '-' :
@@ -693,7 +730,7 @@
                     <form class="vims-form" (ngSubmit)="submitClaim()">
                         <div class="form-group">
                             <select id="claimPolicy" name="claimPolicy" [(ngModel)]="claimForm.PolicyId"
-                                class="form-control" required>
+                                (change)="onClaimPolicyChange()" class="form-control" required>
                                 <option [ngValue]="null" disabled selected>Select Affected Policy</option>
                                 @for (p of claimablePolicies(); track (p.policyId || $index)) {
                                 <option [value]="p.policyId">{{ p.policyNumber }} ({{ p.vehicleModel }})</option>
@@ -704,9 +741,9 @@
                         <div class="form-group">
                             <select id="claimType" name="claimType" [(ngModel)]="claimForm.ClaimType"
                                 class="form-control" required>
-                                <option value="Damage">Vehicle Damage / Accident</option>
-                                <option value="Theft">Total Theft</option>
-                                <option value="ThirdParty">Third-Party Liability</option>
+                                @for (type of availableClaimTypes(); track type.value) {
+                                <option [value]="type.value">{{ type.label }}</option>
+                                }
                             </select>
                         </div>
 
@@ -775,6 +812,12 @@
                         <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">
                             Claim #{{ selectedClaim().claimNumber }}
                         </h2>
+                        <div
+                            style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-regular fa-calendar-days"></i>
+                            Filed on {{ selectedClaim().createdAt | date:'fullDate' }} at {{ selectedClaim().createdAt |
+                            date:'shortTime' }}
+                        </div>
                     </div>
                     <button class="btn-outline" (click)="closeClaimDetails()"
                         style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 0.85rem;">
@@ -820,44 +863,47 @@
                         <p
                             style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px;">
                             Date Filed</p>
-                        <p style="font-weight: 700; color: var(--text-main); margin: 0;">{{ selectedClaim().createdAt |
-                            date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">{{
+                            selectedClaim().createdAt | date:'MMM d, y' }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">{{ selectedClaim().createdAt |
+                            date:'h:mm
+                            a' }}</div>
                     </div>
+                </div>
 
-                    <!-- Settlement — full width -->
-                    <div style="grid-column: 1 / -1; border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;"
-                        [ngStyle]="{
+                <!-- Settlement — full width -->
+                <div style="grid-column: 1 / -1; border-radius: 10px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;"
+                    [ngStyle]="{
                             'background': getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.08)' :
                                           getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.08)' : 'rgba(234,179,8,0.06)',
                             'border': '1px solid ' + (getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.2)' :
                                           getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.2)' : 'rgba(234,179,8,0.15)')
                         }">
-                        <div>
-                            <p
-                                style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px;">
-                                Approved Amount</p>
-                            @if (getStatusString(selectedClaim().status) === 'Rejected') {
-                            <p style="font-size: 1.4rem; font-weight: 900; color: var(--error); margin: 0;">Claim
-                                Rejected</p>
-                            } @else if (selectedClaim().approvedAmount) {
-                            <p style="font-size: 1.4rem; font-weight: 900; color: var(--success); margin: 0;">{{
-                                selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0' }}</p>
-                            } @else {
-                            <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0;">
-                                Pending assessment...</p>
-                            }
-                        </div>
-                        @if (selectedClaim().rejectionReason) {
-                        <div
-                            style="flex: 1; min-width: 200px; max-width: 380px; background: rgba(0,0,0,0.15); border: 1px solid rgba(220,38,38,0.2); border-radius: 8px; padding: 12px 16px;">
-                            <p
-                                style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--error); margin-bottom: 4px;">
-                                Reason for Rejection</p>
-                            <p style="font-size: 0.85rem; color: var(--text-main); margin: 0; font-style: italic;">"{{
-                                selectedClaim().rejectionReason }}"</p>
-                        </div>
+                    <div>
+                        <p
+                            style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px;">
+                            Approved Amount</p>
+                        @if (getStatusString(selectedClaim().status) === 'Rejected') {
+                        <p style="font-size: 1.4rem; font-weight: 900; color: var(--error); margin: 0;">Claim
+                            Rejected</p>
+                        } @else if (selectedClaim().approvedAmount) {
+                        <p style="font-size: 1.4rem; font-weight: 900; color: var(--success); margin: 0;">{{
+                            selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0' }}</p>
+                        } @else {
+                        <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0;">
+                            Pending assessment...</p>
                         }
                     </div>
+                    @if (selectedClaim().rejectionReason) {
+                    <div
+                        style="flex: 1; min-width: 200px; max-width: 380px; background: rgba(0,0,0,0.15); border: 1px solid rgba(220,38,38,0.2); border-radius: 8px; padding: 12px 16px;">
+                        <p
+                            style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--error); margin-bottom: 4px;">
+                            Reason for Rejection</p>
+                        <p style="font-size: 0.85rem; color: var(--text-main); margin: 0; font-style: italic;">"{{
+                            selectedClaim().rejectionReason }}"</p>
+                    </div>
+                    }
                 </div>
 
                 <!-- Documents -->
@@ -866,7 +912,8 @@
                     <p
                         style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px;">
                         <i class="fa-solid fa-folder-open"
-                            style="color: var(--accent); margin-right: 6px;"></i>Supporting Documents
+                            style="color: var(--accent); margin-right: 6px;"></i>Supporting
+                        Documents
                     </p>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         @for (doc of selectedClaim().documents; track $index) {
@@ -948,6 +995,18 @@
                 </div>
                 }
                 @if (premiumPayments().length > 0) {
+                <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Showing premium transaction history</p>
+                    <div class="sort-control">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
+                        <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
+                            <option value="dateDesc">Newest First</option>
+                            <option value="dateAsc">Oldest First</option>
+                            <option value="amountDesc">Amount High to Low</option>
+                            <option value="amountAsc">Amount Low to High</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -972,10 +1031,10 @@
                             </td>
                             <td>
                                 <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ p.paymentDate | date:'MMM d,
+                                        y' }}</span>
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
-                                        date:'shortTime':'+0530' }}</span>
+                                        date:'h:mm a' }}</span>
                                 </div>
                             </td>
                             <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span>
@@ -1005,6 +1064,17 @@
                 </div>
                 }
                 @if (claimPayments().length > 0) {
+                <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
+                    <div class="sort-control">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort Settlements:</label>
+                        <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
+                            <option value="dateDesc">Newest First</option>
+                            <option value="dateAsc">Oldest First</option>
+                            <option value="amountDesc">Amount High to Low</option>
+                            <option value="amountAsc">Amount Low to High</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -1027,10 +1097,10 @@
                             </td>
                             <td>
                                 <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ p.paymentDate | date:'MMM d,
+                                        y' }}</span>
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
-                                        date:'shortTime':'+0530' }}</span>
+                                        date:'h:mm a' }}</span>
                                 </div>
                             </td>
                             <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span>
@@ -1055,6 +1125,16 @@
                 </div>
                 }
                 @if (transferPayments().length > 0) {
+                <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
+                  <div class="sort-control">
+                      <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
+                          <option value="dateDesc">Newest First</option>
+                          <option value="dateAsc">Oldest First</option>
+                          <option value="amountDesc">Amount High to Low</option>
+                          <option value="amountAsc">Amount Low to High</option>
+                      </select>
+                  </div>
+                </div>
                 <table class="vims-table">
                     <thead>
                         <tr>
@@ -1084,10 +1164,10 @@
                             </td>
                             <td>
                                 <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ p.paymentDate | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ p.paymentDate | date:'MMM d,
+                                        y' }}</span>
                                     <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.paymentDate |
-                                        date:'shortTime':'+0530' }}</span>
+                                        date:'h:mm a' }}</span>
                                 </div>
                             </td>
                             <td><span class="status-badge" [ngClass]="p.amount > 0 ? 'success' : 'info'">{{ p.amount > 0
@@ -1143,8 +1223,12 @@
                                 <div class="transfer-meta" style="color: var(--accent); font-weight: 600;">
                                     Sender: {{ t.senderName || t.senderEmail }}
                                 </div>
-                                <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
-                                    Received {{ t.createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}
+                                <div class="transfer-meta"
+                                    style="font-size: 0.85rem; font-weight: 500; color: var(--text-main); margin-top: 4px;">
+                                    {{ t.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div class="transfer-meta" style="font-size: 0.75rem; color: var(--text-muted);">
+                                    {{ t.createdAt | date:'h:mm a' }}
                                 </div>
                             </div>
                         </div>
@@ -1192,8 +1276,12 @@
                                         t.recipientName || t.recipientEmail }}</span></div>
                                 <div class="transfer-meta">Status: <span class="status-badge"
                                         [ngClass]="t.status?.toLowerCase()">{{ t.status }}</span></div>
-                                <div class="transfer-meta" style="font-size: 0.78rem; color: var(--text-muted);">
-                                    Sent {{ t.createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}
+                                <div class="transfer-meta"
+                                    style="font-size: 0.85rem; font-weight: 500; color: var(--text-main); margin-top: 4px;">
+                                    {{ t.createdAt | date:'MMM d, y' }}
+                                </div>
+                                <div class="transfer-meta" style="font-size: 0.75rem; color: var(--text-muted);">
+                                    {{ t.createdAt | date:'h:mm a' }}
                                 </div>
                             </div>
                         </div>
@@ -1285,17 +1373,9 @@
                                 style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
                                 Account Type</p>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="status-badge active" style="padding: 4px 12px; font-size: 0.75rem;">Premium
-                                    Customer</span>
+                                <span class="status-badge active" style="padding: 4px 12px; font-size: 0.75rem;">Customer</span>
                             </div>
                         </div>
-                        <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 8px 0;">
-                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-                            Need to update your email or personal details? Please contact
-                            <a href="mailto:support@vims.com"
-                                style="color: var(--accent); text-decoration: none; font-weight: 600;">VIMS Support</a>
-                            with your Policy ID for verification.
-                        </p>
                     </div>
                 </div>
             </div>

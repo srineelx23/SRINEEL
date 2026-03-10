@@ -17,15 +17,24 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(authReq).pipe(
         catchError((error: HttpErrorResponse) => {
-            const displayMessage = extractErrorMessage(error);
+            // Handle 401 Unauthorized by logging out and sending to login
+            if (error.status === 401) {
+                sessionStorage.removeItem('token');
+                router.navigate(['/login']);
+            }
+            // Only redirect to error page for serious system exceptions (500 etc)
+            // Allow components to handle validation (400) errors locally (e.g. "Wrong password")
+            else if (error.status !== 400) {
+                const displayMessage = extractErrorMessage(error);
+                router.navigate(['/error'], {
+                    state: {
+                        status: error.status,
+                        message: displayMessage,
+                        title: 'System Exception'
+                    }
+                });
+            }
 
-            router.navigate(['/error'], {
-                state: {
-                    status: error.status,
-                    message: displayMessage,
-                    title: 'System Exception'
-                }
-            });
             return throwError(() => error);
         })
     );
