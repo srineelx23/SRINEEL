@@ -485,7 +485,7 @@
                             <p style="margin-bottom: 8px;"><strong
                                     style="color: var(--text-muted); display: inline-block; width: 140px;">Insured
                                     IDV:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
-                                    selectedPolicy().invoiceAmount | currency:'INR' }}</span></p>
+                                    selectedPolicy().idv | currency:'INR' }}</span></p>
                         </div>
 
                         <!-- Vehicle Info -->
@@ -608,13 +608,19 @@
 
                 @if (applications().length > 0) {
                 <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="applicationsSortOption()" (ngModelChange)="applicationsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Latest Applied</option>
-                          <option value="dateAsc">Oldest Applied</option>
-                      </select>
-                  </div>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showApplicationsSortDropdown.set(!showApplicationsSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(applicationsSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showApplicationsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showApplicationsSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showApplicationsSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="applicationsSortOption() === 'dateDesc'" (click)="applicationsSortOption.set('dateDesc'); showApplicationsSortDropdown.set(false)">Latest Applied</div>
+                            <div class="vims-dropdown-item" [class.active]="applicationsSortOption() === 'dateAsc'" (click)="applicationsSortOption.set('dateAsc'); showApplicationsSortDropdown.set(false)">Oldest Applied</div>
+                        </div>
+                        }
+                    </div>
                 </div>
                 <table class="vims-table">
                     <thead>
@@ -664,30 +670,38 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                         <h3>Claims History</h3>
-                        @if (!isFilingClaim()) {
-                        <button class="btn-primary" (click)="startClaim()" style="background: var(--error);">+ File
-                            New Claim</button>
-                        }
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            @if (!isFilingClaim()) {
+                            <button class="btn-primary" (click)="startClaim()" style="background: var(--error); padding: 10px 18px; font-size: 0.85rem;">+ File
+                                New Claim</button>
+                            }
+                            
+                            @if (claims().length > 0) {
+                            <div class="vims-dropdown-container">
+                                <div class="vims-dropdown-trigger" (click)="showClaimsSortDropdown.set(!showClaimsSortDropdown())">
+                                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                                    <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                                    <i class="fa-solid fa-chevron-down" [style.transform]="showClaimsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                                </div>
+                                @if (showClaimsSortDropdown()) {
+                                <div class="vims-dropdown-menu fade-in" (mouseleave)="showClaimsSortDropdown.set(false)">
+                                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="claimsSortOption.set('dateDesc'); showClaimsSortDropdown.set(false)">Newest First</div>
+                                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="claimsSortOption.set('dateAsc'); showClaimsSortDropdown.set(false)">Oldest First</div>
+                                    <div class="vims-dropdown-divider"></div>
+                                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountDesc'" (click)="claimsSortOption.set('amountDesc'); showClaimsSortDropdown.set(false)">Amount: High to Low</div>
+                                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountAsc'" (click)="claimsSortOption.set('amountAsc'); showClaimsSortDropdown.set(false)">Amount: Low to High</div>
+                                </div>
+                                }
+                            </div>
+                            }
+                        </div>
                     </div>
 
                     @if (claims().length === 0) {
-                    <p style="color: var(--text-muted); padding: 16px;">No claims
-                        history
-                        found.</p>
+                    <p style="color: var(--text-muted); padding: 16px;">No claims history found.</p>
                     }
 
                     @if (claims().length > 0) {
-                    <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                        <div class="sort-control">
-                            <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort Claims:</label>
-                            <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
-                                <option value="dateDesc">Latest to First</option>
-                                <option value="dateAsc">Oldest to First</option>
-                                <option value="amountDesc">Amount: High to Low</option>
-                                <option value="amountAsc">Amount: Low to High</option>
-                            </select>
-                        </div>
-                    </div>
                     <table class="vims-table">
                         <thead>
                             <tr>
@@ -704,10 +718,8 @@
                             <tr (click)="viewClaimDetails(c)" style="cursor: pointer;">
                                 <td>{{ c.claimNumber }}</td>
                                 <td>
-                                    <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y'
-                                        }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt |
-                                        date:'h:mm a' }}</div>
+                                    <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm a' }}</div>
                                 </td>
                                 <td>{{ c.policy?.policyNumber }}</td>
                                 <td>{{ c.claimType }}</td>
@@ -997,14 +1009,21 @@
                 @if (premiumPayments().length > 0) {
                 <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                     <p style="font-size: 0.85rem; color: var(--text-muted);">Showing premium transaction history</p>
-                    <div class="sort-control">
-                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                        <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
-                            <option value="dateDesc">Newest First</option>
-                            <option value="dateAsc">Oldest First</option>
-                            <option value="amountDesc">Amount High to Low</option>
-                            <option value="amountAsc">Amount Low to High</option>
-                        </select>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showPaymentsSortDropdown.set(!showPaymentsSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showPaymentsSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showPaymentsSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="paymentsSortOption.set('dateDesc'); showPaymentsSortDropdown.set(false)">Newest First</div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="paymentsSortOption.set('dateAsc'); showPaymentsSortDropdown.set(false)">Oldest First</div>
+                            <div class="vims-dropdown-divider"></div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="paymentsSortOption.set('amountDesc'); showPaymentsSortDropdown.set(false)">Amount: High to Low</div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="paymentsSortOption.set('amountAsc'); showPaymentsSortDropdown.set(false)">Amount: Low to High</div>
+                        </div>
+                        }
                     </div>
                 </div>
                 <table class="vims-table">
@@ -1065,14 +1084,21 @@
                 }
                 @if (claimPayments().length > 0) {
                 <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
-                    <div class="sort-control">
-                        <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort Settlements:</label>
-                        <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
-                            <option value="dateDesc">Newest First</option>
-                            <option value="dateAsc">Oldest First</option>
-                            <option value="amountDesc">Amount High to Low</option>
-                            <option value="amountAsc">Amount Low to High</option>
-                        </select>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showPaymentsSortDropdown.set(!showPaymentsSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showPaymentsSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showPaymentsSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="paymentsSortOption.set('dateDesc'); showPaymentsSortDropdown.set(false)">Newest First</div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="paymentsSortOption.set('dateAsc'); showPaymentsSortDropdown.set(false)">Oldest First</div>
+                            <div class="vims-dropdown-divider"></div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="paymentsSortOption.set('amountDesc'); showPaymentsSortDropdown.set(false)">Amount: High to Low</div>
+                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="paymentsSortOption.set('amountAsc'); showPaymentsSortDropdown.set(false)">Amount: Low to High</div>
+                        </div>
+                        }
                     </div>
                 </div>
                 <table class="vims-table">
@@ -1126,13 +1152,21 @@
                 }
                 @if (transferPayments().length > 0) {
                 <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <select [ngModel]="paymentsSortOption()" (ngModelChange)="paymentsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Newest First</option>
-                          <option value="dateAsc">Oldest First</option>
-                          <option value="amountDesc">Amount High to Low</option>
-                          <option value="amountAsc">Amount Low to High</option>
-                      </select>
+                  <div class="vims-dropdown-container">
+                      <div class="vims-dropdown-trigger" (click)="showPaymentsSortDropdown.set(!showPaymentsSortDropdown())">
+                          <i class="fa-solid fa-arrow-down-wide-short"></i>
+                          <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                          <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                      </div>
+                      @if (showPaymentsSortDropdown()) {
+                      <div class="vims-dropdown-menu fade-in" (mouseleave)="showPaymentsSortDropdown.set(false)">
+                          <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="paymentsSortOption.set('dateDesc'); showPaymentsSortDropdown.set(false)">Newest First</div>
+                          <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="paymentsSortOption.set('dateAsc'); showPaymentsSortDropdown.set(false)">Oldest First</div>
+                          <div class="vims-dropdown-divider"></div>
+                          <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="paymentsSortOption.set('amountDesc'); showPaymentsSortDropdown.set(false)">Amount: High to Low</div>
+                          <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="paymentsSortOption.set('amountAsc'); showPaymentsSortDropdown.set(false)">Amount: Low to High</div>
+                      </div>
+                      }
                   </div>
                 </div>
                 <table class="vims-table">

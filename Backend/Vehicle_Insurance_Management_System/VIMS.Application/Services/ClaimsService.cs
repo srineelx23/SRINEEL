@@ -198,9 +198,8 @@ namespace VIMS.Application.Services
 
             if (claim.claimType == ClaimType.Theft)
             {
-                // pay full IDV computed at time of claim
+                // pay full IDV computed at time of claim, without deductible
                 payout = insuredIdv;
-                // invoice/document paths are available via claim.Documents or policy documents
             }
             else if (claim.claimType == ClaimType.Damage)
             {
@@ -208,17 +207,41 @@ namespace VIMS.Application.Services
                     throw new BadRequestException("Repair cost required");
 
                 var repair = dto.RepairCost.Value;
-                decimal engine = dto.EngineCost ?? 0m;
+                decimal engine = 0m;
+                if (plan.EngineProtectionAvailable && dto.EngineCost != null)
+                {
+                    engine = dto.EngineCost.Value;
+                }
 
-                // depreciation unless zero depreciation selected
-                decimal depreciationFactor = 0.10m; // example 10% depreciation
+                int age = DateTime.UtcNow.Year - insuredVehicle.Year;
+                decimal depreciationPercent = age switch
+                {
+                    0 => 0.05m, 
+                    1 => 0.10m,
+                    2 => 0.15m,
+                    3 => 0.25m,
+                    4 => 0.35m,
+                    5 => 0.45m,
+                    >= 6 and <= 7 => 0.55m, 
+                    >= 8 and <= 10 => 0.65m, 
+                    _ => 0.75m
+                };
+
                 if (plan.ZeroDepreciationAvailable)
-                    depreciationFactor = 0m;
+                    depreciationPercent = 0m;
 
-                decimal depreciatedRepair = repair - (repair * depreciationFactor);
-                decimal depreciatedEngine = engine - (engine * depreciationFactor);
+                decimal depreciatedRepair = repair - (repair * depreciationPercent);
+                decimal depreciatedEngine = engine - (engine * depreciationPercent);
+                decimal totalDepreciatedDamage = depreciatedRepair + depreciatedEngine;
 
-                payout = depreciatedRepair + depreciatedEngine;
+                if (totalDepreciatedDamage >= insuredIdv * 0.75m)
+                {
+                    payout = insuredIdv; // "give the whole idv to the customer"
+                }
+                else
+                {
+                    payout = totalDepreciatedDamage;
+                }
 
                 // remove deductible
                 payout -= plan.DeductibleAmount;
@@ -230,38 +253,27 @@ namespace VIMS.Application.Services
                     throw new BadRequestException("Repair cost, invoice amount and manufacture year required for third party claims");
 
                 var repair = dto.RepairCost.Value;
-                var engine = dto.EngineCost ?? 0m;
-                var invoice = dto.InvoiceAmount.Value;
+                // "engine repair amount is never included in the third party claim"
 
-                // compute idv using shared pricing service
-                var idv = _pricingService.CalculateIDV(invoice, dto.ManufactureYear.Value);
-
-                var totalCost = repair + engine;
-
-                if (totalCost > idv * 0.75m)
+                // apply depreciation to total repair cost (Zero Dep is NOT applicable for 3rd Party)
+                int age = DateTime.UtcNow.Year - dto.ManufactureYear.Value;
+                decimal depreciationPercent = age switch
                 {
-                    // large repair - pay up to IDV
-                    payout = idv;
-                }
-                else
-                {
-                    // apply depreciation to total repair cost (Zero Dep is NOT applicable for 3rd Party)
-                    int age = DateTime.UtcNow.Year - dto.ManufactureYear.Value;
-                    decimal depreciationPercent = age switch
-                    {
-                        0 => 0.05m, 
-                        1 => 0.10m,
-                        2 => 0.15m,
-                        3 => 0.25m,
-                        4 => 0.35m,
-                        5 => 0.45m,
-                        >= 6 and <= 7 => 0.55m, 
-                        >= 8 and <= 10 => 0.65m, 
-                        _ => 0.75m
-                    };
+                    0 => 0.05m, 
+                    1 => 0.10m,
+                    2 => 0.15m,
+                    3 => 0.25m,
+                    4 => 0.35m,
+                    5 => 0.45m,
+                    >= 6 and <= 7 => 0.55m, 
+                    >= 8 and <= 10 => 0.65m, 
+                    _ => 0.75m
+                };
 
-                    payout = totalCost - (totalCost * depreciationPercent);
-                }
+                decimal depreciatedBill = repair - (repair * depreciationPercent);
+                decimal maxCoverage = plan.MaxCoverageAmount;
+
+                payout = Math.Min(depreciatedBill, maxCoverage);
 
                 // remove deductible
                 payout -= plan.DeductibleAmount;

@@ -165,12 +165,18 @@
 
             <div class="glass-panel" style="padding: 24px;">
                 <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Newest First</option>
-                          <option value="dateAsc">Oldest First</option>
-                      </select>
+                  <div class="vims-dropdown-container">
+                      <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
+                          <i class="fa-solid fa-arrow-down-wide-short"></i>
+                          <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                          <i class="fa-solid fa-chevron-down" [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                      </div>
+                      @if (showSortDropdown()) {
+                      <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="claimsSortOption.set('dateDesc'); showSortDropdown.set(false)">Newest First</div>
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="claimsSortOption.set('dateAsc'); showSortDropdown.set(false)">Oldest First</div>
+                      </div>
+                      }
                   </div>
                 </div>
                 @if (pendingClaims().length === 0) {
@@ -433,17 +439,15 @@
                                         [(ngModel)]="decisionForm.repairCost" placeholder="Verified repair cost amount"
                                         required>
                                 </div>
-                                @if (selectedClaim().claimType === 'Damage' || selectedClaim().claimType ===
-                                'ThirdParty') {
+                                @if (selectedClaim().claimType === 'Damage') {
                                 <div>
                                     <label for="engineCost"
                                         style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">
-                                        {{ selectedClaim().claimType === 'ThirdParty' ? 'Engine Repair Amount' : 'Engine
-                                        Parts Cost (Optional)' }}
+                                        Engine Parts Cost (Optional)
                                     </label>
                                     <input type="number" id="engineCost" name="engineCost" class="form-control"
                                         [(ngModel)]="decisionForm.engineCost"
-                                        [placeholder]="selectedClaim().claimType === 'ThirdParty' ? 'Include if assessed' : 'If applicable'">
+                                        placeholder="If applicable">
                                 </div>
                                 }
                             </div>
@@ -562,14 +566,21 @@
 
             <div class="glass-panel" style="padding: 24px;">
                 <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="claimsSortOption()" (ngModelChange)="claimsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Newest First</option>
-                          <option value="dateAsc">Oldest First</option>
-                          <option value="amountDesc">Amount High to Low</option>
-                          <option value="amountAsc">Amount Low to High</option>
-                      </select>
+                  <div class="vims-dropdown-container">
+                      <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
+                          <i class="fa-solid fa-arrow-down-wide-short"></i>
+                          <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                          <i class="fa-solid fa-chevron-down" [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                      </div>
+                      @if (showSortDropdown()) {
+                      <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="claimsSortOption.set('dateDesc'); showSortDropdown.set(false)">Newest First</div>
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="claimsSortOption.set('dateAsc'); showSortDropdown.set(false)">Oldest First</div>
+                          <div class="vims-dropdown-divider"></div>
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountDesc'" (click)="claimsSortOption.set('amountDesc'); showSortDropdown.set(false)">Amount: High to Low</div>
+                          <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountAsc'" (click)="claimsSortOption.set('amountAsc'); showSortDropdown.set(false)">Amount: Low to High</div>
+                      </div>
+                      }
                   </div>
                 </div>
                 @if (reviewedClaims().length === 0) {

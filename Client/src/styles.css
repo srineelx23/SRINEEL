@@ -200,59 +200,100 @@ a:hover {
 /* Custom Filter/Sort Dropdowns (JS-based) */
 .vims-dropdown-container {
     position: relative;
-    min-width: 180px;
+    display: inline-block;
 }
 
 .vims-dropdown-trigger {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 18px;
+    gap: 12px;
+    padding: 11px 20px;
     background: var(--bg-card);
     border: 1px solid var(--glass-border);
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-main);
     font-weight: 600;
     font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    user-select: none;
+    white-space: nowrap;
 }
 
 .vims-dropdown-trigger:hover {
     border-color: var(--accent);
-    background: var(--card-inner-bg);
+    background: var(--accent-glow);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.vims-dropdown-trigger i {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--accent);
+    font-size: 0.8rem;
 }
 
 .vims-dropdown-menu {
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    width: 220px;
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
+    min-width: 220px;
+    background: #0f172a; /* Solid dark slate */
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 18px;
     padding: 8px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    z-index: 1000;
-    backdrop-filter: blur(24px);
+    gap: 4px;
+    overflow: hidden;
+}
+
+/* Light mode override for dropdown menu */
+[data-theme='light'] .vims-dropdown-menu {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 .vims-dropdown-item {
-    padding: 10px 14px;
-    border-radius: 10px;
-    color: var(--text-muted);
-    font-size: 0.88rem;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--text-light);
+    font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
 }
 
 .vims-dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--accent);
+    transform: translateX(4px);
+}
+
+[data-theme='light'] .vims-dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.vims-dropdown-item.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.vims-dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 8px;
 }
 
 .vims-dropdown-item.active {
@@ -358,7 +399,7 @@ a:hover {
     padding: 16px 20px;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
-    border-radius: 12px;
+    border-radius: 14px;
     color: var(--text-main);
     font-family: inherit;
     font-size: 1rem;
@@ -399,6 +440,12 @@ select.form-control option {
     padding: 12px;
 }
 
+/* Global Select Reset to match premium design */
+select {
+    font-family: inherit;
+    border-radius: 14px;
+}
+
 /* Floating Label Logic */
 .floating-label {
     position: absolute;
@@ -434,24 +481,25 @@ select.form-control~.floating-label {
     -moz-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235BC0BE' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
-    background-position: right 14px center !important;
-    background-size: 12px !important;
+    background-position: right 16px center !important;
+    background-size: 14px !important;
     background-color: var(--bg-card);
     border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    padding: 10px 40px 10px 18px;
+    border-radius: 14px; /* Unified radius */
+    padding: 11px 44px 11px 20px;
     color: var(--text-main);
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    min-width: 160px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 170px;
 }
 
 .vims-select-sm:hover {
     border-color: var(--accent);
-    background-color: var(--card-inner-bg);
+    background-color: var(--accent-glow);
+    transform: translateY(-1px);
 }
 
 [data-theme='light'] .vims-select-sm {

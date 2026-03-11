@@ -32,6 +32,10 @@ export class CustomerDashboard implements OnInit {
   paymentsSortOption = signal('dateDesc');
   applicationsSortOption = signal('dateDesc');
 
+  showClaimsSortDropdown = signal(false);
+  showPaymentsSortDropdown = signal(false);
+  showApplicationsSortDropdown = signal(false);
+
   // Categorization
   policyFilter = signal('Active');
 
@@ -265,6 +269,16 @@ export class CustomerDashboard implements OnInit {
     if (s === '1' || s === 'Approved') return 'Approved';
     if (s === '2' || s === 'Rejected') return 'Rejected';
     return 'Under Review';
+  }
+
+  getSortLabel(option: string): string {
+    switch (option) {
+      case 'dateDesc': return 'Newest First';
+      case 'dateAsc': return 'Oldest First';
+      case 'amountDesc': return 'Amount: High to Low';
+      case 'amountAsc': return 'Amount: Low to High';
+      default: return 'Newest First';
+    }
   }
 
   showCurrentPwd = false;

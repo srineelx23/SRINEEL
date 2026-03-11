@@ -159,13 +159,19 @@
             @if (!selectedApp()) {
             <div class="glass-panel" style="padding: 24px;">
                 <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="appsSortOption()" (ngModelChange)="appsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Newest First</option>
-                          <option value="dateAsc">Oldest First</option>
-                      </select>
-                  </div>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(appsSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showAppsSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="appsSortOption.set('dateDesc'); showAppsSortDropdown.set(false)">Newest First</div>
+                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="appsSortOption.set('dateAsc'); showAppsSortDropdown.set(false)">Oldest First</div>
+                        </div>
+                        }
+                    </div>
                 </div>
                 @if (pendingApps().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No pending
@@ -363,13 +369,19 @@
             @if (!selectedApp()) {
             <div class="glass-panel" style="padding: 24px;">
                 <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="appsSortOption()" (ngModelChange)="appsSortOption.set($event)" class="vims-select-sm">
-                          <option value="dateDesc">Newest First</option>
-                          <option value="dateAsc">Oldest First</option>
-                      </select>
-                  </div>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(appsSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showAppsSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="appsSortOption.set('dateDesc'); showAppsSortDropdown.set(false)">Newest First</div>
+                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="appsSortOption.set('dateAsc'); showAppsSortDropdown.set(false)">Oldest First</div>
+                        </div>
+                        }
+                    </div>
                 </div>
                 @if (reviewedApps().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No history records available.</p>
@@ -500,15 +512,22 @@
             @if (!selectedCustomerRecord()) {
             <div class="glass-panel" style="padding: 24px;">
                 <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                  <div class="sort-control">
-                      <label style="font-size: 0.8rem; color: var(--text-muted); margin-right: 8px;">Sort by:</label>
-                      <select [ngModel]="customersSortOption()" (ngModelChange)="customersSortOption.set($event)" class="vims-select-sm">
-                          <option value="nameAsc">Name A-Z</option>
-                          <option value="nameDesc">Name Z-A</option>
-                          <option value="amountDesc">Premium High to Low</option>
-                          <option value="amountAsc">Premium Low to High</option>
-                      </select>
-                  </div>
+                    <div class="vims-dropdown-container">
+                        <div class="vims-dropdown-trigger" (click)="showCustomersSortDropdown.set(!showCustomersSortDropdown())">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>{{ getSortLabel(customersSortOption()) }}</span>
+                            <i class="fa-solid fa-chevron-down" [style.transform]="showCustomersSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                        </div>
+                        @if (showCustomersSortDropdown()) {
+                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showCustomersSortDropdown.set(false)">
+                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameAsc'" (click)="customersSortOption.set('nameAsc'); showCustomersSortDropdown.set(false)">Name A-Z</div>
+                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameDesc'" (click)="customersSortOption.set('nameDesc'); showCustomersSortDropdown.set(false)">Name Z-A</div>
+                            <div class="vims-dropdown-divider"></div>
+                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountDesc'" (click)="customersSortOption.set('amountDesc'); showCustomersSortDropdown.set(false)">Premium: High to Low</div>
+                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountAsc'" (click)="customersSortOption.set('amountAsc'); showCustomersSortDropdown.set(false)">Premium: Low to High</div>
+                        </div>
+                        }
+                    </div>
                 </div>
                 @if (customers().length === 0) {
                 <p style="color: var(--text-muted); padding: 16px;">No customers

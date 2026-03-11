@@ -33,6 +33,9 @@ export class AgentDashboard implements OnInit {
   appsSortOption = signal('dateDesc');
   customersSortOption = signal('dateDesc');
 
+  showAppsSortDropdown = signal(false);
+  showCustomersSortDropdown = signal(false);
+
   pendingPaymentCount = computed(() => {
     return this.customers().filter(c => c.policyStatus === 'PendingPayment').length;
   });
@@ -310,5 +313,17 @@ export class AgentDashboard implements OnInit {
         this.autoHideToast();
       }
     });
+  }
+
+  getSortLabel(option: string): string {
+    switch (option) {
+      case 'dateDesc': return 'Newest First';
+      case 'dateAsc': return 'Oldest First';
+      case 'nameAsc': return 'Name: A-Z';
+      case 'nameDesc': return 'Name: Z-A';
+      case 'amountDesc': return 'Premium: High to Low';
+      case 'amountAsc': return 'Premium: Low to High';
+      default: return 'Newest First';
+    }
   }
 }

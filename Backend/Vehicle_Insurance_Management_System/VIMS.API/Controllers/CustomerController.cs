@@ -74,6 +74,7 @@ namespace VIMS.API.Controllers
                 status = policy.Status.ToString(),
                 premiumAmount = isFeePending ? 500 : policy.PremiumAmount,
                 invoiceAmount = policy.InvoiceAmount,
+                idv = policy.IDV, // Added missing IDV
                 isFeePending,
                 startDate = policy.StartDate,
                 endDate = policy.EndDate,

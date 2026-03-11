@@ -64,6 +64,7 @@ export class ClaimsOfficerDashboard implements OnInit {
     // UI State
     selectedClaim = signal<any>(null);
     showUserDropdown = signal(false);
+    showSortDropdown = signal(false);
 
     // DTO logic for form
     decisionForm = {
@@ -143,6 +144,16 @@ export class ClaimsOfficerDashboard implements OnInit {
         return status;
     }
 
+    getSortLabel(option: string): string {
+        switch (option) {
+            case 'dateDesc': return 'Newest First';
+            case 'dateAsc': return 'Oldest First';
+            case 'amountDesc': return 'Amount: High to Low';
+            case 'amountAsc': return 'Amount: Low to High';
+            default: return 'Newest First';
+        }
+    }
+
     // Navigation
     switchTab(tabId: string) {
         this.activeTab.set(tabId);
@@ -202,7 +213,7 @@ export class ClaimsOfficerDashboard implements OnInit {
 
         const payload = {
             repairCost: this.decisionForm.repairCost,
-            engineCost: this.decisionForm.engineCost,
+            engineCost: cType === 'ThirdParty' ? null : this.decisionForm.engineCost,
             invoiceAmount: this.decisionForm.invoiceAmount,
             manufactureYear: this.decisionForm.manufactureYear,
             rejectionReason: this.decisionForm.rejectionReason

@@ -150,6 +150,14 @@
                             </div>
                         </div>
 
+                        <div class="plan-coverage-meta">
+                            <i class="fas fa-shield-halved coverage-icon"></i>
+                            <div class="coverage-info">
+                                <p class="coverage-text">Maximum Coverage Capacity</p>
+                                <span class="coverage-amount">{{ plan.maxCoverageAmount | currency:'INR' }}</span>
+                            </div>
+                        </div>
+
                         @if (plan.description) {
                         <p class="plan-desc">{{ plan.description }}</p>
                         }

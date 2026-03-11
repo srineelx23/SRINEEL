@@ -41,6 +41,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
   paymentsSortOption = signal('dateDesc');
   auditSortOption = signal('dateDesc');
 
+  showClaimsSortDropdown = signal(false);
+  showPaymentsSortDropdown = signal(false);
+  showAuditSortDropdown = signal(false);
+
   // Aggregate Computations
 
   // Identify payment records that are actually claim payouts (not premiums).
@@ -329,6 +333,16 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
   }
 
+  getSortLabel(option: string): string {
+    switch (option) {
+      case 'dateDesc': return 'Newest First';
+      case 'dateAsc': return 'Oldest First';
+      case 'amountDesc': return 'Amount: High to Low';
+      case 'amountAsc': return 'Amount: Low to High';
+      default: return 'Newest First';
+    }
+  }
+
   rolesList = computed(() => ['All', 'Admin', 'Customer', 'Agent', 'ClaimsOfficer']);
 
   // Theme tracker (must be declared before computed chart options that use it)
@@ -540,6 +554,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     basePremium: 0,
     policyDurationMonths: 12,
     deductibleAmount: 0,
+    maxCoverageAmount: 0,
     coversThirdParty: true,
     coversOwnDamage: true,
     coversTheft: true,
@@ -973,6 +988,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
       this.showValidationMessage('Deductible amount cannot be negative.');
       return;
     }
+    if (this.planForm.maxCoverageAmount < 0) {
+      this.showValidationMessage('Max coverage amount cannot be negative.');
+      return;
+    }
 
     this.adminService.createPolicyPlan(this.planForm).subscribe({
       next: () => {
@@ -1008,6 +1027,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
       basePremium: 0,
       policyDurationMonths: 12,
       deductibleAmount: 0,
+      maxCoverageAmount: 0,
       coversThirdParty: true,
       coversOwnDamage: true,
       coversTheft: true,

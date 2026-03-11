@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -121,6 +121,10 @@ namespace VIMS.Infrastructure.Persistence
 
             modelBuilder.Entity<PolicyPlan>()
                 .Property(p => p.BasePremium)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<PolicyPlan>()
+                .Property(p => p.MaxCoverageAmount)
                 .HasPrecision(18, 2);
 
 

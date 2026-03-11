@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -18,6 +18,7 @@ namespace VIMS.Domain.Entities
 
         public int PolicyDurationMonths { get; set; }
         public decimal DeductibleAmount { get; set; }
+        public decimal MaxCoverageAmount { get; set; }
         // Coverage
         public bool CoversThirdParty { get; set; }
         public bool CoversOwnDamage { get; set; }
