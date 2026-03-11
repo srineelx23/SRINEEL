@@ -109,10 +109,16 @@ namespace VIMS.Application.Services
                 Status = VehicleApplicationStatus.UnderReview
             };
 
-            // Save Uploaded Files via FileStorageService (Dependency Inversion Principle)
+            await _vehicleApplicationRepository.AddAsync(application);
+            await _vehicleApplicationRepository.SaveChangesAsync();
+
+            // Store files in a temporary folder: user_{userId}/temp_app_{appId}
+            // This will be moved to vehicle_{id} upon approval.
+            string storageIdentifier = $"{userId}/temp_app_{application.VehicleApplicationId}";
+
             if (dto.InvoiceDocument != null)
             {
-                string invoicePath = await _fileStorageService.SaveFileAsync(dto.InvoiceDocument, "user", userId.ToString(), "invoice");
+                string invoicePath = await _fileStorageService.SaveFileAsync(dto.InvoiceDocument, "user", storageIdentifier, "invoice");
                 if (!string.IsNullOrEmpty(invoicePath))
                 {
                     application.Documents.Add(new VehicleDocument
@@ -125,7 +131,7 @@ namespace VIMS.Application.Services
 
             if (dto.RcDocument != null)
             {
-                string rcPath = await _fileStorageService.SaveFileAsync(dto.RcDocument, "user", userId.ToString(), "rc");
+                string rcPath = await _fileStorageService.SaveFileAsync(dto.RcDocument, "user", storageIdentifier, "rc");
                 if (!string.IsNullOrEmpty(rcPath))
                 {
                     application.Documents.Add(new VehicleDocument
@@ -136,8 +142,9 @@ namespace VIMS.Application.Services
                 }
             }
 
-            await _vehicleApplicationRepository.AddAsync(application);
-            await _vehicleApplicationRepository.SaveChangesAsync();
+            // Update again to save document paths
+            await _vehicleApplicationRepository.UpdateAsync(application);
+
             await _auditService.LogActionAsync("PolicyApplicationCreated", "Policy", $"Customer created a policy application for {application.Make} {application.Model}", "VehicleApplication", application.VehicleApplicationId.ToString());
         }
 
@@ -543,8 +550,8 @@ namespace VIMS.Application.Services
             var vehicle = policy.Vehicle;
             var oldApp = vehicle.VehicleApplication;
 
-            // Define new storage identifier: user_{recipientId}/transfer_policies/transfer_{transferId}
-            string storageIdentifier = $"{recipientCustomerId}/transfer_policies/transfer_{transferId}";
+            // Define structure: user_{recipientId}/{vehicleId}/transfer_policies/transfer_{transferId}
+            string storageIdentifier = $"{recipientCustomerId}/{vehicle.VehicleId}/transfer_policies/transfer_{transferId}";
 
             // Save new RC document into the recipient's user folder structure
             var rcRelative = await _fileStorageService.SaveFileAsync(rcDocument, "user", storageIdentifier, "rc");

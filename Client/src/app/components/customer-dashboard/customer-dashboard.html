@@ -506,10 +506,11 @@
                             <ul
                                 style="list-style-type: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
                                 @for (doc of selectedPolicy().vehicle?.documents; track (doc.documentId || $index)) {
-                                <li class="btn-outline"
-                                    style="padding: 8px 16px; border-radius: 6px; display: inline-block; width: fit-content; margin-bottom: 0;">
-                                    <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType }}
-                                    <!-- </a> -->
+                                <li>
+                                    <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
+                                        style="padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; width: fit-content; text-decoration: none; margin-bottom: 0;">
+                                        <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType }}
+                                    </a>
                                 </li>
                                 }
                             </ul>
@@ -939,13 +940,15 @@
                                 <a [href]="'https://localhost:7257/' + doc.document1" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Document 1
+                                    <i class="fa-solid fa-eye"></i> 
+                                    @if (selectedClaim().claimType === 'Theft') { View FIR }
+                                    @else { View Repair Bill }
                                 </a>
                                 @if (doc.document2) {
                                 <a [href]="'https://localhost:7257/' + doc.document2" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Document 2
+                                    <i class="fa-solid fa-eye"></i> View Invoice
                                 </a>
                                 }
                             </div>

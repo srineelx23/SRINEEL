@@ -115,24 +115,45 @@ namespace VIMS.Application.Services
             // store documents according to claim type via FileStorageService
             string? doc1Path = null;
             string? doc2Path = null;
-            string claimIdentifier = $"claim_{created.ClaimId}";
+            
+            // New structure: {userId}/{vehicleId}/claims document/{claim_type}
+            string vehicleIdStr = policy.VehicleId.ToString();
+            string claimTypeFolder = parsedClaimType.ToString();
+            string storageIdentifier = $"{customerId}/{vehicleIdStr}/claims document/{claimTypeFolder}";
 
             if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Theft)
             {
-                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
+                // For theft: Document1 is FIR
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", storageIdentifier, "FIR");
             }
             else if (parsedClaimType == VIMS.Domain.Enums.ClaimType.Damage)
             {
-                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
+                // For own damage: Document1 is Repair Bill, Document2 is Invoice
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", storageIdentifier, "repair bill");
+                
                 if (dto.Document2 != null)
                 {
-                    doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
+                    // User uploaded a new invoice copy
+                    doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", storageIdentifier, "invoice");
+                }
+                else
+                {
+                    // Pull from the vehicle folder: {userId}/{vehicleId}/invoice
+                    // We search in the vehicle's original application documents
+                    var vehicleInvoice = policy.Vehicle?.VehicleApplication?.Documents?
+                        .FirstOrDefault(d => d.DocumentType == "Invoice")?.FilePath;
+                    
+                    if (!string.IsNullOrEmpty(vehicleInvoice))
+                    {
+                        doc2Path = await _fileStorageService.CopyFileAsync(vehicleInvoice, "user", storageIdentifier, "invoice");
+                    }
                 }
             }
             else if (parsedClaimType == VIMS.Domain.Enums.ClaimType.ThirdParty)
             {
-                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
-                doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", customerId.ToString(), $"claimsdocuments/{claimIdentifier}");
+                // For third party: Document1 is Repair Bill, Document2 is Invoice
+                doc1Path = await _fileStorageService.SaveFileAsync(dto.Document1, "user", storageIdentifier, "repair bill");
+                doc2Path = await _fileStorageService.SaveFileAsync(dto.Document2, "user", storageIdentifier, "invoice");
             }
 
             var claimDoc = new ClaimDocument

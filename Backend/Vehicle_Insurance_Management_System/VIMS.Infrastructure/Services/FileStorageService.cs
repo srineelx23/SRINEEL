@@ -51,5 +51,51 @@ namespace VIMS.Infrastructure.Services
 
             return Path.Combine("uploads", $"{baseType}_{identifier}", documentType, fileName).Replace("\\", "/");
         }
+
+        public async Task DeleteFileAsync(string relativePath)
+        {
+            if (string.IsNullOrEmpty(relativePath)) return;
+
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath);
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
+
+        public async Task DeleteDirectoryAsync(string baseType, string identifier)
+        {
+            var folderName = $"{baseType}_{identifier}";
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderName);
+            
+            if (Directory.Exists(fullPath))
+            {
+                Directory.Delete(fullPath, true);
+            }
+        }
+
+        public async Task MoveDirectoryAsync(string sourceBaseType, string sourceIdentifier, string targetBaseType, string targetIdentifier)
+        {
+            var sourceFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"{sourceBaseType}_{sourceIdentifier}");
+            var targetFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", $"{targetBaseType}_{targetIdentifier}");
+
+            if (Directory.Exists(sourceFolder))
+            {
+                if (Directory.Exists(targetFolder))
+                {
+                    // If target already exists, we might need to merge or delete.
+                    // For now, let's just delete target if it exists to avoid conflicts, or handle uniquely.
+                    Directory.Delete(targetFolder, true);
+                }
+                
+                var parentDir = Directory.GetParent(targetFolder).FullName;
+                if (!Directory.Exists(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+
+                Directory.Move(sourceFolder, targetFolder);
+            }
+        }
     }
 }

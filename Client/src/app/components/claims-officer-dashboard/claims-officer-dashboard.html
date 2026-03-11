@@ -381,14 +381,16 @@
                                 <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Document 1
+                                    <i class="fa-solid fa-eye"></i> 
+                                    @if (selectedClaim().claimType === 'Theft' || selectedClaim().claimType === '0') { View FIR }
+                                    @else { View Repair Bill }
                                 </a>
                                 }
                                 @if (docPair.document2) {
                                 <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank"
                                     class="btn-outline"
                                     style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                                    <i class="fa-solid fa-eye"></i> View Document 2
+                                    <i class="fa-solid fa-eye"></i> View Invoice
                                 </a>
                                 }
                             </div>

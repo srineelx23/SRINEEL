@@ -135,9 +135,9 @@
                     <div class="overview-list-item" (click)="switchTab('applications')">
                         <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
                         <div class="oli-body">
-                            <div class="oli-title">{{ a.ownerName || a.fullName || 'Applicant' }}</div>
-                            <div class="oli-sub">{{ a.vehicleRegistrationNumber || a.registrationNumber || 'Vehicle' }}
-                                &bull; {{ a.vehicleMake }} {{ a.vehicleModel }}</div>
+                            <div class="oli-title">{{ a.customer?.fullName || 'Applicant' }}</div>
+                            <div class="oli-sub">{{ a.registrationNumber || 'Vehicle' }}
+                                &bull; {{ a.make }} {{ a.model }}</div>
                         </div>
                         <span class="status-badge pending">Pending</span>
                     </div>

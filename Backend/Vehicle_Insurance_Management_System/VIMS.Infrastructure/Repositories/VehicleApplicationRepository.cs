@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -156,6 +156,11 @@ namespace VIMS.Infrastructure.Repositories
             }
 
             return apps;
+        }
+        public async Task UpdateAsync(VehicleApplication application)
+        {
+            _context.VehicleApplications.Update(application);
+            await _context.SaveChangesAsync();
         }
         public async Task SaveChangesAsync()
         {

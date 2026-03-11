@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,8 +21,9 @@ namespace VIMS.Application.Services
         private readonly IPricingService _pricingService;
         private readonly IPolicyTransferRepository _policyTransferRepository;
         private readonly IAuditService _auditService;
+        private readonly IFileStorageService _fileStorageService;
 
-        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService)
+        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService)
         {
             _vehicleApplicationRepository = appRepo;
             _vehicleRepository = vehicleRepo;
@@ -31,6 +32,7 @@ namespace VIMS.Application.Services
             _pricingService = pricingService;
             _policyTransferRepository = policyTransferRepository;
             _auditService = auditService;
+            _fileStorageService = fileStorageService;
         }
 
         public async Task<List<VehicleApplication>> GetMyPendingApplicationsAsync(int agentId)
@@ -50,21 +52,29 @@ namespace VIMS.Application.Services
                 app.Status = VehicleApplicationStatus.Rejected;
                 app.RejectionReason = dto.RejectionReason;
 
-                if (app.Documents != null && app.Documents.Any())
+                // Delete physical documents and folders
+                string storageIdentifier;
+                if (app.IsTransfer)
                 {
-                    foreach (var doc in app.Documents)
+                    // Find transfer record to get vehicleId
+                    var transfers = await _policyTransferRepository.GetByNewVehicleApplicationIdAsync(applicationId);
+                    var transfer = transfers.FirstOrDefault();
+                    if (transfer != null)
                     {
-                        var fullPath = Path.Combine(
-                            Directory.GetCurrentDirectory(),
-                            "wwwroot",
-                            doc.FilePath);
-
-                        if (File.Exists(fullPath))
-                            File.Delete(fullPath);
+                        storageIdentifier = $"{app.CustomerId}/{transfer.Policy?.VehicleId}/transfer_policies/transfer_{transfer.PolicyTransferId}";
                     }
-
-                    app.Documents.Clear();
+                    else
+                    {
+                        storageIdentifier = $"{app.CustomerId}/temp_app_{applicationId}";
+                    }
                 }
+                else
+                {
+                    storageIdentifier = $"{app.CustomerId}/temp_app_{applicationId}";
+                }
+
+                await _fileStorageService.DeleteDirectoryAsync("user", storageIdentifier);
+                app.Documents.Clear();
 
                 await _vehicleApplicationRepository.SaveChangesAsync();
                 await _auditService.LogActionAsync("PolicyApplicationRejected", "Policy", $"Agent rejected application: {app.RegistrationNumber}. Reason: {app.RejectionReason}", "VehicleApplication", app.VehicleApplicationId.ToString());
@@ -218,6 +228,22 @@ namespace VIMS.Application.Services
             }
             
             await _vehicleApplicationRepository.SaveChangesAsync();
+
+            // REORGANIZE FILES: Move from temp_app_{id} to vehicle_{id}
+            if (!app.IsTransfer)
+            {
+                string sourceIdentifier = $"{app.CustomerId}/temp_app_{applicationId}";
+                string targetIdentifier = $"{app.CustomerId}/{vehicle.VehicleId}";
+                
+                await _fileStorageService.MoveDirectoryAsync("user", sourceIdentifier, "user", targetIdentifier);
+
+                // Update document paths in DB
+                foreach (var doc in app.Documents)
+                {
+                    doc.FilePath = doc.FilePath.Replace($"temp_app_{applicationId}", vehicle.VehicleId.ToString());
+                }
+                await _vehicleApplicationRepository.SaveChangesAsync();
+            }
 
             var nowNormal = DateTime.UtcNow;
 
