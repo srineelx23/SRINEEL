@@ -4,13 +4,23 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
 import { AuthService } from '../../services/auth.service';
+import { OverviewComponent } from './overview/overview.component';
+import { PoliciesComponent } from './policies/policies.component';
+import { ClaimsComponent } from './claims/claims.component';
+import { PaymentsComponent } from './payments/payments.component';
+import { TransfersComponent } from './transfers/transfers.component';
+import { NavbarComponent } from './navbar/navbar.component';
+import { ApplicationsComponent } from './applications/applications.component';
+import { SettingsComponent } from './settings/settings.component';
 import { jwtDecode } from 'jwt-decode';
 import { extractErrorMessage } from '../../utils/error-handler';
+import { InitiateTransferModalComponent } from './modals/initiate-transfer-modal.component';
+import { AcceptTransferModalComponent } from './modals/accept-transfer-modal.component';
 
 @Component({
   selector: 'app-customer-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OverviewComponent, PoliciesComponent, ClaimsComponent, PaymentsComponent, TransfersComponent, SettingsComponent, ApplicationsComponent, NavbarComponent, InitiateTransferModalComponent, AcceptTransferModalComponent],
   templateUrl: './customer-dashboard.html',
   styleUrl: './customer-dashboard.css',
 })
@@ -291,11 +301,9 @@ export class CustomerDashboard implements OnInit {
   showTransferModal = signal(false);
   showAcceptModal = signal(false);
   transferPolicyId = signal<number | null>(null);
-  transferRecipientEmail = signal('');
   transferError = signal('');
   transferSuccess = signal('');
   pendingAcceptTransfer = signal<any>(null);
-  rcFile: File | null = null;
 
   private customerService = inject(CustomerService);
   private authService = inject(AuthService);
@@ -650,7 +658,6 @@ export class CustomerDashboard implements OnInit {
 
   openTransferModal(policyId: number) {
     this.transferPolicyId.set(policyId);
-    this.transferRecipientEmail.set('');
     this.transferError.set('');
     this.transferSuccess.set('');
     this.showTransferModal.set(true);
@@ -661,19 +668,18 @@ export class CustomerDashboard implements OnInit {
     this.transferPolicyId.set(null);
   }
 
-  initiateTransfer() {
-    const email = this.transferRecipientEmail().trim();
+  initiateTransfer(recipientEmail: string) {
     const policyId = this.transferPolicyId();
-    if (!email || !policyId) return;
+    if (!recipientEmail || !policyId) return;
 
     this.transferError.set('');
-    this.customerService.initiateTransfer(policyId, email).subscribe({
+    this.customerService.initiateTransfer(policyId, recipientEmail).subscribe({
       next: () => {
         this.transferSuccess.set('Transfer request sent successfully.');
         this.loadOutgoingTransfers();
         setTimeout(() => this.closeTransferModal(), 2000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.transferError.set(extractErrorMessage(err));
       }
     });
@@ -695,29 +701,23 @@ export class CustomerDashboard implements OnInit {
 
   openAcceptModal(transfer: any) {
     this.pendingAcceptTransfer.set(transfer);
-    this.rcFile = null;
     this.showAcceptModal.set(true);
   }
 
   closeAcceptModal() {
     this.showAcceptModal.set(false);
     this.pendingAcceptTransfer.set(null);
-    this.rcFile = null;
   }
 
-  onRcFileChange(event: any) {
-    this.rcFile = event.target.files[0] || null;
-  }
-
-  acceptTransfer() {
+  acceptTransfer(rcFile: File) {
     const transfer = this.pendingAcceptTransfer();
-    if (!transfer || !this.rcFile) {
+    if (!transfer || !rcFile) {
       this.errorMessage.set('Please upload your RC document.');
       this.autoHideToast();
       return;
     }
 
-    this.customerService.acceptTransfer(transfer.policyTransferId, this.rcFile).subscribe({
+    this.customerService.acceptTransfer(transfer.policyTransferId, rcFile).subscribe({
       next: () => {
         this.successMessage.set('Transfer accepted! The application is now pending agent approval.');
         this.closeAcceptModal();
@@ -725,7 +725,7 @@ export class CustomerDashboard implements OnInit {
         this.loadPolicies();
         setTimeout(() => this.successMessage.set(''), 5000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }

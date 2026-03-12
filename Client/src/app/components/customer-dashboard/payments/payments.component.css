@@ -1,0 +1,125 @@
+/* Payments Specific Styles */
+
+.payments-summary-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 24px; 
+    margin-bottom: 40px;
+}
+
+.summary-card {
+    padding: 32px; 
+    border-radius: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--glass-shadow);
+}
+
+.summary-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent);
+}
+
+.summary-card.success::after {
+    background: var(--success);
+}
+
+.summary-card.success {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.05) 0%, rgba(22, 163, 74, 0.02) 100%);
+}
+
+.summary-label {
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 0.1em; 
+    color: var(--text-muted); 
+    margin-bottom: 12px;
+}
+
+.summary-value {
+    font-size: 2.5rem; 
+    font-weight: 800; 
+    font-family: var(--font-heading);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+}
+
+.summary-value.accent { color: var(--accent); }
+.summary-value.success { color: var(--success); }
+
+.summary-meta {
+    font-size: 0.85rem; 
+    color: var(--text-muted); 
+}
+
+.payment-section {
+    padding: 32px; 
+    margin-bottom: 40px;
+    border-radius: 24px;
+}
+
+.payment-section:last-child {
+    margin-bottom: 0;
+}
+
+.payment-section-title {
+    margin-bottom: 32px; 
+    display: flex; 
+    align-items: center; 
+    gap: 16px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    color: var(--text-main);
+}
+
+.txn-id {
+    font-family: 'Courier New', monospace; 
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.txn-date {
+    display: flex; 
+    flex-direction: column;
+    gap: 2px;
+}
+
+.txn-date .date {
+    font-size: 0.9rem; 
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.txn-date .time {
+    font-size: 0.78rem; 
+    color: var(--text-muted);
+}
+
+.empty-txn-state {
+    text-align: center; 
+    padding: 60px; 
+    border: 1px dashed var(--glass-border); 
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.empty-txn-state p {
+    color: var(--text-muted); 
+    font-style: italic;
+    margin-top: 16px;
+    font-size: 1rem;
+}

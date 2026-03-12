@@ -1,0 +1,122 @@
+<div class="tab-content fade-in">
+
+    <!-- Hero Greeting -->
+    <div class="overview-hero">
+        <div class="overview-hero-text">
+            <p class="overview-greeting">Welcome back <i class="fa-solid fa-hand-wave"></i></p>
+            <h1 class="overview-title">Welcome, {{ customerName() }}!</h1>
+            <p class="overview-sub">All your policies, claims, and vehicles &mdash; at a glance.</p>
+        </div>
+        <div class="overview-hero-badge">
+            <div class="hero-shield">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <span class="hero-badge-label">Protected</span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <!-- Policies -->
+        <div class="kpi-card kpi-accent" (click)="onSwitchTab.emit('policies')">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-file-contract"></i></div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ policies().length }}</div>
+                <div class="kpi-label">Total Policies</div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-success" (click)="onSwitchTab.emit('policies')">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ activePolicies().length }}</div>
+                <div class="kpi-label">Active Policies</div>
+            </div>
+        </div>
+
+        <!-- Applications -->
+        <div class="kpi-card kpi-warning" (click)="onSwitchTab.emit('applied')">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ pendingApplicationsCount() }}</div>
+                <div class="kpi-label">Pending Approval</div>
+            </div>
+        </div>
+
+        <!-- Urgent Actions -->
+        <div class="kpi-card kpi-urgent" (click)="handlePendingPayment()">
+            <div class="kpi-icon-wrap">
+                <i class="fa-solid fa-credit-card"></i>
+            </div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ pendingPaymentPolicies().length }}</div>
+                <div class="kpi-label">Pending Payment</div>
+            </div>
+        </div>
+
+        <!-- Claims -->
+        <div class="kpi-card kpi-info" (click)="onSwitchTab.emit('claims')">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-inbox"></i></div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ pendingClaimsList().length }}</div>
+                <div class="kpi-label">Pending Claims</div>
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-success" (click)="onSwitchTab.emit('claims')">
+            <div class="kpi-icon-wrap"><i class="fa-solid fa-thumbs-up"></i></div>
+            <div class="kpi-content">
+                <div class="kpi-value">{{ approvedClaims().length }}</div>
+                <div class="kpi-label">Approved Claims</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Insured Vehicles Section -->
+    <div class="overview-section">
+        <div class="overview-section-header">
+            <h2 class="overview-section-title">
+                <i class="fa-solid fa-car"></i>
+                Your Insured Vehicles
+            </h2>
+            <button class="btn-outline-sm" (click)="onSwitchTab.emit('policies')">View All Policies &rarr;</button>
+        </div>
+
+        @if (myVehicles().length === 0) {
+        <div class="empty-state-mini">
+            <i class="fa-solid fa-car-side" style="font-size: 2.5rem; display: block;"></i>
+            <p>No insured vehicles yet. <a (click)="onSwitchTab.emit('applied')" style="color:var(--accent);cursor:pointer;">Apply for a policy</a> to get started.</p>
+        </div>
+        }
+
+        @if (myVehicles().length > 0) {
+        <div class="vehicle-cards-grid">
+            @for (v of myVehicles(); track (v.reg || $index)) {
+            <div class="vehicle-card glass-panel">
+                <div class="vehicle-card-top">
+                    <div class="vehicle-icon-wrap"><i class="fa-solid fa-car"></i></div>
+                    <span class="status-badge" [ngClass]="v.status?.toLowerCase()">{{ v.status }}</span>
+                </div>
+                <div class="vehicle-card-body">
+                    <div class="vehicle-reg">{{ v.reg }}</div>
+                    @if (v.vehicleName && v.vehicleName !== v.reg) {
+                    <div class="vehicle-name">{{ v.vehicleName }}</div>
+                    }
+                    <div class="vehicle-meta">
+                        <div class="vehicle-meta-item">
+                            <span class="meta-label">IDV</span>
+                            <span class="meta-value">{{ v.idv | currency:'INR':'symbol':'1.0-0' }}</span>
+                        </div>
+                        <div class="vehicle-meta-item">
+                            <span class="meta-label">Plan</span>
+                            <span class="meta-value plan-name">{{ v.planName }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</div>

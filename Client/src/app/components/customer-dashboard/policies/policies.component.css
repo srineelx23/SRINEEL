@@ -1,0 +1,85 @@
+/* Policies Specific Styles */
+
+.policies-header {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end;
+}
+
+.policy-detail-container {
+    padding: 32px; 
+    position: relative;
+}
+
+.policy-back-btn {
+    position: absolute; 
+    top: 32px; 
+    right: 32px; 
+    padding: 8px 16px; 
+    min-width: auto; 
+    height: auto;
+}
+
+.policy-info-grid {
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 24px; 
+    margin-bottom: 24px;
+}
+
+.policy-info-card {
+    background: var(--card-inner-bg); 
+    padding: 24px; 
+    border-radius: 12px; 
+    box-shadow: none; 
+    border: 1px solid var(--card-inner-border);
+}
+
+.policy-info-card h3 {
+    color: var(--accent); 
+    margin-bottom: 16px;
+}
+
+.policy-data-row {
+    margin-bottom: 8px;
+}
+
+.policy-data-label {
+    color: var(--text-muted); 
+    display: inline-block; 
+    width: 140px;
+    font-weight: 600;
+}
+
+.policy-data-value {
+    font-weight: 500; 
+    font-size: 1.1rem;
+}
+
+.policy-doc-list {
+    list-style-type: none; 
+    padding: 0; 
+    margin-top: 12px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px;
+}
+
+.policy-action-bar {
+    display: flex; 
+    gap: 16px; 
+    margin-top: 16px; 
+    flex-wrap: wrap;
+}
+
+.renewal-module {
+    padding: 32px; 
+    margin-top: 24px; 
+    background: rgba(91, 192, 190, 0.05);
+}
+
+.renewal-grid {
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 16px;
+}

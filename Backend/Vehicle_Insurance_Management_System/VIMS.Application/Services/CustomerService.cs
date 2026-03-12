@@ -27,8 +27,9 @@ namespace VIMS.Application.Services
         private readonly IPolicyTransferRepository _policyTransferRepository;
         private readonly IAuditService _auditService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IClaimsRepository _claimsRepository;
  
-        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService)
+        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, IClaimsRepository claimsRepository)
         {
             _customerRepository = customerRepository;
             _vehicleApplicationRepository = vehicleApplicationRepository;
@@ -41,6 +42,7 @@ namespace VIMS.Application.Services
             _policyTransferRepository = policyTransferRepository;
             _auditService = auditService;
             _fileStorageService = fileStorageService;
+            _claimsRepository = claimsRepository;
         }
         public async Task<List<PolicyPlan>> ViewAllPoliciesAsync()
         {
@@ -302,6 +304,8 @@ namespace VIMS.Application.Services
                 };
                 policy.Status = PolicyStatus.Active;
                 policy.CurrentYearNumber = 1;
+                policy.StartDate = DateTime.UtcNow;
+                policy.EndDate = policy.StartDate.AddYears(policy.SelectedYears);
                 policy.CurrentYearEndDate = policy.StartDate.AddYears(1);
                 policy.IsCurrentYearPaid = true;
 
@@ -454,6 +458,11 @@ namespace VIMS.Application.Services
                 throw new NotFoundException("Policy not found.");
             if (policy.Status != PolicyStatus.Active)
                 throw new BadRequestException("Only active policies can be transferred.");
+
+            // Check if there are any claims associated with the policy
+            var hasActiveClaims = await _claimsRepository.HasAnyClaimsAsync(dto.PolicyId);
+            if (hasActiveClaims)
+                throw new BadRequestException("Cannot transfer a policy with unresolved claims.");
 
             // Check there is no existing pending transfer for this policy
             var existingTransfers = await _policyTransferRepository.GetBySenderIdAsync(senderCustomerId);

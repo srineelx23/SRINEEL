@@ -13,8 +13,6 @@ using VIMS.Infrastructure;
 using VIMS.Infrastructure.Persistence;
 using VIMS.Infrastructure.Repositories;
 using VIMS.Infrastructure.Services;
-using VIMS.Application.Interfaces.Repositories;
-using VIMS.Infrastructure.Repositories;
 namespace VIMS.API
 {
     public class Program

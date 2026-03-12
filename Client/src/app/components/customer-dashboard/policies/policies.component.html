@@ -1,0 +1,343 @@
+<div class="tab-content fade-in">
+    <header class="page-header policies-header">
+        <div>
+            <h1 class="page-title">Insurance Portfolio</h1>
+            <p class="page-subtitle">Categorized view of your coverage and renewal status.</p>
+        </div>
+        <div class="category-filters">
+            <button class="filter-pill" [class.active]="policyFilter() === 'Active'"
+                (click)="onSetPolicyFilter.emit('Active')">Active
+                ({{activePolicies().length}})</button>
+            <button class="filter-pill" [class.active]="policyFilter() === 'Renewable'"
+                (click)="onSetPolicyFilter.emit('Renewable')">Renewal
+                ({{renewablePolicies().length}})</button>
+            <button class="filter-pill" [class.active]="policyFilter() === 'Pending'"
+                (click)="onSetPolicyFilter.emit('Pending')">Pending
+                ({{pendingPolicies().length}})</button>
+            <button class="filter-pill" [class.active]="policyFilter() === 'PendingPayment'"
+                (click)="onSetPolicyFilter.emit('PendingPayment')">Pending
+                Payment
+                ({{pendingPaymentPolicies().length}})</button>
+            <button class="filter-pill" [class.active]="policyFilter() === 'History'"
+                (click)="onSetPolicyFilter.emit('History')">History
+                ({{inactivePolicies().length}})</button>
+        </div>
+    </header>
+
+    <div class="glass-panel" style="padding: 24px;">
+        @if (!selectedPolicy()) {
+        <!-- Active Policies -->
+        @if (policyFilter() === 'Active') {
+        <div>
+            @if (activePolicies().length === 0) {
+            <p style="color: var(--text-muted); padding: 16px;">No active
+                policies found.</p>
+            }
+            @if (activePolicies().length > 0) {
+            <table class="vims-table">
+                <thead>
+                    <tr>
+                        <th>Policy No.</th>
+                        <th>Plan Name</th>
+                        <th>Vehicle</th>
+                        <th>Premium</th>
+                        <th>Insured Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of activePolicies(); track (p.policyId || $index)) {
+                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
+                        <td>{{ p.policyNumber }}</td>
+                        <td>{{ p.planName }}</td>
+                        <td>{{ p.vehicleRegistrationNumber }}</td>
+                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                        <td>{{ p.idv | currency:'INR' }}</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+        }
+
+        <!-- Pending Policies (Applications) -->
+        @if (policyFilter() === 'Pending') {
+        <div>
+            @if (pendingPolicies().length === 0) {
+            <p style="color: var(--text-muted); padding: 16px;">No
+                pending applications awaiting review.</p>
+            }
+            @if (pendingPolicies().length > 0) {
+            <table class="vims-table">
+                <thead>
+                    <tr>
+                        <th>Policy No.</th>
+                        <th>Vehicle Detail</th>
+                        <th>Premium</th>
+                        <th>Insured Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of pendingPolicies(); track (p.policyId || $index)) {
+                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
+                        <td>{{ p.policyNumber }}</td>
+                        <td>{{ p.vehicleRegistrationNumber }} ({{p.vehicleModel}})</td>
+                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                        <td>{{ p.idv | currency:'INR' }}</td>
+                        <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+        }
+
+        <!-- Policies Awaiting Payment -->
+        @if (policyFilter() === 'PendingPayment') {
+        <div>
+            @if (pendingPaymentPolicies().length === 0) {
+            <p style="color: var(--text-muted); padding: 16px;">No
+                policies found with pending payment.</p>
+            }
+            @if (pendingPaymentPolicies().length > 0) {
+            <table class="vims-table">
+                <thead>
+                    <tr>
+                        <th>Policy No.</th>
+                        <th>Plan Name</th>
+                        <th>Vehicle Detail</th>
+                        <th>Premium Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of pendingPaymentPolicies(); track (p.policyId || $index)) {
+                    <tr style="cursor: pointer;">
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.policyNumber }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.planName }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.vehicleRegistrationNumber }}
+                            ({{p.vehicleModel}})</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)"
+                            style="font-weight: 600; color: var(--error);">{{
+                            p.premiumAmount | currency:'INR'
+                            }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">
+                            <span class="status-badge pendingpayment">Awaiting Payment</span>
+                        </td>
+                        <td>
+                            <button class="btn-primary"
+                                style="padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(135deg, #ef4444, #dc2626);"
+                                (click)="onPayPremium.emit(p.policyId); $event.stopPropagation()">
+                                <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i>
+                                {{ p.isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Annual Premium' }}
+                            </button>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+        }
+
+        <!-- History Policies -->
+        @if (policyFilter() === 'History') {
+        <div>
+            @if (inactivePolicies().length === 0) {
+            <p style="color: var(--text-muted); padding: 16px;">No
+                historical data.</p>
+            }
+            @if (inactivePolicies().length > 0) {
+            <table class="vims-table">
+                <thead>
+                    <tr>
+                        <th>Policy No.</th>
+                        <th>Plan</th>
+                        <th>Premium</th>
+                        <th>Insured Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of inactivePolicies(); track (p.policyId || $index)) {
+                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
+                        <td>{{ p.policyNumber }}</td>
+                        <td>{{ p.planName }}</td>
+                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                        <td>{{ p.idv | currency:'INR' }}</td>
+                        <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+        }
+        }
+
+        <!-- Renewable Policies -->
+        @if (policyFilter() === 'Renewable') {
+        <div>
+            @if (renewablePolicies().length === 0) {
+            <p style="color: var(--text-muted); padding: 16px;">No policies
+                currently eligible for renewal.</p>
+            }
+            @if (renewablePolicies().length > 0) {
+            <table class="vims-table">
+                <thead>
+                    <tr>
+                        <th>Policy No.</th>
+                        <th>Plan Name</th>
+                        <th>Vehicle</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (p of renewablePolicies(); track (p.policyId || $index)) {
+                    <tr style="cursor: pointer;">
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.policyNumber }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.planName }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.vehicleRegistrationNumber }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.endDate | date:'medium':'+0530' }}</td>
+                        <td (click)="onViewPolicyDetails.emit(p.policyId)">
+                            <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        </td>
+                        <td>
+                            @if (p.status === 'Expired') {
+                            <span class="status-badge"
+                                style="background: rgba(234,179,8,0.15); color: #EAB308; border: 1px solid rgba(234,179,8,0.3); margin-right: 6px; font-size: 0.7rem;">⏳
+                                Buffer</span>
+                            }
+                            <button class="btn-primary"
+                                style="padding: 6px 12px; font-size: 0.85rem; background: var(--success);"
+                                (click)="onStartRenew.emit(p.policyId); $event.stopPropagation()">
+                                <i class="fa-solid fa-arrows-rotate" style="margin-right: 4px;"></i> Renew Now
+                            </button>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            }
+        </div>
+        }
+
+        <!-- Detailed Policy View -->
+        @if (selectedPolicy()) {
+        <div class="glass-panel fade-in policy-detail-container">
+            <button class="btn-outline policy-back-btn" (click)="onClosePolicyDetails.emit()">&larr; Back to Policies</button>
+            <h2 class="form-title" style="margin-bottom: 24px;">Policy Details: {{ selectedPolicy().policyNumber }}</h2>
+
+            <div class="policy-info-grid">
+                <!-- Policy Info -->
+                <div class="policy-info-card">
+                    <h3 style="color: var(--accent); margin-bottom: 16px;">Coverage Information</h3>
+                    <p class="policy-data-row"><strong class="policy-data-label">Status:</strong>
+                        <span class="status-badge" [ngClass]="selectedPolicy().status.toLowerCase()"
+                            style="display: inline-block;">{{ selectedPolicy().status }}</span>
+                    </p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Plan Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Start Date:</strong> {{ selectedPolicy().startDate | date:'medium':'+0530' }}</p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Expiry Date:</strong> {{ selectedPolicy().endDate | date:'medium':'+0530' }}</p>
+                    <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                    <p class="policy-data-row"><strong class="policy-data-label">Premium Paid:</strong> 
+                        <span class="policy-data-value">{{ selectedPolicy().premiumAmount | currency:'INR' }}</span>
+                    </p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Insured IDV:</strong> 
+                        <span class="policy-data-value">{{ selectedPolicy().idv | currency:'INR' }}</span>
+                    </p>
+                </div>
+
+                <!-- Vehicle Info -->
+                <div class="policy-info-card">
+                    <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Information</h3>
+                    <p class="policy-data-row"><strong class="policy-data-label">Make & Model:</strong> {{ selectedPolicy().vehicle?.make }} {{ selectedPolicy().vehicle?.model }}</p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Manufactured Year:</strong> {{ selectedPolicy().vehicle?.year }}</p>
+                    <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                    <p class="policy-data-row"><strong style="color: var(--text-muted); font-weight: 600;">Uploaded Documents:</strong></p>
+                    <ul class="policy-doc-list">
+                        @for (doc of selectedPolicy().vehicle?.documents; track (doc.documentId || $index)) {
+                        <li>
+                            <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
+                                style="padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; width: fit-content; text-decoration: none; margin-bottom: 0;">
+                                <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType }}
+                            </a>
+                        </li>
+                        }
+                    </ul>
+                    @if (!selectedPolicy().vehicle?.documents || selectedPolicy().vehicle?.documents.length === 0) {
+                    <p style="color: var(--text-muted); font-style: italic; margin-top: 8px;">No documents available.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="policy-action-bar">
+                @if (selectedPolicy().status !== 'Active' && selectedPolicy().status !== 'Cancelled' &&
+                selectedPolicy().status !== 'Expired' && selectedPolicy().status !== 'Claimed') {
+                <button class="btn-primary" style="padding: 10px 24px;"
+                    (click)="onPayPremium.emit(selectedPolicy().policyId)">
+                    {{ selectedPolicy().isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Outstanding Premium' }}
+                </button>
+                }
+                @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Claimed' &&
+                (selectedPolicy().status !== 'Expired' || renewablePolicies().some(r => r.policyId ===
+                selectedPolicy().policyId))) {
+                <button class="btn-primary"
+                    style="padding: 10px 24px; background: var(--success); color: var(--text-on-success);"
+                    (click)="onStartRenew.emit(selectedPolicy().policyId)">Renew / Upgrade Policy</button>
+                }
+                @if (selectedPolicy().status === 'Active') {
+                <button class="btn-primary"
+                    style="padding: 10px 24px; background: linear-gradient(135deg, #7c3aed, #4f46e5);"
+                    (click)="onOpenTransferModal.emit(selectedPolicy().policyId)">
+                    <i class="fa-solid fa-right-left" style="margin-right: 8px;"></i>Transfer Policy
+                </button>
+                }
+                @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Expired' &&
+                selectedPolicy().status !== 'Claimed') {
+                <button class="btn-outline" style="color: var(--error); border-color: var(--error);"
+                    (click)="onCancelPolicy.emit(selectedPolicy().policyId)">Cancel Policy</button>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Renewal Form Module -->
+        @if (renewingPolicyId()) {
+        <div class="glass-panel renewal-module">
+            <h2 class="form-title" style="margin-bottom: 24px;">Renew Policy #{{ renewingPolicyId() }}</h2>
+            <form class="vims-form" (ngSubmit)="onSubmitRenew.emit()">
+                <div class="renewal-grid">
+                    <div class="form-group">
+                        <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId" class="form-control" required>
+                            <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
+                            @for (plan of filteredRenewPlans(); track (plan.planId || plan.id || $index)) {
+                            <option [value]="plan.planId">{{ plan.planName }}</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select id="renewYears" name="renewYears" [(ngModel)]="renewForm.SelectedYears" class="form-control">
+                            <option value="1">Extend by 1 Year</option>
+                            <option value="2">Extend by 2 Years</option>
+                            <option value="3">Extend by 3 Years</option>
+                            <option value="4">Extend by 4 Years</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 16px;">
+                    <button type="submit" class="btn-primary">Confirm Renewal</button>
+                    <button type="button" class="btn-text" (click)="onCancelRenew.emit()">Cancel</button>
+                </div>
+            </form>
+        </div>
+        }
+    </div>
+</div>

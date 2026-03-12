@@ -1,0 +1,53 @@
+<nav class="hover-navbar">
+    <div class="nav-brand">
+        <i class="fa-solid fa-shield-halved"
+            style="color: var(--accent); font-size: 1.5rem; margin-right: 12px;"></i>
+        <h2>VIMS</h2>
+    </div>
+
+    <div class="sidebar-nav">
+        <a (click)="onGoHome.emit()" class="nav-item">Home</a>
+        <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+        <a (click)="switchTab('policies')" [class.active]="activeTab() === 'policies'" class="nav-item">Policies</a>
+        <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
+        <a (click)="switchTab('applied')" [class.active]="activeTab() === 'applied'" class="nav-item">Applied</a>
+        <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
+        <a (click)="switchTab('transfers')" [class.active]="activeTab() === 'transfers'" class="nav-item"
+            style="position:relative">
+            Transfers
+            @if (incomingTransfers().length > 0) {
+            <span class="transfer-badge">{{ incomingTransfers().length }}</span>
+            }
+        </a>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="nav-profile-container">
+            <div class="nav-profile-trigger" (click)="onToggleUserDropdown.emit(!showUserDropdown())">
+                <div class="profile-avatar">{{ customerName().charAt(0) }}</div>
+                <div class="profile-info">
+                    <span class="profile-role">{{ userRole() }}</span>
+                    <span class="profile-name">{{ customerName() }}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down"
+                    [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                    style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+            </div>
+
+            <!-- Dropdown Menu -->
+            @if (showUserDropdown()) {
+            <div class="dropdown-menu fade-in" (mouseleave)="onToggleUserDropdown.emit(false)">
+                <div class="dropdown-item" (click)="switchTab('settings'); onToggleUserDropdown.emit(false)">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" (click)="onLogout.emit()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</nav>

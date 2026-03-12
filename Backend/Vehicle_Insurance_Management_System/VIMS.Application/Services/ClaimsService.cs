@@ -207,8 +207,6 @@ namespace VIMS.Application.Services
             if (plan == null)
                 throw new NotFoundException("Policy plan not found");
 
-            decimal payout = 0m;
-
             // compute insured vehicle IDV at time of claim (do not use stored Policy.IDV)
             // ensure vehicle is available
             var insuredVehicle = policy.Vehicle ?? (await _policyRepository.GetByIdAsync(policy.PolicyId))?.Vehicle;
@@ -217,93 +215,11 @@ namespace VIMS.Application.Services
 
             var insuredIdv = _pricingService.CalculateIDV(policy.InvoiceAmount, insuredVehicle.Year);
 
-            if (claim.claimType == ClaimType.Theft)
-            {
-                // pay full IDV computed at time of claim, without deductible
-                payout = insuredIdv;
-            }
-            else if (claim.claimType == ClaimType.Damage)
-            {
-                if (dto.RepairCost == null)
-                    throw new BadRequestException("Repair cost required");
-
-                var repair = dto.RepairCost.Value;
-                decimal engine = 0m;
-                if (plan.EngineProtectionAvailable && dto.EngineCost != null)
-                {
-                    engine = dto.EngineCost.Value;
-                }
-
-                int age = DateTime.UtcNow.Year - insuredVehicle.Year;
-                decimal depreciationPercent = age switch
-                {
-                    0 => 0.05m, 
-                    1 => 0.10m,
-                    2 => 0.15m,
-                    3 => 0.25m,
-                    4 => 0.35m,
-                    5 => 0.45m,
-                    >= 6 and <= 7 => 0.55m, 
-                    >= 8 and <= 10 => 0.65m, 
-                    _ => 0.75m
-                };
-
-                if (plan.ZeroDepreciationAvailable)
-                    depreciationPercent = 0m;
-
-                decimal depreciatedRepair = repair - (repair * depreciationPercent);
-                decimal depreciatedEngine = engine - (engine * depreciationPercent);
-                decimal totalDepreciatedDamage = depreciatedRepair + depreciatedEngine;
-
-                if (totalDepreciatedDamage >= insuredIdv * 0.75m)
-                {
-                    payout = insuredIdv; // "give the whole idv to the customer"
-                }
-                else
-                {
-                    payout = totalDepreciatedDamage;
-                }
-
-                // remove deductible
-                payout -= plan.DeductibleAmount;
-                if (payout < 0) payout = 0;
-            }
-            else // ThirdParty
-            {
-                if (dto.RepairCost == null || dto.InvoiceAmount == null || dto.ManufactureYear == null)
-                    throw new BadRequestException("Repair cost, invoice amount and manufacture year required for third party claims");
-
-                var repair = dto.RepairCost.Value;
-                // "engine repair amount is never included in the third party claim"
-
-                // apply depreciation to total repair cost (Zero Dep is NOT applicable for 3rd Party)
-                int age = DateTime.UtcNow.Year - dto.ManufactureYear.Value;
-                decimal depreciationPercent = age switch
-                {
-                    0 => 0.05m, 
-                    1 => 0.10m,
-                    2 => 0.15m,
-                    3 => 0.25m,
-                    4 => 0.35m,
-                    5 => 0.45m,
-                    >= 6 and <= 7 => 0.55m, 
-                    >= 8 and <= 10 => 0.65m, 
-                    _ => 0.75m
-                };
-
-                decimal depreciatedBill = repair - (repair * depreciationPercent);
-                decimal maxCoverage = plan.MaxCoverageAmount;
-
-                payout = Math.Min(depreciatedBill, maxCoverage);
-
-                // remove deductible
-                payout -= plan.DeductibleAmount;
-                if (payout < 0) payout = 0;
-            }
-
+            var breakdown = await CalculateClaimBreakdownAsync(claimId, dto);
+            
             // mark claim approved and store approved amount
             claim.Status = ClaimStatus.Approved;
-            claim.ApprovedAmount = Math.Round(payout, 2);
+            claim.ApprovedAmount = breakdown.FinalPayout;
 
             // determine decision type
             var decisionType = "Partial";
@@ -354,22 +270,119 @@ namespace VIMS.Application.Services
 
             return "Claim approved";
         }
-        private decimal CalculateIDV(decimal invoiceAmount, int manufactureYear)
+        public async Task<ClaimBreakdownDTO> CalculateClaimBreakdownAsync(int claimId, ApproveClaimDTO dto)
         {
-            int age = DateTime.UtcNow.Year - manufactureYear;
+            var claim = await _claimsRepository.GetByIdAsync(claimId);
+            if (claim == null) throw new NotFoundException("Claim not found");
 
-            decimal depreciation = age switch
+            var policy = claim.Policy ?? await _policyRepository.GetByIdAsync(claim.PolicyId);
+            var plan = policy?.Plan;
+            var vehicle = policy?.Vehicle;
+
+            if (policy == null || plan == null || vehicle == null)
+                throw new BadRequestException("Missing policy, plan, or vehicle details");
+
+            int currentYear = DateTime.UtcNow.Year;
+            int age = currentYear - vehicle.Year;
+            decimal insuredIdv = _pricingService.CalculateIDV(policy.InvoiceAmount, vehicle.Year);
+
+            var breakdown = new ClaimBreakdownDTO
             {
-                <= 0 => 0.05m,
-                1 => 0.15m,
-                2 => 0.20m,
-                3 => 0.30m,
-                4 => 0.40m,
-                5 => 0.50m,
-                _ => 0.60m
+                IDV = insuredIdv,
+                Deductible = plan.DeductibleAmount,
+                MaxCoverage = plan.MaxCoverageAmount
             };
 
-            return invoiceAmount - (invoiceAmount * depreciation);
+            if (claim.claimType == ClaimType.Theft)
+            {
+                breakdown.Items.Add(new BreakdownItemDTO { Label = "Base IDV Settlement", Value = insuredIdv });
+                breakdown.FinalPayout = Math.Round(insuredIdv, 2);
+            }
+            else if (claim.claimType == ClaimType.Damage)
+            {
+                var repair = dto.RepairCost ?? 0m;
+                var engine = (plan.EngineProtectionAvailable && dto.EngineCost != null) ? dto.EngineCost.Value : 0m;
+
+                decimal depPercent = _pricingService.GetDepreciationRate(age);
+
+                bool isZeroDep = plan.ZeroDepreciationAvailable;
+                decimal effectiveDep = isZeroDep ? 0m : depPercent;
+
+                decimal depRepair = repair * effectiveDep;
+                decimal depEngine = engine * effectiveDep;
+
+                breakdown.Items.Add(new BreakdownItemDTO { Label = "Authorized Repair Cost", Value = repair });
+                if (engine > 0) breakdown.Items.Add(new BreakdownItemDTO { Label = "Engine Protection Cover", Value = engine });
+
+                if (effectiveDep > 0)
+                {
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = $"Depreciation Applied ({(effectiveDep * 100):0}%)", Value = -(depRepair + depEngine), Status = "error" });
+                }
+                else if (isZeroDep && (repair + engine) > 0)
+                {
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Zero Depreciation Bonus", Value = 0, Status = "success", Note = "Saved by plan" });
+                }
+
+                decimal subtotal = (repair + engine) - (depRepair + depEngine);
+
+                if (subtotal >= insuredIdv * 0.75m)
+                {
+                    breakdown.IsTotalLoss = true;
+                    breakdown.Items.Clear();
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Calculated Damage Cost", Value = subtotal });
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Total Loss Adjustment", Value = insuredIdv - subtotal, Status = "warning", Note = "Damage > 75% IDV" });
+                    subtotal = insuredIdv;
+                }
+
+                breakdown.Items.Add(new BreakdownItemDTO { Label = "Compulsory Deductible", Value = -breakdown.Deductible, Status = "error" });
+
+                decimal final = subtotal - breakdown.Deductible;
+                if (breakdown.MaxCoverage > 0 && final > breakdown.MaxCoverage)
+                {
+                    breakdown.IsCapped = true;
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Max Coverage Cap", Value = -(final - breakdown.MaxCoverage), Status = "error", Note = "Plan Limit" });
+                    final = breakdown.MaxCoverage;
+                }
+
+                breakdown.FinalPayout = Math.Max(0, Math.Round(final, 2));
+            }
+            else if (claim.claimType == ClaimType.ThirdParty)
+            {
+                var repair = dto.RepairCost ?? 0m;
+                if (dto.ManufactureYear == null) throw new BadRequestException("Manufacture year required for third party");
+
+                int tpAge = currentYear - dto.ManufactureYear.Value;
+                decimal depP = _pricingService.GetDepreciationRate(tpAge);
+                
+                bool isZeroDep = plan.ZeroDepreciationAvailable;
+                decimal effectiveDep = isZeroDep ? 0m : depP;
+
+                decimal depAmt = repair * effectiveDep;
+                breakdown.Items.Add(new BreakdownItemDTO { Label = "3rd Party Repair Bill", Value = repair });
+
+                if (effectiveDep > 0)
+                {
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = $"Age Depreciation ({(effectiveDep * 100):0}%)", Value = -depAmt, Status = "error" });
+                }
+                else if (isZeroDep && repair > 0)
+                {
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Zero Depreciation Bonus", Value = 0, Status = "success", Note = "Saved by plan" });
+                }
+                breakdown.Items.Add(new BreakdownItemDTO { Label = "Compulsory Deductible", Value = -breakdown.Deductible, Status = "error" });
+
+                decimal final = repair - depAmt - breakdown.Deductible;
+                if (breakdown.MaxCoverage > 0 && final > breakdown.MaxCoverage)
+                {
+                    breakdown.IsCapped = true;
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Max Coverage Cap", Value = -(final - breakdown.MaxCoverage), Status = "error" });
+                    final = breakdown.MaxCoverage;
+                }
+                breakdown.FinalPayout = Math.Max(0, Math.Round(final, 2));
+            }
+
+            return breakdown;
         }
+
     }
 }
+

@@ -1,0 +1,45 @@
+<div class="modal-overlay fade-in">
+    <div class="modal-card slide-up">
+        <div class="modal-header">
+            <div class="modal-icon-wrap accept">
+                <i class="fa-solid fa-file-import"></i>
+            </div>
+            <div class="modal-header-text">
+                <h3 class="modal-title">Accept Transfer</h3>
+                <p class="modal-subtitle">Claiming Policy #{{ transfer()?.policy?.policyNumber }}</p>
+            </div>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-description">
+                To finalize the transfer, please upload a clear scan of the **Vehicle Registration Certificate (RC)**
+                showing your name as the new owner.
+            </p>
+
+            <div class="form-group">
+                <label class="file-label">Upload RC Document</label>
+                <div class="file-upload-area" [class.has-file]="!!rcFile()">
+                    <i class="fa-solid" [class.fa-cloud-arrow-up]="!rcFile()" [class.fa-file-circle-check]="rcFile()"></i>
+                    <div class="upload-text">
+                        @if (rcFile()) {
+                            <span class="filename">{{ rcFile()?.name }}</span>
+                            <span class="filesize">{{ (rcFile()?.size || 0) / 1024 / 1024 | number:'1.2-2' }} MB</span>
+                        } @else {
+                            <span class="prompt">Click or Drag RC Document here</span>
+                            <span class="support">PDF, JPG, PNG (Max 5MB)</span>
+                        }
+                    </div>
+                    <input type="file" (change)="onFileChange($event)" accept=".pdf,.jpg,.jpeg,.png"
+                        class="file-input" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-primary accept-btn" [disabled]="!rcFile()" (click)="handleAccept()">
+                <i class="fa-solid fa-check-double"></i> Process Acceptance
+            </button>
+            <button class="btn-text" (click)="handleClose()">Cancel</button>
+        </div>
+    </div>
+</div>

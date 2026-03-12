@@ -1,0 +1,60 @@
+/* Applications Specific Styles */
+
+.applications-panel {
+    padding: 32px;
+    border-radius: 24px;
+}
+
+.empty-applications {
+    color: var(--text-muted); 
+    padding: 60px;
+    text-align: center;
+    border: 1px dashed var(--glass-border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.01);
+    font-style: italic;
+}
+
+.table-header-actions {
+    margin-bottom: 24px; 
+    display: flex; 
+    justify-content: flex-end;
+}
+
+.app-id {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.reg-no {
+    font-family: inherit;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}
+
+.date-applied {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.date-applied .date {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.date-applied .time {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.rejection-text {
+    font-style: italic;
+    color: var(--error);
+    font-size: 0.88rem;
+    max-width: 200px;
+    word-break: break-word;
+}

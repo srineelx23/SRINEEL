@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,5 +16,6 @@ namespace VIMS.Application.Interfaces.Services
              bool isRenewal);
         // Expose IDV calculation so other services (e.g., claims) can use the same logic
         public decimal CalculateIDV(decimal invoiceAmount, int manufactureYear);
+        public decimal GetDepreciationRate(int age);
     }
 }

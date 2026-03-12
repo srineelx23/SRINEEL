@@ -1,0 +1,213 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">Financial Ledger</h1>
+        <p class="page-subtitle">Premium payments, claim payouts, and historical transactions.</p>
+    </header>
+
+    <div class="payments-summary-grid">
+        <div class="glass-panel summary-card">
+            <p class="summary-label">Total Premium Investment</p>
+            <div class="summary-value accent">{{ totalPremiumPaid() | currency:'INR':'symbol':'1.0-0' }}</div>
+            <p class="summary-meta">LTD amount paid across all protected assets</p>
+        </div>
+        <div class="glass-panel summary-card success">
+            <p class="summary-label">Total Claim Payouts</p>
+            <div class="summary-value success">{{ totalClaimPayouts() | currency:'INR':'symbol':'1.0-0' }}</div>
+            <p class="summary-meta">Total funds received from approved claims</p>
+        </div>
+    </div>
+
+    <!-- Premium Transactions -->
+    <div class="glass-panel payment-section">
+        <h3 class="payment-section-title">
+            <i class="fa-solid fa-file-invoice-dollar" style="color: var(--accent);"></i>
+            Premium Transactions
+        </h3>
+        @if (premiumPayments().length === 0) {
+        <div class="empty-txn-state">
+            <i class="fa-solid fa-receipt" style="font-size: 2.5rem; opacity: 0.15; margin-bottom: 16px; display: block;"></i>
+            <p>No premium history found on your account.</p>
+        </div>
+        }
+        @if (premiumPayments().length > 0) {
+        <div class="table-header-actions" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Showing premium transaction history</p>
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showPaymentsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showPaymentsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="onToggleSortDropdown.emit(false)">
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="onSetSortOption.emit('dateDesc'); onToggleSortDropdown.emit(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="onSetSortOption.emit('dateAsc'); onToggleSortDropdown.emit(false)">Oldest First</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="onSetSortOption.emit('amountDesc'); onToggleSortDropdown.emit(false)">Amount: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="onSetSortOption.emit('amountAsc'); onToggleSortDropdown.emit(false)">Amount: Low to High</div>
+                </div>
+                }
+            </div>
+        </div>
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>TXN ID</th>
+                    <th>Policy Reference</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Invoice</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (p of premiumPayments(); track (p.paymentId || $index)) {
+                <tr>
+                    <td><span class="txn-id" style="color: var(--accent);">#{{ p.paymentId }}</span></td>
+                    <td><span style="font-weight: 700; color: var(--text-main);">{{ p.transactionReference || 'Policy Premium' }}</span></td>
+                    <td><span style="font-weight: 800; color: var(--error);">-{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</span></td>
+                    <td>
+                        <div class="txn-date">
+                            <span class="date">{{ p.paymentDate | date:'MMM d, y' }}</span>
+                            <span class="time">{{ p.paymentDate | date:'h:mm a' }}</span>
+                        </div>
+                    </td>
+                    <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span></td>
+                    <td>
+                        <button class="btn-outline-sm" (click)="onDownloadInvoice.emit(p.paymentId)">
+                            <i class="fa-solid fa-file-pdf"></i> Invoice
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+    <!-- Claim Settlements -->
+    <div class="glass-panel payment-section">
+        <h3 class="payment-section-title">
+            <i class="fa-solid fa-hand-holding-dollar" style="color: var(--success);"></i>
+            Claim Settlements
+        </h3>
+        @if (claimPayments().length === 0) {
+        <div class="empty-txn-state">
+            <p>No claim payouts received yet.</p>
+        </div>
+        }
+        @if (claimPayments().length > 0) {
+        <div class="table-header-actions" style="margin-bottom: 24px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showPaymentsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showPaymentsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="onToggleSortDropdown.emit(false)">
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="onSetSortOption.emit('dateDesc'); onToggleSortDropdown.emit(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="onSetSortOption.emit('dateAsc'); onToggleSortDropdown.emit(false)">Oldest First</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="onSetSortOption.emit('amountDesc'); onToggleSortDropdown.emit(false)">Amount: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="onSetSortOption.emit('amountAsc'); onToggleSortDropdown.emit(false)">Amount: Low to High</div>
+                </div>
+                }
+            </div>
+        </div>
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>TXN ID</th>
+                    <th>Claim Reference</th>
+                    <th>Payout Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (p of claimPayments(); track (p.paymentId || $index)) {
+                <tr>
+                    <td><span class="txn-id">#{{ p.paymentId }}</span></td>
+                    <td><span style="font-weight: 700; color: var(--text-main);">{{ p.transactionReference }}</span></td>
+                    <td><span style="font-weight: 800; color: var(--success);">+{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</span></td>
+                    <td>
+                        <div class="txn-date">
+                            <span class="date">{{ p.paymentDate | date:'MMM d, y' }}</span>
+                            <span class="time">{{ p.paymentDate | date:'h:mm a' }}</span>
+                        </div>
+                    </td>
+                    <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+    <!-- Transfer Adjustments -->
+    <div class="glass-panel payment-section">
+        <h3 class="payment-section-title">
+            <i class="fa-solid fa-right-left" style="color: var(--warning);"></i>
+            Transfer Adjustments
+        </h3>
+        @if (transferPayments().length === 0) {
+        <div class="empty-txn-state">
+            <p>No transfer related financial adjustments.</p>
+        </div>
+        }
+        @if (transferPayments().length > 0) {
+        <div class="table-header-actions" style="margin-bottom: 24px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showPaymentsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showPaymentsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="onToggleSortDropdown.emit(false)">
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="onSetSortOption.emit('dateDesc'); onToggleSortDropdown.emit(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="onSetSortOption.emit('dateAsc'); onToggleSortDropdown.emit(false)">Oldest First</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="onSetSortOption.emit('amountDesc'); onToggleSortDropdown.emit(false)">Amount: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="onSetSortOption.emit('amountAsc'); onToggleSortDropdown.emit(false)">Amount: Low to High</div>
+                </div>
+                }
+            </div>
+        </div>
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>TXN ID</th>
+                    <th>Policy Transfer Ref</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (p of transferPayments(); track (p.paymentId || $index)) {
+                <tr>
+                    <td><span class="txn-id" style="color: var(--accent);">#{{ p.paymentId }}</span></td>
+                    <td><span style="font-weight: 700; color: var(--text-main);">{{ p.transactionReference }}</span></td>
+                    <td>
+                        @if (p.transactionReference && p.transactionReference.toLowerCase().includes('fee')) {
+                        <span style="font-weight: 800; color: var(--error);">-{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</span>
+                        } @else {
+                        <span style="font-weight: 700; color: var(--text-main);">{{ p.amount | currency:'INR' }}</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="txn-date">
+                            <span class="date">{{ p.paymentDate | date:'MMM d, y' }}</span>
+                            <span class="time">{{ p.paymentDate | date:'h:mm a' }}</span>
+                        </div>
+                    </td>
+                    <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+</div>

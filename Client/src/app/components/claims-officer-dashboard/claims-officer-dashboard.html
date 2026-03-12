@@ -279,11 +279,68 @@
                             </div>
                         </div>
                     </div>
-                    <button class="btn-outline" (click)="closeClaimReview()"
-                        style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 0.85rem; white-space: nowrap;">
-                        <i class="fa-solid fa-arrow-left"></i> Back to List
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <button class="btn-outline" (click)="closeClaimReview()"
+                            style="display: flex; align-items: center; gap: 8px; padding: 9px 18px; font-size: 0.85rem; white-space: nowrap;">
+                            <i class="fa-solid fa-arrow-left"></i> Back to List
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Premium Fraud Assessment Banner -->
+                @if (selectedClaim().status === 'Submitted' || selectedClaim().status === 'UnderReview') {
+                <div class="risk-profile-banner fade-in">
+                    <div class="risk-gauge-container">
+                        <div class="risk-gauge" [style.--score]="selectedClaim().fraudRiskScore" 
+                             [class.risk-low]="selectedClaim().fraudRiskScore < 35"
+                             [class.risk-med]="selectedClaim().fraudRiskScore >= 35 && selectedClaim().fraudRiskScore < 70"
+                             [class.risk-high]="selectedClaim().fraudRiskScore >= 70">
+                            <div class="gauge-center">
+                                <span class="gauge-label">RISK</span>
+                                <span class="gauge-value">{{ selectedClaim().fraudRiskScore }}</span>
+                                <span class="gauge-total">/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-details">
+                        <div class="risk-status-line">
+                            <h3 class="risk-title">Fraud Risk Analysis</h3>
+                            <span class="risk-level-tag" 
+                                  [class.low]="selectedClaim().fraudRiskScore < 35"
+                                  [class.med]="selectedClaim().fraudRiskScore >= 35 && selectedClaim().fraudRiskScore < 70"
+                                  [class.high]="selectedClaim().fraudRiskScore >= 70">
+                                <i class="fa-solid" [ngClass]="selectedClaim().fraudRiskScore >= 70 ? 'fa-triangle-exclamation' : 'fa-shield-halved'"></i>
+                                {{ selectedClaim().fraudRiskScore >= 70 ? 'CRITICAL ALERT' : selectedClaim().fraudRiskScore >= 35 ? 'CAUTION ADVISED' : 'LOW RISK PROFILE' }}
+                            </span>
+                        </div>
+                        
+                        <div class="risk-flags">
+                            @if (selectedClaim().riskReasons?.length > 0) {
+                                @for (reason of selectedClaim().riskReasons; track $index) {
+                                <div class="risk-flag-item">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span>{{ reason }}</span>
+                                </div>
+                                }
+                            } @else {
+                                <div class="risk-flag-item clean">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>No suspicious activity patterns detected in this claim.</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="risk-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Trust Index</span>
+                            <div class="trust-bar-bg"><div class="trust-bar-fill" [style.width]="(100 - selectedClaim().fraudRiskScore) + '%'"></div></div>
+                        </div>
+                        <p class="meta-note">Score based on timing, history, and policy status.</p>
+                    </div>
+                </div>
+                }
 
                 <!-- Info Grid (3 columns) -->
                 <div
@@ -305,6 +362,7 @@
                         <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">{{
                             selectedClaim().customer?.email }}</p>
                     </div>
+
                     <!-- Incident -->
                     <div style="background: var(--bg-card); padding: 22px 24px;">
                         <p
@@ -414,14 +472,14 @@
                             <label
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
                                 <input type="radio" [value]="true" name="approvedDecision"
-                                    [(ngModel)]="decisionForm.approved"
+                                    [(ngModel)]="decisionForm.approved" (ngModelChange)="updateBreakdown()"
                                     style="accent-color: var(--success); width: 18px; height: 18px;">
                                 Approve Claim
                             </label>
                             <label
                                 style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
-                                <input type="radio" [value]="false" name="rejectDecision"
-                                    [(ngModel)]="decisionForm.approved"
+                                <input type="radio" [value]="false" name="rejectedDecision"
+                                    [(ngModel)]="decisionForm.approved" (ngModelChange)="updateBreakdown()"
                                     style="accent-color: var(--error); width: 18px; height: 18px;">
                                 Reject Claim
                             </label>
@@ -438,7 +496,7 @@
                                         style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Authorized
                                         Repair Cost</label>
                                     <input type="number" id="repairCost" name="repairCost" class="form-control"
-                                        [(ngModel)]="decisionForm.repairCost" placeholder="Verified repair cost amount"
+                                        [(ngModel)]="decisionForm.repairCost" (ngModelChange)="updateBreakdown()" placeholder="Verified repair cost amount"
                                         required>
                                 </div>
                                 @if (selectedClaim().claimType === 'Damage') {
@@ -448,7 +506,7 @@
                                         Engine Parts Cost (Optional)
                                     </label>
                                     <input type="number" id="engineCost" name="engineCost" class="form-control"
-                                        [(ngModel)]="decisionForm.engineCost"
+                                        [(ngModel)]="decisionForm.engineCost" (ngModelChange)="updateBreakdown()"
                                         placeholder="If applicable">
                                 </div>
                                 }
@@ -457,21 +515,13 @@
 
                             <!-- Third Party specific -->
                             @if (selectedClaim().claimType === 'ThirdParty') {
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                                <div>
-                                    <label for="invoiceAmount"
-                                        style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
-                                        Party Vehicle Invoice Amt.</label>
-                                    <input type="number" id="invoiceAmount" name="invoiceAmount" class="form-control"
-                                        [(ngModel)]="decisionForm.invoiceAmount"
-                                        placeholder="Invoice of the external vehicle" required>
-                                </div>
+                            <div style="margin-bottom: 16px;">
                                 <div>
                                     <label for="manufactureYear"
                                         style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">3rd
                                         Party Manufacture Year</label>
                                     <input type="number" id="manufactureYear" name="manufactureYear"
-                                        class="form-control" [(ngModel)]="decisionForm.manufactureYear"
+                                        class="form-control" [(ngModel)]="decisionForm.manufactureYear" (ngModelChange)="updateBreakdown()"
                                         placeholder="e.g. 2021" required>
                                 </div>
                             </div>
@@ -483,10 +533,57 @@
                                 automatically calculated out to Full IDV value.</p>
                             }
                         </div>
+
+                        <!-- Dynamic Payout Preview & Breakdown -->
+                        <div style="background: var(--card-inner-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden;">
+                            @if (payoutLoading()) {
+                            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(2px); z-index: 10; display: flex; align-items: center; justify-content: center;">
+                                <div style="width: 24px; height: 24px; border: 3px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                            </div>
+                            }
+                            <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 16px;">
+                                <div>
+                                    <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Final Payout Estimate</h4>
+                                    <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); opacity: 0.7;">Verified net amount after all rules applied.</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.8rem; font-weight: 900; color: var(--success); letter-spacing: -0.02em; line-height: 1;">
+                                        {{ getEstimatedPayout() !== null ? (getEstimatedPayout() | currency:'INR':'symbol':'1.0-0') : '--' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (getPayoutBreakdown(); as breakdown) {
+                                <div class="payout-breakdown-list">
+                                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                                        @for (item of breakdown.items; track $index) {
+                                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <span [style.color]="item.status === 'error' ? 'var(--error)' : item.status === 'warning' ? '#EAB308' : 'var(--text-main)'">{{ item.label }}</span>
+                                                    @if (item.note) {
+                                                        <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--text-muted);">{{ item.note }}</span>
+                                                    }
+                                                </div>
+                                                <span [style.color]="item.value < 0 ? 'var(--error)' : item.status === 'success' ? 'var(--success)' : 'var(--text-main)'" style="font-weight: 600;">
+                                                    {{ item.value === 0 && item.status === 'success' ? 'NONE' : (item.value | currency:'INR':'symbol':'1.0-0') }}
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @if (getPayoutWarning()) {
+                                        <div style="margin-top: 20px; padding: 12px 16px; border-radius: 8px; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); display: flex; align-items: flex-start; gap: 10px;">
+                                            <i class="fa-solid fa-circle-info" style="color: #EAB308; margin-top: 2px;"></i>
+                                            <p style="margin: 0; font-size: 0.8rem; color: #EAB308; line-height: 1.4;">
+                                                {{ getPayoutWarning() }}
+                                            </p>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
                         }
-
-
-
+                        
                         @if (!decisionForm.approved) {
                         <div class="form-group slide-in" style="margin-bottom: 20px;">
                             <label for="rejectionReason"

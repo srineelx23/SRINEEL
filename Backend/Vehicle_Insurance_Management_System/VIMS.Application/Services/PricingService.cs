@@ -14,8 +14,13 @@ namespace VIMS.Application.Services
         public decimal CalculateIDV(decimal invoiceAmount, int manufactureYear)
         {
             int age = DateTime.UtcNow.Year - manufactureYear;
+            decimal depreciation = GetDepreciationRate(age);
+            return invoiceAmount - (invoiceAmount * depreciation);
+        }
 
-            decimal depreciation = age switch
+        public decimal GetDepreciationRate(int age)
+        {
+            return age switch
             {
                 <= 0 => 0.05m,
                 1 => 0.15m,
@@ -25,8 +30,6 @@ namespace VIMS.Application.Services
                 5 => 0.50m,
                 _ => 0.60m
             };
-
-            return invoiceAmount - (invoiceAmount * depreciation);
         }
 
         public PricingResultDTO CalculateAnnualPremium(

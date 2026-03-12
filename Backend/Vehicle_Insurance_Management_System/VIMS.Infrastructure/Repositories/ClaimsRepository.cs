@@ -51,9 +51,12 @@ namespace VIMS.Infrastructure.Repositories
             return await _context.Claims
                 .Include(c => c.Documents)
                 .Include(c => c.Customer)
+                    .ThenInclude(cust => cust.CustomerClaims)
                 .Include(c => c.ClaimsOfficer)
                 .Include(c => c.Policy)
                     .ThenInclude(p => p.Plan)
+                .Include(c => c.Policy)
+                    .ThenInclude(p => p.Payments)
                 .Include(c => c.Policy)
                     .ThenInclude(p => p.Vehicle)
                         .ThenInclude(v => v.VehicleApplication)
@@ -91,6 +94,11 @@ namespace VIMS.Infrastructure.Repositories
                 .Include(c => c.Policy)
                     .ThenInclude(p => p.Vehicle)
                 .ToListAsync();
+        }
+
+        public async Task<bool> HasAnyClaimsAsync(int policyId)
+        {
+            return await _context.Claims.AnyAsync(c => c.PolicyId == policyId);
         }
     }
 }

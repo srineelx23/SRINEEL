@@ -1,0 +1,83 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">Account Settings</h1>
+        <p class="page-subtitle">Manage your credentials and security preferences.</p>
+    </header>
+
+    <div class="settings-grid">
+        <!-- Security Section -->
+        <div class="glass-panel security-panel">
+            <div class="security-header">
+                <div class="security-icon">
+                    <i class="fa-solid fa-shield-lock"></i>
+                </div>
+                <div>
+                    <h3 class="security-title">Security & Password</h3>
+                    <p class="security-subtitle">Change your account password periodically for better security.</p>
+                </div>
+            </div>
+
+            <form class="vims-form" (ngSubmit)="onChangePassword.emit()">
+                <div class="form-group">
+                    <input [type]="showCurrentPwd() ? 'text' : 'password'" id="currentPwd" name="currentPwd"
+                        class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
+                        required>
+                    <label for="currentPwd" class="floating-label">Current Password</label>
+                    <i class="fa-solid password-toggle" [ngClass]="showCurrentPwd() ? 'fa-eye-slash' : 'fa-eye'"
+                        (click)="showCurrentPwd.set(!showCurrentPwd())"></i>
+                </div>
+
+                <div class="form-group">
+                    <input [type]="showNewPwd() ? 'text' : 'password'" id="newPwd" name="newPwd"
+                        class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
+                        required>
+                    <label for="newPwd" class="floating-label">New Password</label>
+                    <i class="fa-solid password-toggle" [ngClass]="showNewPwd() ? 'fa-eye-slash' : 'fa-eye'"
+                        (click)="showNewPwd.set(!showNewPwd())"></i>
+                </div>
+
+                <div class="form-group">
+                    <input [type]="showConfirmPwd() ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
+                        class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
+                        required>
+                    <label for="confirmPwd" class="floating-label">Confirm New Password</label>
+                    <i class="fa-solid password-toggle" [ngClass]="showConfirmPwd() ? 'fa-eye-slash' : 'fa-eye'"
+                        (click)="showConfirmPwd.set(!showConfirmPwd())"></i>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary full-width-btn" [disabled]="changePwdLoading()">
+                        @if (changePwdLoading()) {
+                        <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
+                        } @else {
+                        <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Box -->
+        <div class="glass-panel info-panel">
+            <div class="info-header">
+                <h3 class="info-title">Account Information</h3>
+            </div>
+            <div class="info-list">
+                <div class="info-item">
+                    <p class="info-label">Profile Name</p>
+                    <p class="info-value">{{ customerName() }}</p>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">Account Type</p>
+                    <div class="badge-container">
+                        <span class="status-badge active">Customer</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">Member Since</p>
+                    <p class="info-value">October 2025</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

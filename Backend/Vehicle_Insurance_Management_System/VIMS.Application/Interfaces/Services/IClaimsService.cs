@@ -15,5 +15,6 @@ namespace VIMS.Application.Interfaces.Services
         // Methods previously handled by controller via repository directly
         Task<Claims?> GetClaimByIdAsync(int claimId);
         Task<List<Claims>> GetClaimsByOfficerIdAsync(int officerId);
+        Task<ClaimBreakdownDTO> CalculateClaimBreakdownAsync(int claimId, ApproveClaimDTO dto);
     }
 }

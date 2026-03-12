@@ -20,4 +20,8 @@ export class ClaimsOfficerService {
     decideClaim(claimId: number, dto: any, approve: boolean): Observable<any> {
         return this.http.post(`${this.apiUrl}/decide/${claimId}?approve=${approve}`, dto);
     }
+
+    getPayoutBreakdown(claimId: number, dto: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/payout-breakdown/${claimId}`, dto);
+    }
 }

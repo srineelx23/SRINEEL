@@ -13,5 +13,6 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<List<Claims>> GetAllAsync();
         Task<bool> ExistsActiveClaimForPolicyAsync(int policyId);
         Task<List<Claims>> GetByCustomerIdAsync(int customerId);
+        Task<bool> HasAnyClaimsAsync(int policyId);
     }
 }

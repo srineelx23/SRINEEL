@@ -1,0 +1,97 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">Policy Transfers</h1>
+        <p class="page-subtitle">Securely transfer policy ownership or manage incoming requests.</p>
+    </header>
+
+    <div class="transfers-grid">
+        <!-- Incoming -->
+        <section>
+            <div class="transfer-section-header">
+                <div class="transfer-header-icon incoming">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <h3 class="transfer-section-title">Shared With Me</h3>
+            </div>
+
+            @if (incomingTransfers().length === 0) {
+            <div class="glass-panel empty-transfer-state">
+                <p>No pending policy transfers from others.</p>
+            </div>
+            }
+
+            @for (t of incomingTransfers(); track trackByTransferId($index, t)) {
+            <div class="transfer-card glass-panel">
+                <div class="transfer-card-info">
+                    <div class="transfer-icon"><i class="fa-solid fa-key"></i></div>
+                    <div>
+                        <div class="transfer-policy-no">Policy #{{ t.policy?.policyNumber }}</div>
+                        <div class="transfer-vehicle">
+                            {{ t.policy?.vehicle?.registrationNumber }}
+                            @if (t.policy?.vehicle?.make || t.policy?.vehicle?.model) {
+                            &nbsp;({{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }})
+                            }
+                        </div>
+                        <div class="transfer-meta" style="color: var(--accent); font-weight: 600;">
+                            Sender: {{ t.senderName || t.senderEmail }}
+                        </div>
+                        <div class="transfer-meta" style="font-weight: 500; color: var(--text-main); margin-top: 4px;">
+                            {{ t.createdAt | date:'MMM d, y' }}
+                        </div>
+                        <div class="transfer-meta" style="font-size: 0.75rem; color: var(--text-muted);">
+                            {{ t.createdAt | date:'h:mm a' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="transfer-card-actions">
+                    <button class="btn-primary btn-accept" (click)="onAcceptTransfer.emit(t)">Accept</button>
+                    <button class="btn-outline btn-decline" (click)="onDeclineTransfer(t)">Decline</button>
+                </div>
+            </div>
+            }
+        </section>
+
+        <!-- Outgoing -->
+        <section>
+            <div class="transfer-section-header">
+                <div class="transfer-header-icon outgoing">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </div>
+                <h3 class="transfer-section-title">Initiated Transfers</h3>
+            </div>
+
+            @if (outgoingTransfers().length === 0) {
+            <div class="glass-panel empty-transfer-state">
+                <p>You haven't initiated any ownership changes.</p>
+            </div>
+            }
+
+            @for (t of outgoingTransfers(); track trackByTransferId($index, t)) {
+            <div class="transfer-card glass-panel">
+                <div class="transfer-card-info">
+                    <div class="transfer-icon outgoing"><i class="fa-solid fa-right-from-bracket"></i></div>
+                    <div style="flex: 1;">
+                        <div class="transfer-policy-no">Policy #{{ t.policy?.policyNumber }}</div>
+                        <div class="transfer-vehicle">
+                            {{ t.policy?.vehicle?.registrationNumber }}
+                            @if (t.policy?.vehicle?.make || t.policy?.vehicle?.model) {
+                            &nbsp;({{ t.policy?.vehicle?.make }} {{ t.policy?.vehicle?.model }})
+                            }
+                        </div>
+                        <div class="transfer-vehicle">Recipient: <span style="color: var(--text-main);">{{
+                                t.recipientName || t.recipientEmail }}</span></div>
+                        <div class="transfer-meta">Status: <span class="status-badge"
+                                [ngClass]="t.status?.toLowerCase()">{{ t.status }}</span></div>
+                        <div class="transfer-meta" style="font-weight: 500; color: var(--text-main); margin-top: 4px;">
+                            {{ t.createdAt | date:'MMM d, y' }}
+                        </div>
+                        <div class="transfer-meta" style="font-size: 0.75rem; color: var(--text-muted);">
+                            {{ t.createdAt | date:'h:mm a' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </section>
+    </div>
+</div>

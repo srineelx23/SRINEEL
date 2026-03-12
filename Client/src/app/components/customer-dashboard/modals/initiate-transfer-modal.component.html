@@ -1,0 +1,47 @@
+<div class="modal-overlay fade-in">
+    <div class="modal-card slide-up">
+        <div class="modal-header">
+            <div class="modal-icon-wrap initiate">
+                <i class="fa-solid fa-right-left"></i>
+            </div>
+            <div class="modal-header-text">
+                <h3 class="modal-title">Initiate Transfer</h3>
+                <p class="modal-subtitle">Transfer ownership of Policy #{{ policyId() }}</p>
+            </div>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-description">
+                You are about to transfer this policy to another user. They will need to accept the request and upload
+                their identification documents.
+            </p>
+
+            <div class="form-group">
+                <input type="email" id="recipientEmail" name="recipientEmail" class="form-control" placeholder=" "
+                    [(ngModel)]="recipientEmail" required>
+                <label for="recipientEmail" class="floating-label">Recipient's Email Address</label>
+            </div>
+
+            @if (error()) {
+            <div class="modal-status error fade-in">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error() }}</span>
+            </div>
+            }
+
+            @if (success()) {
+            <div class="modal-status success fade-in">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>{{ success() }}</span>
+            </div>
+            }
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-primary initiate-btn" (click)="handleInitiate()">
+                <i class="fa-solid fa-paper-plane"></i> Send Request
+            </button>
+            <button class="btn-text" (click)="handleClose()">Cancel</button>
+        </div>
+    </div>
+</div>

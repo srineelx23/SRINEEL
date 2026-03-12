@@ -72,6 +72,13 @@ namespace VIMS.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<PolicyTransfer>> GetTransfersByPolicyIdAsync(int policyId)
+        {
+            return await _context.PolicyTransfers
+                .Where(t => t.PolicyId == policyId)
+                .ToListAsync();
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
