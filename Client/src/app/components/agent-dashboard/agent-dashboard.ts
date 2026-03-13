@@ -6,11 +6,26 @@ import { AuthService } from '../../services/auth.service';
 import { AgentService } from '../../services/agent.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
+import { Navbar } from './navbar/navbar';
+import { Overview } from './overview/overview';
+import { Applications } from './applications/applications';
+import { HistoryComponent } from './history/history';
+import { Customers } from './customers/customers';
+import { Settings } from './settings/settings';
 
 @Component({
   selector: 'app-agent-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    Navbar, 
+    Overview, 
+    Applications, 
+    HistoryComponent, 
+    Customers, 
+    Settings
+  ],
   templateUrl: './agent-dashboard.html',
   styleUrl: './agent-dashboard.css',
 })
@@ -237,6 +252,11 @@ export class AgentDashboard implements OnInit {
     this.selectedCustomerRecord.set(null);
   }
 
+  submitReviewWithData(data: any) {
+    this.reviewAction = data;
+    this.submitReview();
+  }
+
   submitReview() {
     this.errorMessage.set('');
 
@@ -278,6 +298,11 @@ export class AgentDashboard implements OnInit {
     setTimeout(() => {
       this.errorMessage.set('');
     }, 5000);
+  }
+
+  changePasswordWithData(data: any) {
+    this.changePasswordForm = data;
+    this.changePassword();
   }
 
   changePassword() {

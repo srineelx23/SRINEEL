@@ -8,980 +8,129 @@
     }
 
     <!-- Navigation Sidebar -->
-    <nav class="hover-navbar">
-        <div class="nav-brand">
-            <span class="logo-shield">🛡️</span>
-            <h2>VIMS Admin</h2>
-        </div>
-
-        <div class="sidebar-nav">
-            <a (click)="goHome()" class="nav-item">Home</a>
-            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
-            <a (click)="switchTab('vehicles')" [class.active]="activeTab() === 'vehicles'" class="nav-item">Vehicles</a>
-            <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
-            <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
-            <a (click)="switchTab('users')" [class.active]="activeTab() === 'users'" class="nav-item">Users</a>
-            <a (click)="switchTab('plans')" [class.active]="activeTab() === 'plans'" class="nav-item">Plans</a>
-            <a (click)="switchTab('audit')" [class.active]="activeTab() === 'audit'" class="nav-item">Audit Logs</a>
-        </div>
-
-        <div class="sidebar-footer">
-            <!-- User Dropdown Component -->
-            <div class="nav-profile-container">
-                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
-                    <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
-                    <div class="profile-info">
-                        <span class="profile-role">{{ userRole() }}</span>
-                        <span class="profile-name">{{ adminName() }}</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"
-                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
-                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
-                </div>
-
-                <!-- Dropdown Menu -->
-                @if (showUserDropdown()) {
-                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
-                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
-                        <i class="fa-solid fa-gear"></i>
-                        <span>Settings</span>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item danger" (click)="logout()">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        <span>Sign Out</span>
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-    </nav>
+    <app-navbar 
+        [adminName]="adminName()" 
+        [userRole]="userRole()" 
+        [activeTab]="activeTab()"
+        (onTabSwitch)="switchTab($event)"
+        (onLogout)="logout()"
+        (onGoHome)="goHome()">
+    </app-navbar>
 
     <!-- Main Content -->
     <main class="main-content">
 
         <!-- Overview Tab -->
         @if (activeTab() === 'overview') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <p style="color: var(--accent); font-weight: 500; font-size: 1.1rem; margin-bottom: 8px;">Welcome back,
-                    {{ adminName() }}! 👋</p>
-                <h1 class="page-title">Executive Overview</h1>
-                <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
-            </header>
-
-            <div class="dashboard-cards" style="margin-bottom: 32px;">
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
-                    <h3>Gross Premiums (Revenue)</h3>
-                    <p class="stat-number" style="color: var(--accent);">+{{ totalRevenue() | currency:'INR' }}</p>
-                </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
-                    <h3>Claim Payouts (Losses)</h3>
-                    <p class="stat-number" style="color: var(--error);">-{{ totalPayoutAmount() | currency:'INR' }}</p>
-                </div>
-                <div class="stat-card glass-panel"
-                    [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--success)' : '4px solid var(--error)'}">
-                    <h3>Net Profit / Reserve</h3>
-                    <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}">
-                        {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
-                            currency:'INR' }} </p>
-                </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
-                    <h3>Policies & Claims</h3>
-                    <p class="stat-number" style="color: var(--warning); font-size: 1.5rem; margin-top: 10px;">{{
-                        totalActivePolicies() }} Active | {{ totalClaimsApproved() }} Resolved</p>
-                </div>
-            </div>
-
-            <!-- Dashboard Charts -->
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 8px;">Revenue History (Current Year)</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Monthly premium
-                        collections</p>
-                    <div style="height: 280px; width: 100%;">
-                        <canvas baseChart [data]="revenueChartData" [options]="revenueChartOptions()"
-                            [type]="revenueChartType"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
-                    <h3 style="margin-bottom: 4px;">Portfolio Health</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Claim status
-                        distribution</p>
-                    <div style="flex: 1; min-height: 340px;">
-                        <canvas baseChart [data]="claimsChartData" [options]="claimsChartOptions()"
-                            [type]="claimsChartType"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 8px;">Performance by Policy Type</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial comparison
-                        by insurance category</p>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas baseChart [data]="planPremiumsChartData" [options]="planAnalyticsOptions()"
-                            [type]="planBarChartType"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 8px;">Claims by Policy Type</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume of claims
-                        handled per category</p>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas baseChart [data]="planClaimsChartData" [options]="planClaimsCountOptions()"
-                            [type]="planBarChartType"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 8px;">Performance by Vehicle Type</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial metrics by
-                        vehicle classification</p>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas baseChart [data]="vehicleTypePremiumsChartData" [options]="planAnalyticsOptions()"
-                            [type]="planBarChartType"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel" style="padding: 24px;">
-                    <h3 style="margin-bottom: 8px;">Claims by Vehicle Type</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume tracking by
-                        vehicle category</p>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas baseChart [data]="vehicleTypeClaimsChartData" [options]="planClaimsCountOptions()"
-                            [type]="planBarChartType"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <app-overview
+            [adminName]="adminName()"
+            [totalRevenue]="totalRevenue()"
+            [totalPayoutAmount]="totalPayoutAmount()"
+            [netProfit]="netProfit()"
+            [totalActivePolicies]="totalActivePolicies()"
+            [totalClaimsApproved]="totalClaimsApproved()"
+            [revenueChartData]="revenueChartData"
+            [revenueChartOptions]="revenueChartOptions()"
+            [revenueChartType]="revenueChartType"
+            [claimsChartData]="claimsChartData"
+            [claimsChartOptions]="claimsChartOptions()"
+            [claimsChartType]="claimsChartType"
+            [planPremiumsChartData]="planPremiumsChartData"
+            [planAnalyticsOptions]="planAnalyticsOptions()"
+            [planBarChartType]="planBarChartType"
+            [planClaimsChartData]="planClaimsChartData"
+            [planClaimsCountOptions]="planClaimsCountOptions()"
+            [vehicleTypePremiumsChartData]="vehicleTypePremiumsChartData"
+            [vehicleTypeClaimsChartData]="vehicleTypeClaimsChartData">
+        </app-overview>
         }
 
         <!-- Vehicles Registry Tab -->
         @if (activeTab() === 'vehicles') {
-        <div class="tab-content fade-in">
-            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <div>
-                    <h1 class="page-title">Vehicle Registry</h1>
-                    <p class="page-subtitle">Track and filter all high-value insulated assets currently protected.</p>
-                </div>
-                <div class="form-group" style="width: 320px;">
-                    <label class="static-label">Filter Minimum Assessed Value (INR)</label>
-                    <input type="number" class="form-control" [(ngModel)]="vehicleIdvFilter"
-                        placeholder="Min. Assessed Value (e.g. 500000)">
-                </div>
-            </header>
-
-            <div class="glass-panel" style="padding: 24px;">
-                @if (!selectedVehicle() && filteredVehicles().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No
-                    vehicles match the filter criteria.</p>
-                }
-
-                @if (!selectedVehicle() && filteredVehicles().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Reg. Number</th>
-                            <th>Manufacturer & Model</th>
-                            <th>Mfg. Year</th>
-                            <th>Current Assessed IDV</th>
-                            <th style="color: var(--success);">Premiums Collected</th>
-                            <th style="color: var(--error);">Claims Paid Out</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (v of filteredVehicles(); track (v.vehicleId || $index)) {
-                        <tr (click)="viewVehicleDetails(v)" style="cursor: pointer;" title="Click for Insights">
-                            <td>{{ v.registrationNumber }}</td>
-                            <td>{{ v.make }} {{ v.model }}</td>
-                            <td>{{ v.year }}</td>
-                            <td style="color: var(--accent); font-weight: 500;">{{ v.currentIdv | currency:'INR' }}</td>
-                            <td style="color: var(--success); font-weight: 700;">
-                                {{ (vehiclePremiumsMap().get(v.vehicleId) || 0) | currency:'INR' }}
-                            </td>
-                            <td style="color: var(--error); font-weight: 700;">
-                                {{ (vehicleClaimsMap().get(v.vehicleId) || 0) | currency:'INR' }}
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-
-                <!-- Vehicle Details Overlay -->
-                @if (selectedVehicle()) {
-                <div class="fade-in">
-                    <button class="btn-outline" style="margin-bottom: 24px;" (click)="backToVehicles()">← Back to
-                        Registry</button>
-
-                    <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
-                        selectedVehicle().registrationNumber }}</h2>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
-                            <h3>Owner Profile</h3>
-                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
-                                selectedVehicle().customerName || 'N/A' }}</p>
-                        </div>
-                        <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
-                            <h3>Asset Value</h3>
-                            <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
-                                selectedVehicle().currentIdv
-                                | currency:'INR' }}</p>
-                        </div>
-                    </div>
-
-                    <h3
-                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
-                        Active & Past Policies</h3>
-                    <table class="vims-table">
-                        <tr>
-                            <th>Policy ID</th>
-                            <th>Plan</th>
-                            <th>Premium</th>
-                            <th>Status</th>
-                        </tr>
-                        @for (p of vehiclePolicies(); track (p.policyId || $index)) {
-                        <tr>
-                            <td>{{ p.policyId }}</td>
-                            <td>{{ p.policyPlan?.planName || 'Standard' }}</td>
-                            <td>{{ p.premiumAmount | currency:'INR' }}</td>
-                            <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status === 'Active'
-                                    || p.status === 0 ? 'Active' : p.status }}</span></td>
-                        </tr>
-                        }
-                    </table>
-
-                    <h3
-                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
-                        Payment Ledgers</h3>
-                    <table class="vims-table">
-                        <tr>
-                            <th>Txn ID</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                        @for (pmt of vehicleTransactions(); track (pmt.id || $index)) {
-                        <tr>
-                            <td style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ pmt.id
-                                || 'N/A' }}</td>
-                            <td>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ pmt.date | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ pmt.date |
-                                        date:'shortTime':'+0530' }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="status-badge"
-                                    [style.background]="pmt.isCredit ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
-                                    [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
-                                    {{ pmt.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
-                                </span>
-                            </td>
-                            <td style="font-weight: 700;"
-                                [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
-                                {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
-                            </td>
-                            <td><span class="status-badge"
-                                    [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ? 'paid' : 'pending'">
-                                    {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ?
-                                    'Approved' : 'Pending' }}</span>
-                            </td>
-                        </tr>
-                        }
-                        @if (vehicleTransactions().length === 0) {
-                        <tr>
-                            <td colspan="5"
-                                style="color: var(--text-muted); text-align: center; padding: 24px; font-style: italic;">
-                                No transactions found for this vehicle.</td>
-                        </tr>
-                        }
-                    </table>
-
-                    <h3
-                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
-                        Filed Claims</h3>
-                    <table class="vims-table">
-                        <tr>
-                            <th>Claim No.</th>
-                            <th>Filed On</th>
-                            <th>Incident Type</th>
-                            <th>Approved</th>
-                            <th>Status</th>
-                        </tr>
-                        @for (c of vehicleClaims(); track (c.claimId || $index)) {
-                        <tr>
-                            <td>{{ c.claimNumber }}</td>
-                            <td>
-                                <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
-                                </div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
-                                    a' }}</div>
-                            </td>
-                            <td>{{ c.claimType }}</td>
-                            <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
-                                : 'Pending' }}</td>
-                            <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status === 1 ||
-                                    c.status === 'Approved' ? 'Approved' : (c.status === 2 || c.status === 'Rejected' ?
-                                    'Rejected' : 'Under Review') }}</span></td>
-                        </tr>
-                        }
-                    </table>
-
-                    <h3
-                        style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
-                        Linked Documents</h3>
-                    <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        @for (doc of vehicleDocuments(); track doc.name) {
-                        <a [href]="doc.url" target="_blank"
-                            style="color: var(--accent); margin-right: 16px; text-decoration: underline; display: inline-block; margin-bottom: 8px;">📄
-                            {{ doc.name }}</a>
-                        }
-                        @if (vehicleDocuments().length === 0) {
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">
-                            No documents attached to this vehicle or its claims.</p>
-                        }
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
+        <app-vehicles
+            [filteredVehicles]="filteredVehicles()"
+            [vehiclePremiumsMap]="vehiclePremiumsMap()"
+            [vehicleClaimsMap]="vehicleClaimsMap()"
+            [selectedVehicle]="selectedVehicle()"
+            [vehiclePolicies]="vehiclePolicies()"
+            [vehicleTransactions]="vehicleTransactions()"
+            [vehicleClaims]="vehicleClaims()"
+            [vehicleDocuments]="vehicleDocuments()"
+            [(vehicleIdvFilter)]="vehicleIdvFilter"
+            (onViewVehicleDetails)="viewVehicleDetails($event)"
+            (onBackToVehicles)="backToVehicles()">
+        </app-vehicles>
         }
 
-        <!-- ==================== ALL CLAIMS TAB ==================== -->
+        <!-- All Claims Tab -->
         @if (activeTab() === 'claims') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">All Claims</h1>
-                <p class="page-subtitle">Platform-wide insurance claims and their resolution status.</p>
-            </header>
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showClaimsSortDropdown.set(!showClaimsSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(claimsSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showClaimsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showClaimsSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showClaimsSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="claimsSortOption.set('dateDesc'); showClaimsSortDropdown.set(false)">Newest First</div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="claimsSortOption.set('dateAsc'); showClaimsSortDropdown.set(false)">Oldest First</div>
-                            <div class="vims-dropdown-divider"></div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountDesc'" (click)="claimsSortOption.set('amountDesc'); showClaimsSortDropdown.set(false)">Amount: High to Low</div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountAsc'" (click)="claimsSortOption.set('amountAsc'); showClaimsSortDropdown.set(false)">Amount: Low to High</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (sortedClaims().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No claims found.
-                </p>
-                }
-                @if (sortedClaims().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Claim No.</th>
-                            <th>Policy ID</th>
-                            <th>Type</th>
-                            <th>Filed Date</th>
-                            <th>Approved Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (c of sortedClaims(); track (c.claimId || $index)) {
-                        <tr>
-                            <td style="font-family: monospace; font-size: 0.9rem;">{{ c.claimNumber || '#' + c.claimId
-                                }}</td>
-                            <td style="color: var(--text-muted);">{{ c.policyId }}</td>
-                            <td>{{ c.claimType }}</td>
-                            <td>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ c.createdAt | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt |
-                                        date:'shortTime':'+0530' }}</span>
-                                </div>
-                            </td>
-                            <td style="font-weight: 700;"
-                                [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--error)' : 'var(--text-muted)'">
-                                {{ (c.status === 'Approved' || c.status === 1) ? '-' + (c.approvedAmount |
-                                currency:'INR') :
-                                (c.status === 'Rejected' || c.status === 2) ? '-' : 'Pending Assessment' }}
-                            </td>
-                            <td>
-                                <span class="status-badge"
-                                    [style.background]="(c.status === 'Approved' || c.status === 1) ? 'rgba(34,197,94,0.12)' : (c.status === 'Rejected' || c.status === 2) ? 'rgba(239,68,68,0.12)' : 'rgba(251,191,36,0.12)'"
-                                    [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--success)' : (c.status === 'Rejected' || c.status === 2) ? 'var(--error)' : 'var(--warning)'">
-                                    {{ (c.status === 'Approved' || c.status === 1) ? 'Approved' : (c.status ===
-                                    'Rejected' || c.status === 2) ? 'Rejected' : 'Under Review' }}
-                                </span>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-            </div>
-        </div>
+        <app-claims
+            [sortedClaims]="sortedClaims()"
+            [(claimsSortOption)]="claimsSortOption"
+            [(showClaimsSortDropdown)]="showClaimsSortDropdown">
+        </app-claims>
         }
 
-        <!-- ==================== ALL PAYMENTS TAB ==================== -->
+        <!-- All Payments Tab -->
         @if (activeTab() === 'payments') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">All Payment Transactions</h1>
-                <p class="page-subtitle">Complete ledger of premium collections and claim disbursements.</p>
-            </header>
-
-            <!-- Summary KPIs -->
-            <div class="dashboard-cards" style="margin-bottom: 28px;">
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
-                    <h3>Total Premium Collected</h3>
-                    <p class="stat-number" style="color: var(--success); font-size: 2rem;">+{{ totalRevenue() |
-                        currency:'INR' }}</p>
-                </div>
-                <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
-                    <h3>Total Claims Disbursed</h3>
-                    <p class="stat-number" style="color: var(--error); font-size: 2rem;">-{{ totalPayoutAmount() |
-                        currency:'INR' }}</p>
-                </div>
-                <div class="stat-card glass-panel"
-                    [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--accent)' : '4px solid var(--error)'}">
-                    <h3>Net Balance</h3>
-                    <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}"
-                        style="font-size: 2rem;">
-                        {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
-                            currency:'INR' }} </p>
-                </div>
-            </div>
-
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showPaymentsSortDropdown.set(!showPaymentsSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(paymentsSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showPaymentsSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showPaymentsSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="paymentsSortOption.set('dateDesc'); showPaymentsSortDropdown.set(false)">Newest First</div>
-                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="paymentsSortOption.set('dateAsc'); showPaymentsSortDropdown.set(false)">Oldest First</div>
-                            <div class="vims-dropdown-divider"></div>
-                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="paymentsSortOption.set('amountDesc'); showPaymentsSortDropdown.set(false)">Amount: High to Low</div>
-                            <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="paymentsSortOption.set('amountAsc'); showPaymentsSortDropdown.set(false)">Amount: Low to High</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (allTransactions().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No
-                    transactions found.</p>
-                }
-                @if (allTransactions().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Txn ID</th>
-                            <th>Date</th>
-                            <th>Customer</th>
-                            <th>Vehicle</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (t of allTransactions(); track (t.id || $index)) {
-                        <tr>
-                            <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ t.id
-                                }}</td>
-                            <td>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ t.date | date:'MMM d, y'
-                                        }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ t.date | date:'h:mm
-                                        a' }}</span>
-                                </div>
-                            </td>
-                            <td>{{ t.customer }}</td>
-                            <td style="font-size: 0.9rem; color: var(--text-muted);">{{ t.vehicle }}</td>
-                            <td>
-                                <span class="status-badge"
-                                    [style.background]="t.isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)'"
-                                    [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
-                                    {{ t.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
-                                </span>
-                            </td>
-                            <td style="font-weight: 700;"
-                                [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
-                                {{ t.isCredit ? '+' : '-' }}{{ t.amount | currency:'INR' }}
-                            </td>
-                            <td>
-                                <span class="status-badge"
-                                    [ngClass]="(t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'paid' : 'pending'">
-                                    {{ (t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'Approved' :
-                                    'Pending' }}
-                                </span>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-            </div>
-        </div>
+        <app-payments
+            [allTransactions]="allTransactions()"
+            [totalRevenue]="totalRevenue()"
+            [totalPayoutAmount]="totalPayoutAmount()"
+            [netProfit]="netProfit()"
+            [(paymentsSortOption)]="paymentsSortOption"
+            [(showPaymentsSortDropdown)]="showPaymentsSortDropdown">
+        </app-payments>
         }
 
         <!-- Users Management Tab -->
         @if (activeTab() === 'users') {
-        <div class="tab-content fade-in">
-            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <div>
-                    <h1 class="page-title">Identity Access Management</h1>
-                    <p class="page-subtitle">Configure system users, support officers, and agents.</p>
-                </div>
-                <div style="display: flex; gap: 16px; align-items: center;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showRoleDropdown.set(!showRoleDropdown())">
-                            <i class="fa-solid fa-filter" style="font-size: 0.9rem; color: var(--accent);"></i>
-                            <span>{{ userRoleFilter() === 'All' ? 'All Roles' : userRoleFilter() }}</span>
-                            <i class="fa-solid fa-chevron-down"
-                                [style.transform]="showRoleDropdown() ? 'rotate(180deg)' : 'none'"
-                                style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
-                        </div>
-                        @if (showRoleDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showRoleDropdown.set(false)">
-                            @for (role of rolesList(); track role) {
-                            <div class="vims-dropdown-item" [class.active]="userRoleFilter() === role"
-                                (click)="userRoleFilter.set(role); showRoleDropdown.set(false)">
-                                {{ role === 'All' ? 'All Roles' : role }}
-                            </div>
-                            }
-                        </div>
-                        }
-                    </div>
-                    <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
-                    <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
-                        style="background: var(--accent);">+ Provision Officer</button>
-                </div>
-            </header>
-
-            <!-- Creation Module -->
-            @if (isCreatingAgent() || isCreatingClaimsOfficer()) {
-            <div class="glass-panel slide-in"
-                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
-                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
-                    (click)="switchTab('users')">Cancel</button>
-                <h2 style="margin-bottom: 24px;">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New
-                    Claims Officer' }}</h2>
-                <form class="vims-form" (ngSubmit)="submitUserRegistration()">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-                        <div>
-                            <label>Full Assigned Name</label>
-                            <input type="text" name="fullName" class="form-control" [(ngModel)]="registerForm.fullName"
-                                required>
-                        </div>
-                        <div>
-                            <label>Secure Identifier (Email)</label>
-                            <input type="email" name="email" class="form-control" [(ngModel)]="registerForm.email"
-                                required email #emailInput="ngModel">
-                            @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
-                            <div style="color: var(--error); font-size: 0.8rem; margin-top: 4px;">
-                                Please enter a valid email address.
-                            </div>
-                            }
-                        </div>
-                        <div>
-                            <label>Temporary Password</label>
-                            <input type="password" name="password" class="form-control"
-                                [(ngModel)]="registerForm.password" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary">Provision Identity</button>
-                </form>
-            </div>
-            }
-
-            <!-- Users List -->
-            @if (!isCreatingAgent() && !isCreatingClaimsOfficer()) {
-            <div class="glass-panel" style="padding: 24px;">
-                @if (filteredUsers().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No users
-                    mapped to this filter.</p>
-                }
-                @if (filteredUsers().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Database ID</th>
-                            <th>Full Name</th>
-                            <th>Identifier (Email)</th>
-                            <th>Authorization Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (u of filteredUsers(); track (u.userId || $index)) {
-                        <tr>
-                            <td>#{{ u.userId }}</td>
-                            <td>{{ u.fullName }}</td>
-                            <td>{{ u.email }}</td>
-                            <td><span class="status-badge"
-                                    style="background: var(--card-inner-border); color: var(--text-main);">{{
-                                    u.displayRole }}</span></td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-            </div>
-            }
-        </div>
+        <app-users
+            [filteredUsers]="filteredUsers()"
+            [rolesList]="rolesList()"
+            [(userRoleFilter)]="userRoleFilter"
+            [isCreatingAgent]="isCreatingAgent()"
+            [isCreatingClaimsOfficer]="isCreatingClaimsOfficer()"
+            [(registerForm)]="registerForm"
+            (onOpenUserForm)="openUserForm($event)"
+            (onSubmitUserRegistration)="submitUserRegistration()"
+            (onSwitchTab)="switchTab($event)">
+        </app-users>
         }
 
         <!-- Plans & Infrastructure Tab -->
         @if (activeTab() === 'plans') {
-        <div class="tab-content fade-in">
-            <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <div>
-                    <h1 class="page-title">Policy Architect</h1>
-                    <p class="page-subtitle">Deploy or modify underlying insurance products globally.</p>
-                </div>
-                <button class="btn-primary" (click)="openPlanForm()">+ Architect New Plan</button>
-            </header>
-
-            @if (isCreatingPlan()) {
-            <div class="glass-panel slide-in"
-                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
-                <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
-                    (click)="switchTab('plans')">Cancel Module</button>
-                <h2 style="margin-bottom: 24px;">Architect Enterprise Coverage Plan</h2>
-                <form class="vims-form" (ngSubmit)="submitPlanRegistration()">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label>Plan Commercial Name <span style="color: var(--error);">*</span></label>
-                            <input type="text" name="planName" class="form-control" [(ngModel)]="planForm.planName"
-                                required placeholder="e.g. Premium Protection Gold">
-                        </div>
-                        <div class="form-group">
-                            <label>Policy Category / Type <span style="color: var(--error);">*</span></label>
-                            <select name="policyType" class="form-control" [(ngModel)]="planForm.policyType" required>
-                                <option value="" disabled selected>Select Policy Type</option>
-                                @for (cat of policyCategories; track cat) {
-                                <option [value]="cat">{{ cat }}</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Base Premium (INR) <span style="color: var(--error);">*</span></label>
-                            <input type="number" name="basePremium" class="form-control"
-                                [(ngModel)]="planForm.basePremium" required min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>Policy Duration (Months) <span style="color: var(--error);">*</span></label>
-                            <input type="number" name="policyDurationMonths" class="form-control"
-                                [(ngModel)]="planForm.policyDurationMonths" required min="12">
-                        </div>
-                        <div class="form-group">
-                            <label>Applicable Vehicle Classification <span style="color: var(--error);">*</span></label>
-                            <select name="applicableVehicleType" class="form-control"
-                                [(ngModel)]="planForm.applicableVehicleType" required>
-                                <option value="" disabled selected>Select Vehicle Class</option>
-                                @for (vCat of vehicleCategories; track vCat) {
-                                <option [value]="vCat">{{ vCat }}</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Statutory Deductible (INR) <span style="color: var(--error);">*</span></label>
-                            <input type="number" name="deductibleAmount" class="form-control"
-                                [(ngModel)]="planForm.deductibleAmount" required min="0">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Max Coverage Amount (INR) <span style="color: var(--error);">*</span></label>
-                            <input type="number" name="maxCoverageAmount" class="form-control"
-                                [(ngModel)]="planForm.maxCoverageAmount" required min="0">
-                        </div>
-
-                    </div>
-                    <div
-                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; background: var(--card-inner-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border-light);">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="coversThirdParty" [(ngModel)]="planForm.coversThirdParty"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> 3rd Party Liability
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="coversOwnDamage" [(ngModel)]="planForm.coversOwnDamage"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Personal Damage
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="coversTheft" [(ngModel)]="planForm.coversTheft"
-                                style="accent-color: var(--accent); width: 18px; height: 18px;"> Theft Protection
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="zeroDepreciationAvailable"
-                                [(ngModel)]="planForm.zeroDepreciationAvailable"
-                                style="accent-color: var(--success); width: 18px; height: 18px;"> Zero-Depreciation
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="engineProtectionAvailable"
-                                [(ngModel)]="planForm.engineProtectionAvailable"
-                                style="accent-color: var(--success); width: 18px; height: 18px;"> Engine Protection
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="roadsideAssistanceAvailable"
-                                [(ngModel)]="planForm.roadsideAssistanceAvailable"
-                                style="accent-color: var(--success); width: 18px; height: 18px;"> Roadside Assistance
-                        </label>
-                    </div>
-                    <button type="submit" class="btn-primary" style="background: var(--success); border: none;">Deploy
-                        Plan To System</button>
-                </form>
-            </div>
-            }
-
-            @if (!isCreatingPlan()) {
-            <div class="glass-panel" style="padding: 24px;">
-                @if (orderedPlans().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No Plans
-                    deployed
-                    in system infrastructure.</p>
-                }
-                @if (orderedPlans().length > 0) {
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                    @for (p of orderedPlans(); track (p.planId || $index)) {
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); padding: 24px; box-shadow: none; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h3 style="margin-bottom: 8px; color: var(--text-main);">
-                                {{ p.planName }}
-                                <span class="status-badge"
-                                    [ngStyle]="{'background': p.status === 1 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(255, 90, 95, 0.2)', 'color': p.status === 1 ? 'var(--success)' : 'var(--error)'}">
-                                    {{ p.status === 1 ? 'Available' : 'Deactivated' }}
-                                </span>
-                            </h3>
-                            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-                                <strong>Type:</strong> {{ p.policyType }} | <strong>Vehicle:</strong> {{
-                                p.applicableVehicleType }}
-                                <br>
-                                <strong>Duration:</strong> {{ p.policyDurationMonths }} Months | <strong>Base
-                                    Premium:</strong> {{ p.basePremium | currency:'INR' }}
-                                <br>
-                                <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }} | <strong>Max
-                                    Coverage:</strong> {{ p.maxCoverageAmount | currency:'INR' }}
-                                <br>
-                                <strong>Coverage:</strong>
-                                @if (p.coversOwnDamage) {<span> Own Damage,</span>}
-                                @if (p.coversThirdParty) {<span> 3rd Party,</span>}
-                                @if (p.coversTheft) {<span> Theft,</span>}
-
-                                <br>
-                                <strong>Add-ons:</strong>
-                                @if (p.zeroDepreciationAvailable) {<span style="color: var(--success);"> ✓
-                                    Zero-Dep</span>}
-                                @if (p.engineProtectionAvailable) {<span style="color: var(--success);"> ✓
-                                    Engine-Prot</span>}
-                                @if (p.roadsideAssistanceAvailable) {<span style="color: var(--success);"> ✓
-                                    Roadside-Asst</span>}
-                            </p>
-                        </div>
-                        <div>
-                            @if (p.status === 1) {
-                            <button class="btn-outline" style="color: var(--error); border-color: var(--error);"
-                                (click)="togglePlanStatus(p.planId, p.status)">Deprecate Plan</button>
-                            }
-                            @if (p.status !== 1) {
-                            <button class="btn-outline" style="color: var(--success); border-color: var(--success);"
-                                (click)="togglePlanStatus(p.planId, p.status || 0)">Restore Plan</button>
-                            }
-                        </div>
-                    </div>
-                    }
-                </div>
-                }
-            </div>
-            }
-        </div>
+        <app-plans
+            [orderedPlans]="orderedPlans()"
+            [isCreatingPlan]="isCreatingPlan()"
+            [(planForm)]="planForm"
+            [vehicleCategories]="vehicleCategories"
+            [policyCategories]="policyCategories"
+            (onOpenPlanForm)="openPlanForm()"
+            (onSubmitPlanRegistration)="submitPlanRegistration()"
+            (onTogglePlanStatus)="togglePlanStatus($event.planId, $event.status)"
+            (onSwitchTab)="switchTab($event)">
+        </app-plans>
         }
 
         <!-- Settings Tab -->
         @if (activeTab() === 'settings') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Account Settings</h1>
-                <p class="page-subtitle">Manage your administrative security and preferences.</p>
-            </header>
-
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start;">
-                <!-- Password Change Panel -->
-                <div class="glass-panel" style="padding: 32px;">
-                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 32px;">
-                        <div
-                            style="width: 44px; height: 44px; border-radius: 12px; background: rgba(220,38,38,0.1); color: var(--error); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                            <i class="fa-solid fa-shield-lock"></i>
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.25rem;">Security & Password</h3>
-                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Change your administrative
-                                password periodically.</p>
-                        </div>
-                    </div>
-
-                    <form class="vims-form" (ngSubmit)="changePassword()">
-                        <div class="form-group">
-                            <input [type]="showCurrentPwd ? 'text' : 'password'" id="currentPwd" name="currentPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
-                                required>
-                            <label for="currentPwd" class="floating-label">Current Password</label>
-                            <i class="fa-solid" [ngClass]="showCurrentPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showCurrentPwd = !showCurrentPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <div class="form-group">
-                            <input [type]="showNewPwd ? 'text' : 'password'" id="newPwd" name="newPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
-                                required>
-                            <label for="newPwd" class="floating-label">New Password</label>
-                            <i class="fa-solid" [ngClass]="showNewPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showNewPwd = !showNewPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <div class="form-group">
-                            <input [type]="showConfirmPwd ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
-                                required>
-                            <label for="confirmPwd" class="floating-label">Confirm New Password</label>
-                            <i class="fa-solid" [ngClass]="showConfirmPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showConfirmPwd = !showConfirmPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <button type="submit" class="btn-primary" [disabled]="changePwdLoading()"
-                            style="margin-top: 8px; width: 100%;">
-                            @if (changePwdLoading()) {
-                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
-                            } @else {
-                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
-                            }
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Profile Info Box -->
-                <div class="glass-panel" style="padding: 32px; background: rgba(91, 192, 190, 0.03);">
-                    <h3 style="margin-bottom: 24px; color: var(--accent);">Administrative Profile</h3>
-                    <div style="display: flex; flex-direction: column; gap: 24px;">
-                        <div>
-                            <p
-                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
-                                Full Name</p>
-                            <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ adminName() }}</p>
-                        </div>
-                        <div>
-                            <p
-                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
-                                Authority Level</p>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="status-badge active" style="background: rgba(91, 192, 190, 0.1); color: var(--accent);">{{ userRole() }}</span>
-                            </div>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 8px 0;">
-                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-                            As an administrator, you have full access to system records. Ensure your credentials are kept secure and never shared.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <app-settings
+            [adminName]="adminName()"
+            [userRole]="userRole()"
+            [(changePasswordForm)]="changePasswordForm"
+            [changePwdLoading]="changePwdLoading()"
+            (onChangePassword)="changePassword()">
+        </app-settings>
         }
 
         <!-- Audit Logs Tab -->
         @if (activeTab() === 'audit') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">System Audit Trail</h1>
-                <p class="page-subtitle">Track every critical action performed across the platform for accountability.
-                </p>
-            </header>
-
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showAuditSortDropdown.set(!showAuditSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(auditSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showAuditSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showAuditSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showAuditSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateDesc'" (click)="auditSortOption.set('dateDesc'); showAuditSortDropdown.set(false)">Newest First</div>
-                            <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateAsc'" (click)="auditSortOption.set('dateAsc'); showAuditSortDropdown.set(false)">Oldest First</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (sortedAuditLogs().length === 0) {
-                <p style="color: var(--text-muted); font-style: italic;">No audit logs
-                    recorded yet.</p>
-                }
-                @if (sortedAuditLogs().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Timestamp</th>
-                            <th>User (Email)</th>
-                            <th>Role</th>
-                            <th>Action</th>
-                            <th>Category</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (log of sortedAuditLogs(); track log.id) {
-                        <tr>
-                            <td>#{{ log.id }}</td>
-                            <td style="white-space: nowrap;">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.85rem; font-weight: 500;">{{ log.timestamp | date:'MMM d,
-                                        y' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ log.timestamp |
-                                        date:'h:mm a' }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div>{{ log.email }}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">ID: {{ log.userId || 'System'
-                                    }}</div>
-                            </td>
-                            <td><span class="status-badge" style="background: rgba(255,255,255,0.05);">{{ log.role
-                                    }}</span></td>
-                            <td><strong style="color: var(--accent);">{{ log.action }}</strong></td>
-                            <td>{{ log.category }}</td>
-                            <td style="font-size: 0.85rem; max-width: 300px;">{{ log.details }}</td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-            </div>
-        </div>
+        <app-audit-logs
+            [sortedAuditLogs]="sortedAuditLogs()"
+            [(auditSortOption)]="auditSortOption"
+            [(isAuditSortOpen)]="isAuditSortOpen">
+        </app-audit-logs>
         }
 
     </main>

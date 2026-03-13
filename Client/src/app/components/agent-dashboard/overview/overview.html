@@ -1,0 +1,83 @@
+<div class="tab-content fade-in">
+    <!-- Hero Greeting -->
+    <div class="overview-hero">
+        <div class="overview-hero-text">
+            <p class="overview-greeting">Sales & Performance Hub <i class="fa-solid fa-chart-line"></i></p>
+            <h1 class="overview-title">Welcome, {{ agentName() }}!</h1>
+            <p class="overview-sub">Review applications, manage customers, and track your performance.</p>
+        </div>
+        <div class="overview-hero-badge">
+            <span class="hero-shield"><i class="fa-solid fa-user-tie"></i></span>
+            <span class="hero-badge-label">Agent</span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="overview-kpi-grid">
+        <div class="kpi-card kpi-warning" (click)="switchTab('applications')">
+            <div class="kpi-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ pendingApps().length }}</div>
+                <div class="kpi-label">Pending Approval</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+
+        <div class="kpi-card kpi-payments" (click)="switchTab('customers')">
+            <div class="kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ pendingPaymentCount() }}</div>
+                <div class="kpi-label">Awaiting Payment</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+
+        <div class="kpi-card kpi-success" (click)="switchTab('history')">
+            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ reviewedApps().length }}</div>
+                <div class="kpi-label">Reviewed Applications</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+
+        <div class="kpi-card kpi-accent" (click)="switchTab('customers')">
+            <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ customers().length }}</div>
+                <div class="kpi-label">Supervised Customers</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+    </div>
+
+    <!-- Recent Pending Applications -->
+    <div class="overview-section">
+        <div class="overview-section-header">
+            <h2 class="overview-section-title"><i class="fa-solid fa-inbox"
+                    style="color:var(--warning);margin-right:8px;"></i>Pending Applications Queue</h2>
+            <button class="btn-outline-sm" (click)="switchTab('applications')">View All →</button>
+        </div>
+        @if (pendingApps().length === 0) {
+        <div class="empty-state-mini">
+            <span>🎉</span>
+            <p>No pending applications. All caught up!</p>
+        </div>
+        }
+        @if (pendingApps().length > 0) {
+        <div class="overview-list">
+            @for (a of sortedPendingApps().slice(0,5); track (a.applicationId || $index)) {
+            <div class="overview-list-item" (click)="switchTab('applications')">
+                <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
+                <div class="oli-body">
+                    <div class="oli-title">{{ a.customer?.fullName || 'Applicant' }}</div>
+                    <div class="oli-sub">{{ a.registrationNumber || 'Vehicle' }}
+                        &bull; {{ a.make }} {{ a.model }}</div>
+                </div>
+                <span class="status-badge pending">Pending</span>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,102 @@
+<div class="tab-content fade-in">
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1 class="page-title">Identity Access Management</h1>
+            <p class="page-subtitle">Configure system users, support officers, and agents.</p>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showRoleDropdown.set(!showRoleDropdown())">
+                    <i class="fa-solid fa-filter" style="font-size: 0.9rem; color: var(--accent);"></i>
+                    <span>{{ userRoleFilter() === 'All' ? 'All Roles' : userRoleFilter() }}</span>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showRoleDropdown() ? 'rotate(180deg)' : 'none'"
+                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+                @if (showRoleDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showRoleDropdown.set(false)">
+                    @for (role of rolesList(); track role) {
+                    <div class="vims-dropdown-item" [class.active]="userRoleFilter() === role"
+                        (click)="userRoleFilter.set(role); showRoleDropdown.set(false)">
+                        {{ role === 'All' ? 'All Roles' : role }}
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+            <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
+            <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
+                style="background: var(--accent);">+ Provision Officer</button>
+        </div>
+    </header>
+
+    <!-- Creation Module -->
+    @if (isCreatingAgent() || isCreatingClaimsOfficer()) {
+    <div class="glass-panel slide-in"
+        style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
+        <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
+            (click)="cancelCreation()">Cancel</button>
+        <h2 style="margin-bottom: 24px;">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New
+            Claims Officer' }}</h2>
+        <form class="vims-form" (ngSubmit)="submitUserRegistration()">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <div>
+                    <label>Full Assigned Name</label>
+                    <input type="text" name="fullName" class="form-control" [(ngModel)]="registerForm().fullName"
+                        required>
+                </div>
+                <div>
+                    <label>Secure Identifier (Email)</label>
+                    <input type="email" name="email" class="form-control" [(ngModel)]="registerForm().email"
+                        required email #emailInput="ngModel">
+                    @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
+                    <div style="color: var(--error); font-size: 0.8rem; margin-top: 4px;">
+                        Please enter a valid email address.
+                    </div>
+                    }
+                </div>
+                <div>
+                    <label>Temporary Password</label>
+                    <input type="password" name="password" class="form-control"
+                        [(ngModel)]="registerForm().password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Provision Identity</button>
+        </form>
+    </div>
+    }
+
+    <!-- Users List -->
+    @if (!isCreatingAgent() && !isCreatingClaimsOfficer()) {
+    <div class="glass-panel" style="padding: 24px;">
+        @if (filteredUsers().length === 0) {
+        <p style="color: var(--text-muted); font-style: italic;">No users
+            mapped to this filter.</p>
+        }
+        @if (filteredUsers().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Database ID</th>
+                    <th>Full Name</th>
+                    <th>Identifier (Email)</th>
+                    <th>Authorization Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (u of filteredUsers(); track (u.userId || $index)) {
+                <tr>
+                    <td>#{{ u.userId }}</td>
+                    <td>{{ u.fullName }}</td>
+                    <td>{{ u.email }}</td>
+                    <td><span class="status-badge"
+                            style="background: var(--card-inner-border); color: var(--text-main);">{{
+                            u.displayRole }}</span></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+    }
+</div>

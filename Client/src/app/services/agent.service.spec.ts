@@ -36,21 +36,26 @@ describe('AgentService', () => {
     });
 
     it('should fetch pending applications', () => {
-        service.getPendingApplications().subscribe();
+        const mockApps = [{ id: 1 }];
+        service.getPendingApplications().subscribe(apps => expect(apps).toEqual(mockApps));
         const req = httpMock.expectOne('https://localhost:7257/api/Agent/pending-applications');
         expect(req.request.method).toBe('GET');
-        req.flush([]);
+        req.flush(mockApps);
     });
 
     it('should fetch customers', () => {
-        service.getCustomers().subscribe();
+        const mockCustomers = [{ id: 1 }];
+        service.getCustomers().subscribe(c => expect(c).toEqual(mockCustomers));
         const req = httpMock.expectOne('https://localhost:7257/api/Agent/customers');
-        req.flush([]);
+        expect(req.request.method).toBe('GET');
+        req.flush(mockCustomers);
     });
 
     it('should fetch all applications', () => {
-        service.getApplications().subscribe();
+        const mockApps = [{ id: 1 }];
+        service.getApplications().subscribe(apps => expect(apps).toEqual(mockApps));
         const req = httpMock.expectOne('https://localhost:7257/api/Agent/applications');
-        req.flush([]);
+        expect(req.request.method).toBe('GET');
+        req.flush(mockApps);
     });
 });

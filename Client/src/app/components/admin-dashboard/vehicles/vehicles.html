@@ -1,0 +1,193 @@
+<div class="tab-content fade-in">
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+            <h1 class="page-title">Vehicle Registry</h1>
+            <p class="page-subtitle">Track and filter all high-value insulated assets currently protected.</p>
+        </div>
+        @if (!selectedVehicle()) {
+        <div class="form-group" style="width: 320px;">
+            <label class="static-label">Filter Minimum Assessed Value (INR)</label>
+            <input type="number" class="form-control" [(ngModel)]="vehicleIdvFilter"
+                placeholder="Min. Assessed Value (e.g. 500000)">
+        </div>
+        }
+    </header>
+
+    <div class="glass-panel" style="padding: 24px;">
+        @if (!selectedVehicle() && filteredVehicles().length === 0) {
+        <p style="color: var(--text-muted); font-style: italic;">No
+            vehicles match the filter criteria.</p>
+        }
+
+        @if (!selectedVehicle() && filteredVehicles().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Reg. Number</th>
+                    <th>Manufacturer & Model</th>
+                    <th>Mfg. Year</th>
+                    <th>Current Assessed IDV</th>
+                    <th style="color: var(--success);">Premiums Collected</th>
+                    <th style="color: var(--error);">Claims Paid Out</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (v of filteredVehicles(); track (v.vehicleId || $index)) {
+                <tr (click)="viewVehicleDetails(v)" style="cursor: pointer;" title="Click for Insights">
+                    <td>{{ v.registrationNumber }}</td>
+                    <td>{{ v.make }} {{ v.model }}</td>
+                    <td>{{ v.year }}</td>
+                    <td style="color: var(--accent); font-weight: 500;">{{ v.currentIdv | currency:'INR' }}</td>
+                    <td style="color: var(--success); font-weight: 700;">
+                        {{ (vehiclePremiumsMap().get(v.vehicleId) || 0) | currency:'INR' }}
+                    </td>
+                    <td style="color: var(--error); font-weight: 700;">
+                        {{ (vehicleClaimsMap().get(v.vehicleId) || 0) | currency:'INR' }}
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+
+        <!-- Vehicle Details Overlay -->
+        @if (selectedVehicle()) {
+        <div class="fade-in">
+            <button class="btn-outline" style="margin-bottom: 24px;" (click)="backToVehicles()">← Back to
+                Registry</button>
+
+            <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
+                selectedVehicle().registrationNumber }}</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                    <h3>Owner Profile</h3>
+                    <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                        selectedVehicle().customerName || 'N/A' }}</p>
+                </div>
+                <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                    <h3>Asset Value</h3>
+                    <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                        selectedVehicle().currentIdv
+                        | currency:'INR' }}</p>
+                </div>
+            </div>
+
+            <h3
+                style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                Active & Past Policies</h3>
+            <table class="vims-table">
+                <tr>
+                    <th>Policy ID</th>
+                    <th>Plan</th>
+                    <th>Premium</th>
+                    <th>Status</th>
+                </tr>
+                @for (p of vehiclePolicies(); track (p.policyId || $index)) {
+                <tr>
+                    <td>{{ p.policyId }}</td>
+                    <td>{{ p.policyPlan?.planName || 'Standard' }}</td>
+                    <td>{{ p.premiumAmount | currency:'INR' }}</td>
+                    <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status === 'Active'
+                            || p.status === 0 ? 'Active' : p.status }}</span></td>
+                </tr>
+                }
+            </table>
+
+            <h3
+                style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                Payment Ledgers</h3>
+            <table class="vims-table">
+                <tr>
+                    <th>Txn ID</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+                @for (pmt of vehicleTransactions(); track (pmt.id || $index)) {
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">{{ pmt.id
+                        || 'N/A' }}</td>
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.9rem; font-weight: 600;">{{ pmt.date | date:'dd MMM
+                                yyyy':'+0530' }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ pmt.date |
+                                date:'shortTime':'+0530' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge"
+                            [style.background]="pmt.isCredit ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
+                            [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                            {{ pmt.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
+                        </span>
+                    </td>
+                    <td style="font-weight: 700;"
+                        [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                        {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
+                    </td>
+                    <td><span class="status-badge"
+                            [ngClass]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ? 'paid' : 'pending'">
+                            {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ?
+                            'Approved' : 'Pending' }}</span>
+                    </td>
+                </tr>
+                }
+                @if (vehicleTransactions().length === 0) {
+                <tr>
+                    <td colspan="5"
+                        style="color: var(--text-muted); text-align: center; padding: 24px; font-style: italic;">
+                        No transactions found for this vehicle.</td>
+                </tr>
+                }
+            </table>
+
+            <h3
+                style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                Filed Claims</h3>
+            <table class="vims-table">
+                <tr>
+                    <th>Claim No.</th>
+                    <th>Filed On</th>
+                    <th>Incident Type</th>
+                    <th>Approved</th>
+                    <th>Status</th>
+                </tr>
+                @for (c of vehicleClaims(); track (c.claimId || $index)) {
+                <tr>
+                    <td>{{ c.claimNumber }}</td>
+                    <td>
+                        <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
+                            a' }}</div>
+                    </td>
+                    <td>{{ c.claimType }}</td>
+                    <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
+                        : 'Pending' }}</td>
+                    <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status === 1 ||
+                            c.status === 'Approved' ? 'Approved' : (c.status === 2 || c.status === 'Rejected' ?
+                            'Rejected' : 'Under Review') }}</span></td>
+                </tr>
+                }
+            </table>
+
+            <h3
+                style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+                Linked Documents</h3>
+            <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                @for (doc of vehicleDocuments(); track doc.name) {
+                <a [href]="doc.url" target="_blank"
+                    style="color: var(--accent); margin-right: 16px; text-decoration: underline; display: inline-block; margin-bottom: 8px;">📄
+                    {{ doc.name }}</a>
+                }
+                @if (vehicleDocuments().length === 0) {
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    No documents attached to this vehicle or its claims.</p>
+                }
+            </div>
+        </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,236 @@
+<div class="tab-content fade-in">
+    @if (!selectedClaim) {
+    <header class="page-header">
+        <h1 class="page-title">Pending Claims</h1>
+        <p class="page-subtitle">Outstanding claims requiring investigation and approval decisions.</p>
+    </header>
+
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(claimsSortOption) }}</span>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption === 'dateDesc'"
+                        (click)="setSortOption('dateDesc')">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption === 'dateAsc'"
+                        (click)="setSortOption('dateAsc')">Oldest First</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (pendingClaims.length === 0) {
+        <p style="color: var(--text-muted); padding: 16px;">No pending
+            claims at the moment. Great job!</p>
+        }
+
+        @if (pendingClaims.length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Claim No.</th>
+                    <th>Customer Name</th>
+                    <th>Registration No.</th>
+                    <th>Claim Type</th>
+                    <th>Filed On</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (c of sortedPendingClaims; track (c.claimId || $index)) {
+                <tr (click)="openClaimReview(c)" style="cursor: pointer;">
+                    <td>{{ c.claimNumber }}</td>
+                    <td>{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
+                    <td>{{ c.vehicle?.registrationNumber }}</td>
+                    <td>{{ c.claimType }}</td>
+                    <td>
+                        <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm
+                            a' }}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge pending" style="display: inline-block;">Under Review</span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+    }
+
+    <!-- Detailed Claim Review Panel -->
+    @if (selectedClaim) {
+    <div class="glass-panel fade-in claim-detail-container">
+        <!-- Status stripe -->
+        <div class="claim-detail-stripe" [ngStyle]="{
+            'background': selectedClaim.status === 'Approved' ? 'var(--success)' :
+                          selectedClaim.status === 'Rejected' ? 'var(--error)' : '#EAB308'
+        }"></div>
+
+        <!-- Header row -->
+        <div class="claim-detail-header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="claim-status-icon"
+                    [ngStyle]="{
+                        'background': selectedClaim.status === 'Approved' ? 'rgba(22,163,74,0.15)' :
+                                      selectedClaim.status === 'Rejected' ? 'rgba(220,38,38,0.15)' : 'rgba(234,179,8,0.15)',
+                        'color':      selectedClaim.status === 'Approved' ? 'var(--success)' :
+                                      selectedClaim.status === 'Rejected' ? 'var(--error)' : '#EAB308'
+                    }" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                    <i class="fa-solid" [ngClass]="{
+                            'fa-hourglass-half':  selectedClaim.status === 'Submitted' || selectedClaim.status === 'UnderReview',
+                            'fa-circle-check':    selectedClaim.status === 'Approved',
+                            'fa-circle-xmark':    selectedClaim.status === 'Rejected'
+                        }"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">Case #{{ selectedClaim.claimNumber }}</h2>
+                    <div class="claim-detail-meta">
+                        <i class="fa-regular fa-calendar-days"></i>
+                        Filed on {{ selectedClaim.createdAt | date:'fullDate' }}
+                    </div>
+                </div>
+            </div>
+            <button class="btn-outline" (click)="closeClaimReview()">← Back to List</button>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="claim-info-grid">
+            <div class="claim-info-card">
+                <label>Applicant</label>
+                <p class="value">{{ selectedClaim.customer?.fullName }}</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">{{ selectedClaim.customer?.email }}</p>
+            </div>
+            <div class="claim-info-card">
+                <label>Incident Details</label>
+                <p class="value">{{ selectedClaim.claimType }}</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Policy #{{ selectedClaim.policy?.policyNumber }}</p>
+            </div>
+            <div class="claim-info-card" style="grid-column: span 2;">
+                <label>Insured Vehicle</label>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p class="vehicle-reg">{{ selectedClaim.vehicle?.registrationNumber }}</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">{{ selectedClaim.vehicle?.make }} {{ selectedClaim.vehicle?.model }} ({{ selectedClaim.vehicle?.year }})</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supporting Documents -->
+        <div class="supporting-docs-section" style="border-top: 1px solid var(--glass-border); padding-top: 24px;">
+            <header>
+                <i class="fa-solid fa-folder-closed" style="color: var(--accent); margin-right: 6px;"></i>Evidence Documents
+            </header>
+            @if (!selectedClaim.documents || selectedClaim.documents.length === 0) {
+            <div class="empty-state-mini" style="justify-content: center; padding: 32px;">
+                <p>No supporting evidence provided.</p>
+            </div>
+            }
+            @if (selectedClaim.documents && selectedClaim.documents.length > 0) {
+            <div class="doc-list">
+                @for (docPair of selectedClaim.documents; track $index) {
+                <div class="doc-item">
+                    <div class="doc-info">
+                        <i class="fa-solid fa-file-pdf" style="color: var(--error);"></i>
+                        <span style="font-size: 0.9rem; font-weight: 600;">Document {{ $index + 1 }}</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        @if (docPair.document1) {
+                        <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-eye"></i> 
+                            @if (selectedClaim.claimType === 'Theft' || selectedClaim.claimType === '0') { FIR }
+                            @else { Bill }
+                        </a>
+                        }
+                        @if (docPair.document2) {
+                        <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank" class="btn-outline" style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-eye"></i> Invoice
+                        </a>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+            }
+        </div>
+
+        <!-- Action Panel -->
+        <div style="padding: 28px; background: rgba(255,255,255,0.01); border-top: 1px solid var(--glass-border);">
+           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Officer Evaluation</h3>
+            </div>
+
+            <form class="vims-form" (ngSubmit)="submitDecision()">
+                <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" [value]="true" name="approvedDecision" [(ngModel)]="decisionForm.approved" (ngModelChange)="updateBreakdown()" style="accent-color: var(--success); width: 18px; height: 18px;">
+                        Approve Claim
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" [value]="false" name="rejectedDecision" [(ngModel)]="decisionForm.approved" (ngModelChange)="updateBreakdown()" style="accent-color: var(--error); width: 18px; height: 18px;">
+                        Reject Claim
+                    </label>
+                </div>
+
+                @if (decisionForm.approved) {
+                    <div class="fade-in">
+                        @if (selectedClaim.claimType === 'Damage' || selectedClaim.claimType === 'ThirdParty') {
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label class="static-label">Authorized Repair Cost</label>
+                                <input type="number" name="repairCost" class="form-control" [(ngModel)]="decisionForm.repairCost" (ngModelChange)="updateBreakdown()" required>
+                            </div>
+                            @if (selectedClaim.claimType === 'Damage') {
+                            <div class="form-group">
+                                <label class="static-label">Engine Add-on Cost</label>
+                                <input type="number" name="engineCost" class="form-control" [(ngModel)]="decisionForm.engineCost" (ngModelChange)="updateBreakdown()">
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        @if (selectedClaim.claimType === 'ThirdParty') {
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label class="static-label">3rd Party Vehicle Manufacture Year</label>
+                            <input type="number" name="manufactureYear" class="form-control" [(ngModel)]="decisionForm.manufactureYear" (ngModelChange)="updateBreakdown()" required>
+                        </div>
+                        }
+
+                        <!-- Settlement Preview -->
+                        <div class="claim-settlement-banner" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); margin-top: 10px;">
+                            <div>
+                                <label>Calculated Settlement</label>
+                                <p class="claim-amount" style="color: var(--success);">{{ getEstimatedPayout() | currency:'INR':'symbol':'1.0-0' }}</p>
+                            </div>
+                            @if (payoutWarning) {
+                            <div style="font-size: 0.8rem; color: #EAB308; background: rgba(234, 179, 8, 0.1); padding: 8px 12px; border-radius: 8px;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> {{ payoutWarning }}
+                            </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!decisionForm.approved) {
+                <div class="form-group fade-in">
+                    <label class="static-label">Reason for Rejection</label>
+                    <textarea name="rejectionReason" class="form-control" [(ngModel)]="decisionForm.rejectionReason" style="min-height: 100px;" placeholder="Explain why this claim is being denied..." required></textarea>
+                </div>
+                }
+
+                <button type="submit" class="btn-primary" style="margin-top: 24px; padding: 14px 40px;" [ngStyle]="{'background': decisionForm.approved ? 'var(--success)' : 'var(--error)'}">
+                    {{ decisionForm.approved ? 'Submit Approval' : 'Submit Rejection' }}
+                </button>
+            </form>
+        </div>
+    </div>
+    }
+</div>

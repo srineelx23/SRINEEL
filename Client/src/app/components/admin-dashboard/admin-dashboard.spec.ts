@@ -19,6 +19,7 @@ describe('AdminDashboard', () => {
     let routerSpy: jasmine.SpyObj<Router>;
 
     beforeEach(async () => {
+        sessionStorage.clear();
         adminServiceSpy = jasmine.createSpyObj('AdminService', [
             'getAllPolicyPlans', 'getAllPolicies', 'getAllPayments', 'getAllClaims', 'getAllUsers', 'getAuditLogs'
         ]);

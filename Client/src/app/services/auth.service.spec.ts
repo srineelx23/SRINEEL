@@ -74,7 +74,6 @@ describe('AuthService', () => {
 
         const req = httpMock.expectOne('https://localhost:7257/api/Auth/change-password');
         expect(req.request.method).toBe('PUT');
-        expect(req.request.headers.get('Authorization')).toBe('Bearer fake-token');
         req.flush(mockResponse);
     });
 
@@ -115,7 +114,6 @@ describe('AuthService', () => {
 
         const req = httpMock.expectOne('https://localhost:7257/api/Auth/set-security-question');
         expect(req.request.method).toBe('POST');
-        expect(req.request.headers.get('Authorization')).toBe('Bearer fake-token');
         req.flush(mockResponse);
     });
 

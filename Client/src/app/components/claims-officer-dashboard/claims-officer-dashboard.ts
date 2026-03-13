@@ -7,10 +7,16 @@ import { ClaimsOfficerService } from '../../services/claims-officer.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
 
+import { Navbar } from './navbar/navbar';
+import { Overview } from './overview/overview';
+import { Claims } from './claims/claims';
+import { History } from './history/history';
+import { Settings } from './settings/settings';
+
 @Component({
     selector: 'app-claims-officer-dashboard',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, Navbar, Overview, Claims, History, Settings],
     templateUrl: './claims-officer-dashboard.html',
     styleUrl: './claims-officer-dashboard.css',
 })
@@ -362,6 +368,11 @@ export class ClaimsOfficerDashboard implements OnInit {
                 this.autoHideToast();
             }
         });
+    }
+
+    changePasswordWithData(data: any) {
+        this.changePasswordForm = data;
+        this.changePassword();
     }
 
     private autoHideToast() {

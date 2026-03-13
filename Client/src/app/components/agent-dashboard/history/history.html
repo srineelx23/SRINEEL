@@ -1,0 +1,134 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">Application History</h1>
+        <p class="page-subtitle">Track previously reviewed vehicle insurance applications.</p>
+    </header>
+
+    @if (!selectedApp()) {
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(appsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showAppsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="setAppsSortOption('dateDesc')">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="setAppsSortOption('dateAsc')">Oldest First</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (reviewedApps().length === 0) {
+        <p style="color: var(--text-muted); padding: 16px;">No application history found.</p>
+        }
+
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Applicant</th>
+                    <th>Vehicle</th>
+                    <th>Registration</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (app of sortedReviewedApps(); track (app.applicationId || $index)) {
+                <tr (click)="openAppReview(app)" style="cursor: pointer;">
+                    <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
+                    <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
+                    <td>{{ app.registrationNumber }}</td>
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM yyyy':'+0530' }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt | date:'shortTime':'+0530' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge" [ngClass]="app.status.toLowerCase()">
+                            {{ app.status }}
+                        </span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+
+    <!-- Detailed View (Read-Only) -->
+    @if (selectedApp()) {
+    <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
+        <button class="btn-outline"
+            style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+            (click)="closeAppReview()">← Back to History</button>
+
+        <h2 class="form-title" style="margin-bottom: 24px;">Application Details: {{ selectedApp().registrationNumber }}</h2>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+            <div class="glass-panel"
+                style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                <h3 style="color: var(--accent); margin-bottom: 16px;">General Information</h3>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
+                    {{ selectedApp().customer?.fullName || 'Customer ' + selectedApp().customerId }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                    {{ selectedApp().make }} {{ selectedApp().model }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
+                    {{ selectedApp().registrationNumber }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Type / Fuel:</strong> 
+                    {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
+                    {{ selectedApp().createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
+            </div>
+
+            <div class="glass-panel"
+                style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                <h3 style="color: var(--accent); margin-bottom: 16px;">Review Record</h3>
+                <p style="margin-bottom: 16px;">
+                    <strong style="color: var(--text-muted); display: inline-block; width: 140px;">Decision:</strong>
+                    <span class="status-badge" [ngClass]="selectedApp().status.toLowerCase()">{{ selectedApp().status }}</span>
+                </p>
+
+                @if (selectedApp().status === 'Approved') {
+                <div style="padding: 16px; background: rgba(0, 255, 127, 0.05); border-radius: 8px; border: 1px solid rgba(0, 255, 127, 0.2);">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">Approved Invoice Amount</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: var(--success);">{{ selectedApp().invoiceAmount | currency:'INR' }}</p>
+                </div>
+                }
+
+                @if (selectedApp().status === 'Rejected') {
+                <div style="padding: 16px; background: rgba(255, 90, 95, 0.05); border-radius: 8px; border: 1px solid rgba(255, 90, 95, 0.2);">
+                    <p style="color: var(--error); font-weight: 600; margin-bottom: 8px;">Rejection Reason:</p>
+                    <p style="color: var(--text); font-style: italic;">"{{ selectedApp().rejectionReason }}"</p>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Documents Section -->
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="color: var(--accent); margin-bottom: 16px;">Uploaded Documents</h3>
+            @if (selectedApp().documents && selectedApp().documents.length > 0) {
+            <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+                @for (doc of selectedApp().documents; track doc.documentId) {
+                <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline" 
+                   style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+                    <span>📄</span> View {{ doc.documentType }}
+                </a>
+                }
+            </div>
+            } @else {
+            <p style="color: var(--text-muted); font-style: italic;">No documents associated with this application.</p>
+            }
+        </div>
+    </div>
+    }
+</div>

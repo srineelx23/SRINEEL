@@ -1,728 +1,86 @@
 <div class="dashboard-layout">
-    <!-- Display Error/Success Messages -->
+    <!-- Modular Navbar -->
+    <app-navbar 
+        [activeTab]="activeTab()" 
+        [agentName]="agentName()" 
+        [userRole]="userRole()"
+        (onTabSwitch)="switchTab($event)"
+        (onLogout)="logout()"
+        (onGoHome)="goHome()">
+    </app-navbar>
+
+    <main class="main-content">
+        @if (activeTab() === 'overview') {
+            <app-overview
+                [agentName]="agentName()"
+                [pendingApps]="pendingApps()"
+                [pendingPaymentCount]="pendingPaymentCount()"
+                [reviewedApps]="reviewedApps()"
+                [customers]="customers()"
+                [sortedPendingApps]="sortedPendingApps()"
+                (onTabSwitch)="switchTab($event)">
+            </app-overview>
+        }
+
+        @if (activeTab() === 'applications') {
+            <app-applications
+                [pendingApps]="pendingApps()"
+                [sortedPendingApps]="sortedPendingApps()"
+                [selectedApp]="selectedApp()"
+                [appsSortOption]="appsSortOption()"
+                (onOpenAppReview)="openAppReview($event)"
+                (onCloseAppReview)="closeAppReview()"
+                (onAppsSortOptionChange)="appsSortOption.set($event)"
+                (onSubmitReview)="submitReviewWithData($event)">
+            </app-applications>
+        }
+
+        @if (activeTab() === 'history') {
+            <app-history
+                [reviewedApps]="reviewedApps()"
+                [sortedReviewedApps]="sortedReviewedApps()"
+                [selectedApp]="selectedApp()"
+                [appsSortOption]="appsSortOption()"
+                (onOpenAppReview)="openAppReview($event)"
+                (onCloseAppReview)="closeAppReview()"
+                (onAppsSortOptionChange)="appsSortOption.set($event)">
+            </app-history>
+        }
+
+        @if (activeTab() === 'customers') {
+            <app-customers
+                [customers]="customers()"
+                [sortedCustomers]="sortedCustomers()"
+                [selectedCustomerRecord]="selectedCustomerRecord()"
+                [customersSortOption]="customersSortOption()"
+                (onOpenCustomerDetails)="openCustomerDetails($event)"
+                (onCloseCustomerDetails)="closeCustomerDetails()"
+                (onCustomersSortOptionChange)="customersSortOption.set($event)">
+            </app-customers>
+        }
+
+        @if (activeTab() === 'settings') {
+            <app-settings
+                [agentName]="agentName()"
+                [userRole]="userRole()"
+                [changePwdLoading]="changePwdLoading()"
+                (onChangePassword)="changePasswordWithData($event)">
+            </app-settings>
+        }
+    </main>
+
+    <!-- Global Toasts -->
     @if (errorMessage()) {
     <div class="error-toast">
+        <i class="fa-solid fa-circle-exclamation" style="margin-right: 10px;"></i>
         {{ errorMessage() }}
     </div>
     }
+
     @if (successMessage()) {
     <div class="success-toast">
+        <i class="fa-solid fa-circle-check" style="margin-right: 10px;"></i>
         {{ successMessage() }}
     </div>
     }
-
-    <!-- Hovering Navbar -->
-    <nav class="hover-navbar">
-        <div class="nav-brand">
-            <span class="logo-shield">🛡️</span>
-            <h2>VIMS Agent</h2>
-        </div>
-
-        <div class="sidebar-nav">
-            <a (click)="goHome()" class="nav-item">Home</a>
-            <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
-            <a (click)="switchTab('applications')" [class.active]="activeTab() === 'applications'"
-                class="nav-item">Applications</a>
-            <a (click)="switchTab('history')" [class.active]="activeTab() === 'history'" class="nav-item">History</a>
-            <a (click)="switchTab('customers')" [class.active]="activeTab() === 'customers'"
-                class="nav-item">Customers</a>
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="nav-profile-container">
-                <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
-                    <div class="profile-avatar">{{ agentName().charAt(0) }}</div>
-                    <div class="profile-info">
-                        <span class="profile-role">{{ userRole() }}</span>
-                        <span class="profile-name">{{ agentName() }}</span>
-                    </div>
-                    <i class="fa-solid fa-chevron-down"
-                        [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
-                        style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
-                </div>
-
-                <!-- Dropdown Menu -->
-                @if (showUserDropdown()) {
-                <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
-                    <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
-                        <i class="fa-solid fa-gear"></i>
-                        <span>Settings</span>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item danger" (click)="logout()">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        <span>Sign Out</span>
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Overview Tab -->
-        @if (activeTab() === 'overview') {
-        <div class="tab-content fade-in">
-
-            <!-- Hero Greeting -->
-            <div class="overview-hero">
-                <div class="overview-hero-text">
-                    <p class="overview-greeting">Welcome back 👋</p>
-                    <h1 class="overview-title">Welcome, {{ agentName() }}!</h1>
-                    <p class="overview-sub">Review applications, manage customers, and track your performance.</p>
-                </div>
-                <div class="overview-hero-badge">
-                    <span class="hero-shield"><i class="fa-solid fa-user-tie"></i></span>
-                    <span class="hero-badge-label">Agent</span>
-                </div>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="overview-kpi-grid">
-                <div class="kpi-card kpi-warning" (click)="switchTab('applications')">
-                    <div class="kpi-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ pendingApps().length }}</div>
-                        <div class="kpi-label">Pending Approval</div>
-                    </div>
-                </div>
-
-                <div class="kpi-card kpi-info" (click)="switchTab('customers')"
-                    style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(6, 182, 212, 0.2);">
-                    <div class="kpi-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;"><i
-                            class="fa-solid fa-credit-card"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value" style="color: #06b6d4;">{{ pendingPaymentCount() }}</div>
-                        <div class="kpi-label">Awaiting Payment</div>
-                    </div>
-                    <div class="kpi-arrow" style="color: #06b6d4;">→</div>
-                </div>
-                <div class="kpi-card kpi-success" (click)="switchTab('history')">
-                    <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ reviewedApps().length }}</div>
-                        <div class="kpi-label">Reviewed Applications</div>
-                    </div>
-                    <div class="kpi-arrow">→</div>
-                </div>
-                <div class="kpi-card kpi-accent" (click)="switchTab('customers')">
-                    <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
-                    <div class="kpi-body">
-                        <div class="kpi-value">{{ customers().length }}</div>
-                        <div class="kpi-label">Supervised Customers</div>
-                    </div>
-                    <div class="kpi-arrow">→</div>
-                </div>
-            </div>
-
-            <!-- Recent Pending Applications -->
-            <div class="overview-section">
-                <div class="overview-section-header">
-                    <h2 class="overview-section-title"><i class="fa-solid fa-inbox"
-                            style="color:var(--warning);margin-right:8px;"></i>Pending Applications Queue</h2>
-                    <button class="btn-outline-sm" (click)="switchTab('applications')">View All →</button>
-                </div>
-                @if (pendingApps().length === 0) {
-                <div class="empty-state-mini">
-                    <span>🎉</span>
-                    <p>No pending applications. All caught up!</p>
-                </div>
-                }
-                @if (pendingApps().length > 0) {
-                <div class="overview-list">
-                    @for (a of sortedPendingApps().slice(0,5); track (a.applicationId || $index)) {
-                    <div class="overview-list-item" (click)="switchTab('applications')">
-                        <div class="oli-icon"><i class="fa-solid fa-car"></i></div>
-                        <div class="oli-body">
-                            <div class="oli-title">{{ a.customer?.fullName || 'Applicant' }}</div>
-                            <div class="oli-sub">{{ a.registrationNumber || 'Vehicle' }}
-                                &bull; {{ a.make }} {{ a.model }}</div>
-                        </div>
-                        <span class="status-badge pending">Pending</span>
-                    </div>
-                    }
-                </div>
-                }
-            </div>
-        </div>
-        }
-
-        <!-- Applications Tab -->
-        @if (activeTab() === 'applications') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Pending Applications</h1>
-                <p class="page-subtitle">Review vehicle insurance applications assigned to you.</p>
-            </header>
-
-            @if (!selectedApp()) {
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(appsSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showAppsSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="appsSortOption.set('dateDesc'); showAppsSortDropdown.set(false)">Newest First</div>
-                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="appsSortOption.set('dateAsc'); showAppsSortDropdown.set(false)">Oldest First</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (pendingApps().length === 0) {
-                <p style="color: var(--text-muted); padding: 16px;">No pending
-                    applications at the moment. Great job!</p>
-                }
-
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Applicant</th>
-                            <th>Vehicle</th>
-                            <th>Registration</th>
-                            <th>Submitted</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (app of sortedPendingApps(); track (app.applicationId || $index)) {
-                        <tr (click)="openAppReview(app)" style="cursor: pointer;">
-                            <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
-                            <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
-                            <td>{{ app.registrationNumber }}</td>
-                            <td>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt |
-                                        date:'shortTime':'+0530' }}</span>
-                                </div>
-                            </td>
-                            <td><span class="status-badge pending">Pending Review</span></td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            }
-
-            <!-- Detailed Application Review View -->
-            @if (selectedApp()) {
-            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
-                <button class="btn-outline"
-                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-                    (click)="closeAppReview()">← Back to List</button>
-
-                <h2 class="form-title" style="margin-bottom: 24px;">Review Application: {{
-                    selectedApp().registrationNumber }}</h2>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Details</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
-                            {{ selectedApp().customer?.fullName || 'Customer ' + selectedApp().customerId }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
-                            {{ selectedApp().make }} {{ selectedApp().model }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
-                            {{ selectedApp().registrationNumber }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
-                                Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers Driven:</strong>
-                            {{ selectedApp().kilometersDriven }} km</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
-                            {{ selectedApp().createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
-                    </div>
-
-                    <!-- Documents -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Documents</h3>
-                        @if (!selectedApp().documents || selectedApp().documents.length === 0) {
-                        <p style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
-                        }
-
-                        @if (selectedApp().documents && selectedApp().documents.length > 0) {
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            @for (doc of selectedApp().documents; track (doc.documentId || $index)) {
-                            <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
-                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
-                            </a>
-                            }
-                        </div>
-                        }
-                    </div>
-                </div>
-
-                <!-- Review Action Form (Only for Pending) -->
-                @if (selectedApp().status === 'Pending') {
-                <div class="glass-panel"
-                    style="padding: 24px; border: 1px solid var(--accent); background: rgba(58, 80, 107, 0.1);">
-                    <h3 style="margin-bottom: 24px;">Decision</h3>
-                    <form class="vims-form" (ngSubmit)="submitReview()">
-
-                        <div style="display: flex; gap: 24px; margin-bottom: 24px;">
-                            <label
-                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
-                                <input type="radio" [value]="true" name="approvedDecision"
-                                    [(ngModel)]="reviewAction.approved"
-                                    style="accent-color: var(--success); width: 18px; height: 18px;">
-                                Approve Application
-                            </label>
-                            <label
-                                style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
-                                <input type="radio" [value]="false" name="rejectDecision"
-                                    [(ngModel)]="reviewAction.approved"
-                                    style="accent-color: var(--error); width: 18px; height: 18px;">
-                                Reject Application
-                            </label>
-                        </div>
-
-                        <!-- Approve Fields -->
-                        @if (reviewAction.approved) {
-                        <div class="form-group slide-in">
-                            <label for="invoiceAmt"
-                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Determined
-                                Invoice Amount (from documents)</label>
-                            <input type="number" id="invoiceAmt" name="invoiceAmt" class="form-control"
-                                [(ngModel)]="reviewAction.invoiceAmount" placeholder="e.g. 500000" required>
-                        </div>
-                        }
-
-                        <!-- Reject Fields -->
-                        @if (!reviewAction.approved) {
-                        <div class="form-group slide-in">
-                            <label for="rejectReason"
-                                style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; display: block;">Rejection
-                                Reason</label>
-                            <textarea id="rejectReason" name="rejectReason" class="form-control"
-                                [(ngModel)]="reviewAction.rejectionReason" rows="3"
-                                placeholder="Explain why this application is rejected..." required></textarea>
-                        </div>
-                        }
-
-                        <button type="submit" class="btn-primary" style="margin-top: 16px; padding: 12px 32px;"
-                            [ngStyle]="{'background': reviewAction.approved ? 'var(--success)' : 'var(--error)'}">
-                            {{ reviewAction.approved ? 'Confirm Approval' : 'Submit Rejection' }}
-                        </button>
-                    </form>
-                </div>
-                }
-
-                <!-- Read-Only History View (For non-Pending) -->
-                @if (selectedApp().status !== 'Pending') {
-                <div class="glass-panel"
-                    style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
-                    <h3 style="margin-bottom: 24px; color: var(--text-main);">Decision Record</h3>
-
-                    <p style="margin-bottom: 8px;"><strong
-                            style="color: var(--text-muted); display: inline-block; width: 140px;">Final
-                            Status:</strong>
-                        <span class="status-badge" [ngClass]="selectedApp().status.toLowerCase()"
-                            style="display: inline-block;">{{ selectedApp().status }}</span>
-                    </p>
-
-                    @if (selectedApp().status === 'Approved') {
-                    <p style="margin-bottom: 8px;"><strong
-                            style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
-                            Value:</strong>
-                        <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
-                            selectedApp().invoiceAmount | currency:'INR' }}</span>
-                    </p>
-                    }
-
-                    @if (selectedApp().status === 'Rejected') {
-                    <div
-                        style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
-                        <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
-                            Reason:</strong>
-                        <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
-                        </p>
-                    </div>
-                    }
-                </div>
-                }
-            </div>
-            }
-        </div>
-        }
-
-        <!-- History Tab -->
-        @if (activeTab() === 'history') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Application History</h1>
-                <p class="page-subtitle">A record of vehicle applications you have approved or rejected.</p>
-            </header>
-
-            @if (!selectedApp()) {
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(appsSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showAppsSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="appsSortOption.set('dateDesc'); showAppsSortDropdown.set(false)">Newest First</div>
-                            <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="appsSortOption.set('dateAsc'); showAppsSortDropdown.set(false)">Oldest First</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (reviewedApps().length === 0) {
-                <p style="color: var(--text-muted); padding: 16px;">No history records available.</p>
-                }
-
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Applicant</th>
-                            <th>Vehicle</th>
-                            <th>Registration</th>
-                            <th>Decision Date</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (app of sortedReviewedApps(); track (app.applicationId || $index)) {
-                        <tr (click)="openAppReview(app)" style="cursor: pointer;">
-                            <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
-                            <td>{{ app.make }} {{ app.model }}</td>
-                            <td>{{ app.registrationNumber }}</td>
-                            <td>
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM
-                                        yyyy':'+0530' }}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt |
-                                        date:'shortTime':'+0530' }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="status-badge" [ngClass]="app.status.toLowerCase()"
-                                    style="display: inline-block;">{{ app.status }}</span>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            }
-
-            <!-- Detailed Application History View (Re-using the same panel logic) -->
-            @if (selectedApp()) {
-            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
-                <button class="btn-outline"
-                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-                    (click)="closeAppReview()">← Back to History</button>
-
-                <h2 class="form-title" style="margin-bottom: 24px;">Application Record: {{
-                    selectedApp().registrationNumber }}</h2>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-                    <!-- App Info -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Application Details</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Applicant:</strong>
-                            {{ selectedApp().customer?.fullName || 'Customer ' + selectedApp().customerId }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
-                            {{ selectedApp().make }} {{ selectedApp().model }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
-                            {{ selectedApp().registrationNumber }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
-                                Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers Driven:</strong>
-                            {{ selectedApp().kilometersDriven }} km</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
-                            {{ selectedApp().createdAt | date:'dd MMM yyyy, h:mm a':'+0530' }}</p>
-                    </div>
-
-                    <!-- Documents (Hidden for Past Applications per requirement) -->
-                    <div class="glass-panel"
-                        style="background: rgba(255, 255, 255, 0.05); padding: 24px; border-radius: 12px; border: 1px dashed var(--card-inner-border); box-shadow: none; display: flex; align-items: center; justify-content: center;">
-                        <p style="color: var(--text-muted); font-style: italic; margin: 0;">Documents cannot be viewed
-                            after an application is closed.</p>
-                    </div>
-                </div>
-
-                <!-- Read-Only History View -->
-                <div class="glass-panel"
-                    style="padding: 24px; border: 1px solid var(--border-light); background: var(--card-inner-bg);">
-                    <h3 style="margin-bottom: 24px; color: var(--text-main);">Decision Record</h3>
-
-                    <p style="margin-bottom: 8px;"><strong
-                            style="color: var(--text-muted); display: inline-block; width: 140px;">Final
-                            Status:</strong>
-                        <span class="status-badge" [ngClass]="selectedApp().status.toLowerCase()"
-                            style="display: inline-block;">{{ selectedApp().status }}</span>
-                    </p>
-
-                    @if (selectedApp().status === 'Approved') {
-                    <p style="margin-bottom: 8px;"><strong
-                            style="color: var(--text-muted); display: inline-block; width: 140px;">Approved
-                            Value:</strong>
-                        <span style="font-weight: 500; font-size: 1.1rem; color: var(--success);">{{
-                            selectedApp().invoiceAmount | currency:'INR' }}</span>
-                    </p>
-                    }
-
-                    @if (selectedApp().status === 'Rejected') {
-                    <div
-                        style="margin-top: 16px; padding: 16px; border-left: 4px solid var(--error); background: rgba(255, 90, 95, 0.05); border-radius: 4px;">
-                        <strong style="color: var(--error); display: block; margin-bottom: 8px;">Rejection
-                            Reason:</strong>
-                        <p style="color: var(--text-main); font-style: italic;">"{{ selectedApp().rejectionReason }}"
-                        </p>
-                    </div>
-                    }
-                </div>
-            </div>
-            }
-        </div>
-        }
-
-        <!-- Customers Tab -->
-        @if (activeTab() === 'customers') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Supervised Customers</h1>
-                <p class="page-subtitle">View your assigned customers and their active policies.</p>
-            </header>
-
-            @if (!selectedCustomerRecord()) {
-            <div class="glass-panel" style="padding: 24px;">
-                <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="showCustomersSortDropdown.set(!showCustomersSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(customersSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down" [style.transform]="showCustomersSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showCustomersSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="showCustomersSortDropdown.set(false)">
-                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameAsc'" (click)="customersSortOption.set('nameAsc'); showCustomersSortDropdown.set(false)">Name A-Z</div>
-                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameDesc'" (click)="customersSortOption.set('nameDesc'); showCustomersSortDropdown.set(false)">Name Z-A</div>
-                            <div class="vims-dropdown-divider"></div>
-                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountDesc'" (click)="customersSortOption.set('amountDesc'); showCustomersSortDropdown.set(false)">Premium: High to Low</div>
-                            <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountAsc'" (click)="customersSortOption.set('amountAsc'); showCustomersSortDropdown.set(false)">Premium: Low to High</div>
-                        </div>
-                        }
-                    </div>
-                </div>
-                @if (customers().length === 0) {
-                <p style="color: var(--text-muted); padding: 16px;">No customers
-                    assigned yet.</p>
-                }
-
-                @if (customers().length > 0) {
-                <table class="vims-table">
-                    <thead>
-                        <tr>
-                            <th>Customer Name</th>
-                            <th>Registration No.</th>
-                            <th>Policy Number</th>
-                            <th>Premium</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (c of sortedCustomers(); track ($index)) {
-                        <tr (click)="openCustomerDetails(c)" style="cursor: pointer;">
-                            <td>{{ c.customerName }}</td>
-                            <td>{{ c.registrationNumber }}</td>
-                            <td>{{ c.policyNumber }}</td>
-                            <td>
-                                <span style="font-weight: 600; color: var(--accent);">{{ c.premiumAmount | currency:'INR' }}</span>
-                            </td>
-                            <td>
-                                <span class="status-badge" [ngClass]="c.policyStatus?.toLowerCase()"
-                                    style="display: inline-block;">{{ c.policyStatus }}</span>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                }
-            </div>
-            }
-
-            <!-- Detailed Customer Policy View -->
-            @if (selectedCustomerRecord()) {
-            <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
-                <button class="btn-outline"
-                    style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-                    (click)="closeCustomerDetails()">← Back to List</button>
-
-                <h2 class="form-title" style="margin-bottom: 24px;">Customer Record: {{
-                    selectedCustomerRecord().customerName }}</h2>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <!-- Policy & Vehicle Info -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Policy & Vehicle Information</h3>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Email:</strong>
-                            {{ selectedCustomerRecord().email }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
-                            {{ selectedCustomerRecord().vehicleMake }} {{ selectedCustomerRecord().vehicleModel }} ({{
-                            selectedCustomerRecord().vehicleYear }})</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
-                            {{ selectedCustomerRecord().registrationNumber }}</p>
-                        <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
-                                Number:</strong> {{ selectedCustomerRecord().policyNumber }}</p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
-                                Status:</strong> <span class="status-badge"
-                                [ngClass]="selectedCustomerRecord().policyStatus?.toLowerCase()"
-                                style="display: inline-block;">{{ selectedCustomerRecord().policyStatus }}</span></p>
-                        <p style="margin-bottom: 8px;"><strong
-                                style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
-                                Amount:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
-                                selectedCustomerRecord().premiumAmount | currency:'INR' }}</span></p>
-                    </div>
-
-                    <!-- Documents -->
-                    <div class="glass-panel"
-                        style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
-                        <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Documents</h3>
-                        @if (!selectedCustomerRecord().documents || selectedCustomerRecord().documents.length === 0) {
-                        <p style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
-                        }
-
-                        @if (selectedCustomerRecord().documents && selectedCustomerRecord().documents.length > 0) {
-                        <div style="display: flex; flex-direction: column; gap: 12px;">
-                            @for (doc of selectedCustomerRecord().documents; track $index) {
-                            <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
-                                style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                                <span style="font-size: 1.2rem;">📄</span> View Document {{ $index + 1 }}
-                            </a>
-                            }
-                        </div>
-                        }
-                    </div>
-                </div>
-            </div>
-            }
-        </div>
-        }
-
-        <!-- Settings Tab -->
-        @if (activeTab() === 'settings') {
-        <div class="tab-content fade-in">
-            <header class="page-header">
-                <h1 class="page-title">Account Settings</h1>
-                <p class="page-subtitle">Manage your field agent security and preferences.</p>
-            </header>
-
-            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: start;">
-                <!-- Password Change Panel -->
-                <div class="glass-panel" style="padding: 32px;">
-                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 32px;">
-                        <div
-                            style="width: 44px; height: 44px; border-radius: 12px; background: rgba(220,38,38,0.1); color: var(--error); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                            <i class="fa-solid fa-shield-lock"></i>
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.25rem;">Security & Password</h3>
-                            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">Change your agent
-                                password periodically.</p>
-                        </div>
-                    </div>
-
-                    <form class="vims-form" (ngSubmit)="changePassword()">
-                        <div class="form-group">
-                            <input [type]="showCurrentPwd ? 'text' : 'password'" id="currentPwd" name="currentPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.currentPassword"
-                                required>
-                            <label for="currentPwd" class="floating-label">Current Password</label>
-                            <i class="fa-solid" [ngClass]="showCurrentPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showCurrentPwd = !showCurrentPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <div class="form-group">
-                            <input [type]="showNewPwd ? 'text' : 'password'" id="newPwd" name="newPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.newPassword"
-                                required>
-                            <label for="newPwd" class="floating-label">New Password</label>
-                            <i class="fa-solid" [ngClass]="showNewPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showNewPwd = !showNewPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <div class="form-group">
-                            <input [type]="showConfirmPwd ? 'text' : 'password'" id="confirmPwd" name="confirmPwd"
-                                class="form-control" placeholder=" " [(ngModel)]="changePasswordForm.confirmPassword"
-                                required>
-                            <label for="confirmPwd" class="floating-label">Confirm New Password</label>
-                            <i class="fa-solid" [ngClass]="showConfirmPwd ? 'fa-eye-slash' : 'fa-eye'"
-                                (click)="showConfirmPwd = !showConfirmPwd"
-                                style="position: absolute; right: 16px; top: 18px; cursor: pointer; opacity: 0.4;"></i>
-                        </div>
-
-                        <button type="submit" class="btn-primary" [disabled]="changePwdLoading()"
-                            style="margin-top: 8px; width: 100%;">
-                            @if (changePwdLoading()) {
-                            <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px;"></i> Updating...
-                            } @else {
-                            <i class="fa-solid fa-key" style="margin-right: 8px;"></i> Change Password
-                            }
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Profile Info Box -->
-                <div class="glass-panel" style="padding: 32px; background: rgba(6, 182, 212, 0.03);">
-                    <h3 style="margin-bottom: 24px; color: #06b6d4;">Agent Profile</h3>
-                    <div style="display: flex; flex-direction: column; gap: 24px;">
-                        <div>
-                            <p
-                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
-                                Field Agent Name</p>
-                            <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ agentName() }}</p>
-                        </div>
-                        <div>
-                            <p
-                                style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
-                                Official Role</p>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="status-badge active" style="background: rgba(6, 182, 212, 0.1); color: #06b6d4;">{{ userRole() }}</span>
-                            </div>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 8px 0;">
-                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-                            As an agent, you help customers protect their valuable assets. Keep your account secure to maintain customer trust.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        }
-
-    </main>
 </div>

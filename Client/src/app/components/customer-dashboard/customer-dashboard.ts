@@ -88,18 +88,9 @@ export class CustomerDashboard implements OnInit {
     now.setHours(0, 0, 0, 0);
 
     return this.policies().filter(p => {
-      if (p.status !== 'Cancelled' && p.status !== 'Expired' && p.status !== 'Claimed') return false;
-      if (p.status === 'Cancelled' || p.status === 'Claimed') return true;
-
-      const endDate = new Date(p.endDate);
-      endDate.setHours(0, 0, 0, 0);
-
-      const diffTime = endDate.getTime() - now.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
-
-      // If Expired but within 30 days after expiry AND not already renewed, it goes to Renewable
-      if (p.status === 'Expired' && diffDays >= -30 && !p.isRenewed) return false;
-      return true;
+      // Inactive policies include Cancelled, Claimed, and Expired
+      if (p.status === 'Cancelled' || p.status === 'Claimed' || p.status === 'Expired') return true;
+      return false;
     });
   });
 
@@ -108,7 +99,7 @@ export class CustomerDashboard implements OnInit {
     now.setHours(0, 0, 0, 0);
 
     return this.policies().filter(p => {
-      if (p.isRenewed || p.status === 'Cancelled' || p.status === 'Claimed') return false;
+      if (p.isRenewed || p.status !== 'Active') return false; // Only Active policies can be renewed/upgraded before they expire
 
       const endDate = new Date(p.endDate);
       endDate.setHours(0, 0, 0, 0);
@@ -201,7 +192,7 @@ export class CustomerDashboard implements OnInit {
       policy = this.selectedPolicy();
     }
     
-    if (!policy) return this.plans();
+    if (!policy) return this.plans().filter(p => p.status === 1 || p.status === 'Active');
 
     // Find the current plan in the loaded plans list to determine its ApplicableVehicleType
     let currentPlan = undefined;
@@ -219,12 +210,13 @@ export class CustomerDashboard implements OnInit {
 
     if (!vType || vType === "N/A") {
       // Fallback if current plan not found, but this should rarely happen
-      return this.plans();
+      return this.plans().filter(p => p.status === 1 || p.status === 'Active');
     }
 
     return this.plans().filter(p => {
       const planVType = (p.applicableVehicleType || p.ApplicableVehicleType)?.toString().trim();
-      return planVType && planVType.toLowerCase() === vType.toLowerCase();
+      const isActive = p.status === 1 || p.status === 'Active';
+      return isActive && planVType && planVType.toLowerCase() === vType.toLowerCase();
     });
   });
 

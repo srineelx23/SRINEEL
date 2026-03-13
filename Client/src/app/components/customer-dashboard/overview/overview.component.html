@@ -3,7 +3,7 @@
     <!-- Hero Greeting -->
     <div class="overview-hero">
         <div class="overview-hero-text">
-            <p class="overview-greeting">Welcome back <i class="fa-solid fa-hand-wave"></i></p>
+            <p class="overview-greeting">Your Secure Insurance Hub <i class="fa-solid fa-shield-heart"></i></p>
             <h1 class="overview-title">Welcome, {{ customerName() }}!</h1>
             <p class="overview-sub">All your policies, claims, and vehicles &mdash; at a glance.</p>
         </div>
@@ -16,59 +16,66 @@
     </div>
 
     <!-- KPI Cards -->
-    <div class="kpi-grid">
+    <!-- KPI Cards -->
+    <div class="overview-kpi-grid">
         <!-- Policies -->
         <div class="kpi-card kpi-accent" (click)="onSwitchTab.emit('policies')">
-            <div class="kpi-icon-wrap"><i class="fa-solid fa-file-contract"></i></div>
-            <div class="kpi-content">
+            <div class="kpi-icon"><i class="fa-solid fa-file-contract"></i></div>
+            <div class="kpi-body">
                 <div class="kpi-value">{{ policies().length }}</div>
                 <div class="kpi-label">Total Policies</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
         <div class="kpi-card kpi-success" (click)="onSwitchTab.emit('policies')">
-            <div class="kpi-icon-wrap"><i class="fa-solid fa-circle-check"></i></div>
-            <div class="kpi-content">
+            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kpi-body">
                 <div class="kpi-value">{{ activePolicies().length }}</div>
                 <div class="kpi-label">Active Policies</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
         <!-- Applications -->
         <div class="kpi-card kpi-warning" (click)="onSwitchTab.emit('applied')">
-            <div class="kpi-icon-wrap"><i class="fa-solid fa-hourglass-half"></i></div>
-            <div class="kpi-content">
+            <div class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div class="kpi-body">
                 <div class="kpi-value">{{ pendingApplicationsCount() }}</div>
                 <div class="kpi-label">Pending Approval</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
         <!-- Urgent Actions -->
-        <div class="kpi-card kpi-urgent" (click)="handlePendingPayment()">
-            <div class="kpi-icon-wrap">
+        <div class="kpi-card kpi-payments" (click)="handlePendingPayment()">
+            <div class="kpi-icon">
                 <i class="fa-solid fa-credit-card"></i>
             </div>
-            <div class="kpi-content">
+            <div class="kpi-body">
                 <div class="kpi-value">{{ pendingPaymentPolicies().length }}</div>
                 <div class="kpi-label">Pending Payment</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
         <!-- Claims -->
         <div class="kpi-card kpi-info" (click)="onSwitchTab.emit('claims')">
-            <div class="kpi-icon-wrap"><i class="fa-solid fa-inbox"></i></div>
-            <div class="kpi-content">
+            <div class="kpi-icon"><i class="fa-solid fa-inbox"></i></div>
+            <div class="kpi-body">
                 <div class="kpi-value">{{ pendingClaimsList().length }}</div>
                 <div class="kpi-label">Pending Claims</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
         <div class="kpi-card kpi-success" (click)="onSwitchTab.emit('claims')">
-            <div class="kpi-icon-wrap"><i class="fa-solid fa-thumbs-up"></i></div>
-            <div class="kpi-content">
+            <div class="kpi-icon"><i class="fa-solid fa-thumbs-up"></i></div>
+            <div class="kpi-body">
                 <div class="kpi-value">{{ approvedClaims().length }}</div>
                 <div class="kpi-label">Approved Claims</div>
             </div>
+            <div class="kpi-arrow">→</div>
         </div>
 
     </div>

@@ -1,0 +1,44 @@
+<nav class="hover-navbar">
+    <div class="nav-brand">
+        <i class="fa-solid fa-shield-halved"
+            style="color: var(--accent); font-size: 1.5rem; margin-right: 12px;"></i>
+        <h2>VIMS</h2>
+    </div>
+
+    <div class="sidebar-nav">
+        <a (click)="goHome()" class="nav-item">Home</a>
+        <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+        <a (click)="switchTab('pending')" [class.active]="activeTab() === 'pending'" class="nav-item">Claims</a>
+        <a (click)="switchTab('history')" [class.active]="activeTab() === 'history'" class="nav-item">History</a>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="nav-profile-container">
+            <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                <div class="profile-avatar">{{ officerName().charAt(0) }}</div>
+                <div class="profile-info">
+                    <span class="profile-role">{{ userRole() }}</span>
+                    <span class="profile-name">{{ officerName() }}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down"
+                    [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                    style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+            </div>
+
+            <!-- Dropdown Menu -->
+            @if (showUserDropdown()) {
+            <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
+                <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" (click)="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</nav>

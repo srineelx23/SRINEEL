@@ -1,0 +1,46 @@
+<nav class="hover-navbar">
+    <div class="nav-brand">
+        <span class="logo-shield">🛡️</span>
+        <h2>VIMS Admin</h2>
+    </div>
+
+    <div class="sidebar-nav">
+        <a (click)="goHome()" class="nav-item">Home</a>
+        <a (click)="switchTab('overview')" [class.active]="activeTab() === 'overview'" class="nav-item">Overview</a>
+        <a (click)="switchTab('vehicles')" [class.active]="activeTab() === 'vehicles'" class="nav-item">Vehicles</a>
+        <a (click)="switchTab('claims')" [class.active]="activeTab() === 'claims'" class="nav-item">Claims</a>
+        <a (click)="switchTab('payments')" [class.active]="activeTab() === 'payments'" class="nav-item">Payments</a>
+        <a (click)="switchTab('users')" [class.active]="activeTab() === 'users'" class="nav-item">Users</a>
+        <a (click)="switchTab('plans')" [class.active]="activeTab() === 'plans'" class="nav-item">Plans</a>
+        <a (click)="switchTab('audit')" [class.active]="activeTab() === 'audit'" class="nav-item">Audit Logs</a>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="nav-profile-container">
+            <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
+                <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
+                <div class="profile-info">
+                    <span class="profile-role">{{ userRole() }}</span>
+                    <span class="profile-name">{{ adminName() }}</span>
+                </div>
+                <i class="fa-solid fa-chevron-down"
+                    [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                    style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
+            </div>
+
+            @if (showUserDropdown()) {
+            <div class="dropdown-menu fade-in" (mouseleave)="showUserDropdown.set(false)">
+                <div class="dropdown-item" (click)="switchTab('settings'); showUserDropdown.set(false)">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" (click)="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </div>
+            </div>
+            }
+        </div>
+    </div>
+</nav>

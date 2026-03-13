@@ -1296,8 +1296,6 @@ select.form-control~.floating-label {
 
 .stat-card:hover {
     transform: translateY(-5px);
-    background: var(--accent-glow);
-    border-color: var(--accent);
 }
 
 .stat-card h3 {

@@ -16,6 +16,7 @@ describe('CustomerDashboard', () => {
     let routerSpy: jasmine.SpyObj<Router>;
 
     beforeEach(async () => {
+        sessionStorage.clear();
         customerServiceSpy = jasmine.createSpyObj('CustomerService', [
             'getMyPolicies', 'getMyClaims', 'getMyApplications', 'getMyPayments', 'getIncomingTransfers', 'getOutgoingTransfers'
         ]);

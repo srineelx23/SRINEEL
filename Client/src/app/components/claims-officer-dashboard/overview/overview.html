@@ -1,0 +1,79 @@
+<div class="tab-content fade-in">
+    <!-- Hero Greeting -->
+    <div class="overview-hero">
+        <div class="overview-hero-text">
+            <p class="overview-greeting">Claim Resolution Center <i class="fa-solid fa-gavel"></i></p>
+            <h1 class="overview-title">Welcome, {{ officerName() }}!</h1>
+            <p class="overview-sub">Investigate, evaluate, and resolve vehicle insurance claims.</p>
+        </div>
+        <div class="overview-hero-badge">
+            <span class="hero-shield"><i class="fa-solid fa-scale-balanced"></i></span>
+            <span class="hero-badge-label">Officer</span>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="overview-kpi-grid">
+        <div class="kpi-card kpi-warning" (click)="switchTab('pending')">
+            <div class="kpi-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ totalPending() }}</div>
+                <div class="kpi-label">Pending Assignment</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+
+        <div class="kpi-card kpi-success" (click)="switchTab('history')">
+            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ totalReviewed() }}</div>
+                <div class="kpi-label">Historical Record</div>
+            </div>
+            <div class="kpi-arrow">→</div>
+        </div>
+
+        <div class="kpi-card kpi-accent">
+            <div class="kpi-icon"><i class="fa-solid fa-chart-pie"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-value">{{ totalPending() + totalReviewed() }}</div>
+                <div class="kpi-label">Total Claims</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Pending Claims -->
+    <div class="overview-section">
+        <div class="overview-section-header">
+            <h2 class="overview-section-title"><i class="fa-solid fa-magnifying-glass"
+                    style="color:var(--warning);margin-right:8px;"></i>Claims Requiring Attention</h2>
+            <button class="btn-outline-sm" (click)="switchTab('pending')">View All →</button>
+        </div>
+        @if (pendingClaims().length === 0) {
+        <div class="empty-state-mini">
+            <span>🎉</span>
+            <p>All claims have been reviewed. Excellent work!</p>
+        </div>
+        }
+        @if (pendingClaims().length > 0) {
+        <div class="overview-list">
+            @for (c of sortedPendingClaims().slice(0,5); track (c.claimId || $index)) {
+            <div class="overview-list-item" (click)="openClaimReview(c)">
+                <div class="oli-icon"><i class="fa-solid fa-file-shield"></i></div>
+                <div class="oli-body">
+                    <div class="oli-title">{{ c.claimNumber }}</div>
+                    <div class="oli-sub">
+                        <span>{{ c.customer?.fullName || 'Customer' }} &bull; {{ c.claimType }}</span>
+                        <span
+                            style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 3px;">
+                            <i class="fa-regular fa-clock" style="margin-right: 4px;"></i>
+                            {{ c.createdAt | date:'MMM d, y, h:mm a' }}
+                        </span>
+                    </div>
+                </div>
+                <span class="status-badge pending">Under Review</span>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</div>

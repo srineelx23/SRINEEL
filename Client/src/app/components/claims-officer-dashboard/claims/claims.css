@@ -1,0 +1,156 @@
+/* Claims Component Styles */
+
+.tab-content {
+    width: 100%;
+}
+
+.table-header-actions {
+    margin-bottom: 24px;
+}
+
+/* Detailed Claim View - Standardized with Customer Dashboard */
+.claim-detail-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0;
+    overflow: hidden;
+}
+
+.claim-detail-stripe {
+    height: 5px;
+}
+
+.claim-detail-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.claim-detail-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.claim-info-grid {
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.claim-info-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+}
+
+.claim-info-card label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.claim-info-card .value {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.claim-info-card .vehicle-reg {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: monospace;
+    letter-spacing: 0.08em;
+    margin: 0 0 4px;
+}
+
+.claim-settlement-banner {
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.claim-settlement-banner label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.claim-amount {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin: 0;
+}
+
+.supporting-docs-section {
+    padding: 0 28px 24px;
+}
+
+.supporting-docs-section header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.doc-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

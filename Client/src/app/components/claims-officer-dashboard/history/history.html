@@ -1,0 +1,132 @@
+<div class="tab-content fade-in">
+    @if (!selectedClaim()) {
+    <header class="page-header">
+        <h1 class="page-title">Processed Claims</h1>
+        <p class="page-subtitle">A historical record of claims you've reviewed.</p>
+    </header>
+
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="setSortOption('dateDesc')">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="setSortOption('dateAsc')">Oldest First</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (reviewedClaims().length === 0) {
+        <p style="color: var(--text-muted); padding: 16px;">No history records available.</p>
+        }
+
+        @if (reviewedClaims().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Claim No.</th>
+                    <th>Customer Name</th>
+                    <th>Registration No.</th>
+                    <th>Claim Type</th>
+                    <th>Filed On</th>
+                    <th>Approved Amt</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (c of sortedReviewedClaims(); track (c.claimId || $index)) {
+                <tr (click)="openClaimReview(c)" style="cursor: pointer;">
+                    <td>{{ c.claimNumber }}</td>
+                    <td>{{ c.customer?.fullName || 'Customer' }}</td>
+                    <td>{{ c.vehicle?.registrationNumber }}</td>
+                    <td>{{ c.claimType }}</td>
+                    <td>
+                        <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm a' }}</div>
+                    </td>
+                    <td>
+                        @if (c.status === 'Approved') {
+                            <span style="font-weight: 700; color: var(--success);">{{ c.approvedAmount | currency:'INR':'symbol':'1.0-0' }}</span>
+                        } @else {
+                            <span style="color: var(--text-muted);">--</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="status-badge" [ngClass]="c.status?.toLowerCase()">{{ c.status }}</span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+    }
+
+    <!-- Read-Only History Detailed View -->
+    @if (selectedClaim()) {
+    <div class="glass-panel fade-in claim-detail-container">
+        <!-- Status stripe -->
+        <div class="claim-detail-stripe" [ngStyle]="{
+            'background': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'
+        }"></div>
+
+        <!-- Header row -->
+        <div class="claim-detail-header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                 <div class="claim-status-icon"
+                    [ngStyle]="{
+                        'background': selectedClaim().status === 'Approved' ? 'rgba(22,163,74,0.15)' : 'rgba(220,38,38,0.15)',
+                        'color':      selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'
+                    }" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                    <i class="fa-solid" [ngClass]="selectedClaim().status === 'Approved' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+                </div>
+                <div>
+                    <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">Case #{{ selectedClaim().claimNumber }}</h2>
+                    <div class="claim-detail-meta">Historical Record &bull; Processed</div>
+                </div>
+            </div>
+            <button class="btn-outline" (click)="closeClaimReview()">← Back to List</button>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="claim-info-grid">
+            <div class="claim-info-card">
+                <label>Applicant</label>
+                <p class="value">{{ selectedClaim().customer?.fullName }}</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">{{ selectedClaim().customer?.email }}</p>
+            </div>
+            <div class="claim-info-card">
+                <label>Incident Details</label>
+                <p class="value">{{ selectedClaim().claimType }}</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Policy #{{ selectedClaim().policy?.policyNumber }}</p>
+            </div>
+            <div class="claim-info-card" style="grid-column: span 2;">
+                <label>Insured Vehicle</label>
+                <p class="vehicle-reg">{{ selectedClaim().vehicle?.registrationNumber }}</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">{{ selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }} ({{ selectedClaim().vehicle?.year }})</p>
+            </div>
+        </div>
+
+        <!-- Final Resolution -->
+        <div class="claim-settlement-banner" [ngStyle]="{'background': selectedClaim().status === 'Approved' ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)'}" style="margin: 0 28px 24px; border: 1px solid var(--glass-border);">
+            <div>
+                <label>Final Resolution</label>
+                <p class="claim-amount" [ngStyle]="{'color': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'}">
+                    {{ selectedClaim().status === 'Approved' ? (selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0') : 'Claim Rejected' }}
+                </p>
+            </div>
+            @if (selectedClaim().rejectionReason) {
+            <div style="flex: 1; min-width: 240px; background: rgba(0,0,0,0.1); border-radius: 12px; padding: 14px 18px; border: 1px solid var(--border-light);">
+                <label style="color: var(--error); margin-bottom: 4px;">Decision Notes</label>
+                <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6; margin: 0; font-style: italic;">"{{ selectedClaim().rejectionReason }}"</p>
+            </div>
+            }
+        </div>
+    </div>
+    }
+</div>

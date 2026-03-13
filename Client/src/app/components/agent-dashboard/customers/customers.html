@@ -1,0 +1,126 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">Supervised Customers</h1>
+        <p class="page-subtitle">View your assigned customers and their active policies.</p>
+    </header>
+
+    @if (!selectedCustomerRecord()) {
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showCustomersSortDropdown.set(!showCustomersSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(customersSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showCustomersSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showCustomersSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showCustomersSortDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameAsc'" (click)="setCustomersSortOption('nameAsc')">Name A-Z</div>
+                    <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'nameDesc'" (click)="setCustomersSortOption('nameDesc')">Name Z-A</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountDesc'" (click)="setCustomersSortOption('amountDesc')">Premium: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="customersSortOption() === 'amountAsc'" (click)="setCustomersSortOption('amountAsc')">Premium: Low to High</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (customers().length === 0) {
+        <p style="color: var(--text-muted); padding: 16px;">No customers
+            assigned yet.</p>
+        }
+
+        @if (customers().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Registration No.</th>
+                    <th>Policy Number</th>
+                    <th>Premium</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (c of sortedCustomers(); track ($index)) {
+                <tr (click)="openCustomerDetails(c)" style="cursor: pointer;">
+                    <td>{{ c.customerName }}</td>
+                    <td>{{ c.registrationNumber }}</td>
+                    <td>{{ c.policyNumber }}</td>
+                    <td>
+                        <span style="font-weight: 600; color: var(--accent);">{{ c.premiumAmount | currency:'INR' }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge" [ngClass]="c.policyStatus?.toLowerCase()"
+                            style="display: inline-block;">{{ c.policyStatus }}</span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+    }
+
+    <!-- Detailed Customer Policy View -->
+    @if (selectedCustomerRecord()) {
+    <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
+        <button class="btn-outline"
+            style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
+            (click)="closeCustomerDetails()">← Back to List</button>
+
+        <h2 class="form-title" style="margin-bottom: 24px;">Customer Record: {{
+            selectedCustomerRecord().customerName }}</h2>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <!-- Policy & Vehicle Info -->
+            <div class="glass-panel"
+                style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                <h3 style="color: var(--accent); margin-bottom: 16px;">Policy & Vehicle Information</h3>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Email:</strong>
+                    {{ selectedCustomerRecord().email }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Vehicle:</strong>
+                    {{ selectedCustomerRecord().vehicleMake }} {{ selectedCustomerRecord().vehicleModel }} ({{
+                    selectedCustomerRecord().vehicleYear }})</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Registration:</strong>
+                    {{ selectedCustomerRecord().registrationNumber }}</p>
+                <hr style="border-color: var(--card-inner-border); margin: 16px 0;">
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
+                        Number:</strong> {{ selectedCustomerRecord().policyNumber }}</p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Policy
+                        Status:</strong> <span class="status-badge"
+                        [ngClass]="selectedCustomerRecord().policyStatus?.toLowerCase()"
+                        style="display: inline-block;">{{ selectedCustomerRecord().policyStatus }}</span></p>
+                <p style="margin-bottom: 8px;"><strong
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Premium
+                        Amount:</strong> <span style="font-weight: 500; font-size: 1.1rem;">{{
+                        selectedCustomerRecord().premiumAmount | currency:'INR' }}</span></p>
+            </div>
+
+            <!-- Documents -->
+            <div class="glass-panel"
+                style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                <h3 style="color: var(--accent); margin-bottom: 16px;">Vehicle Documents</h3>
+                @if (!selectedCustomerRecord().documents || selectedCustomerRecord().documents.length === 0) {
+                <p style="color: var(--text-muted); font-style: italic;">No documents uploaded.</p>
+                }
+
+                @if (selectedCustomerRecord().documents && selectedCustomerRecord().documents.length > 0) {
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    @for (doc of selectedCustomerRecord().documents; track $index) {
+                    <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
+                        style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
+                        <span style="font-size: 1.2rem;">📄</span> View Document {{ $index + 1 }}
+                    </a>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+    }
+</div>

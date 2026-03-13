@@ -15,6 +15,7 @@ describe('AgentDashboard', () => {
     let routerSpy: jasmine.SpyObj<Router>;
 
     beforeEach(async () => {
+        sessionStorage.clear();
         agentServiceSpy = jasmine.createSpyObj('AgentService', ['getPendingApplications', 'getCustomers', 'getApplications']);
         authServiceSpy = jasmine.createSpyObj('AuthService', ['logout']);
         routerSpy = jasmine.createSpyObj('Router', ['navigate']);

@@ -1,0 +1,104 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">All Payment Transactions</h1>
+        <p class="page-subtitle">Complete ledger of premium collections and claim disbursements.</p>
+    </header>
+
+    <!-- Summary KPIs -->
+    <div class="dashboard-cards" style="margin-bottom: 28px;">
+        <div class="stat-card glass-panel" style="border-left: 4px solid var(--success);">
+            <h3>Total Premium Collected</h3>
+            <p class="stat-number" style="color: var(--success); font-size: 2rem;">+{{ totalRevenue() |
+                currency:'INR' }}</p>
+        </div>
+        <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+            <h3>Total Claims Disbursed</h3>
+            <p class="stat-number" style="color: var(--error); font-size: 2rem;">-{{ totalPayoutAmount() |
+                currency:'INR' }}</p>
+        </div>
+        <div class="stat-card glass-panel"
+            [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--accent)' : '4px solid var(--error)'}">
+            <h3>Net Balance</h3>
+            <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}"
+                style="font-size: 2rem;">
+                {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
+                    currency:'INR' }} </p>
+        </div>
+    </div>
+
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showPaymentsSortDropdown.set(!showPaymentsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(paymentsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showPaymentsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showPaymentsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="showPaymentsSortDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateDesc'" (click)="paymentsSortOption.set('dateDesc'); showPaymentsSortDropdown.set(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'dateAsc'" (click)="paymentsSortOption.set('dateAsc'); showPaymentsSortDropdown.set(false)">Oldest First</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountDesc'" (click)="paymentsSortOption.set('amountDesc'); showPaymentsSortDropdown.set(false)">Amount: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="paymentsSortOption() === 'amountAsc'" (click)="paymentsSortOption.set('amountAsc'); showPaymentsSortDropdown.set(false)">Amount: Low to High</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (allTransactions().length === 0) {
+        <p style="color: var(--text-muted); font-style: italic;">No
+            transactions found.</p>
+        }
+        @if (allTransactions().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>Txn ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (t of allTransactions(); track (t.id || $index)) {
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ t.id
+                        }}</td>
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.85rem; font-weight: 500;">{{ t.date | date:'MMM d, y'
+                                }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ t.date | date:'h:mm
+                                a' }}</span>
+                        </div>
+                    </td>
+                    <td>{{ t.customer }}</td>
+                    <td style="font-size: 0.9rem; color: var(--text-muted);">{{ t.vehicle }}</td>
+                    <td>
+                        <span class="status-badge"
+                            [style.background]="t.isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)'"
+                            [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
+                            {{ t.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
+                        </span>
+                    </td>
+                    <td style="font-weight: 700;"
+                        [style.color]="t.isCredit ? 'var(--success)' : 'var(--error)'">
+                        {{ t.isCredit ? '+' : '-' }}{{ t.amount | currency:'INR' }}
+                    </td>
+                    <td>
+                        <span class="status-badge"
+                            [ngClass]="(t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'paid' : 'pending'">
+                            {{ (t.status === 'Paid' || t.status === 1 || t.status === 'Approved') ? 'Approved' :
+                            'Pending' }}
+                        </span>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+</div>

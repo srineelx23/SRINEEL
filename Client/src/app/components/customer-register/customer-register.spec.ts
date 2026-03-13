@@ -33,24 +33,22 @@ describe('CustomerRegister', () => {
         expect(component).toBeTruthy();
     });
 
-    it('should navigate to /error if registration form is incomplete', () => {
+    it('should show error message if registration form is incomplete', () => {
         component.firstName = '';
         component.register();
-        expect(routerSpy.navigate).toHaveBeenCalledWith(['/error'], jasmine.any(Object));
+        expect(component.errorMessage()).toContain('Missing required fields');
     });
 
-    it('should navigate to /error if passwords do not match', () => {
+    it('should show error message if passwords do not match', () => {
         component.firstName = 'John';
         component.lastName = 'Doe';
         component.email = 'john@test.com';
-        component.password = '123';
-        component.confirmPassword = '456';
+        component.password = 'password123';
+        component.confirmPassword = 'differentPassword';
         component.securityQuestion = 'Q';
         component.securityAnswer = 'A';
         component.register();
-        expect(routerSpy.navigate).toHaveBeenCalledWith(['/error'], jasmine.objectContaining({
-            state: jasmine.objectContaining({ message: 'Passwords do not match.' })
-        }));
+        expect(component.errorMessage()).toBe('Passwords do not match.');
     });
 
     it('should register successfully and redirect after timeout', fakeAsync(() => {
@@ -58,8 +56,8 @@ describe('CustomerRegister', () => {
         component.firstName = 'John';
         component.lastName = 'Doe';
         component.email = 'john@test.com';
-        component.password = '123';
-        component.confirmPassword = '123';
+        component.password = 'password123';
+        component.confirmPassword = 'password123';
         component.securityQuestion = 'Q';
         component.securityAnswer = 'A';
 

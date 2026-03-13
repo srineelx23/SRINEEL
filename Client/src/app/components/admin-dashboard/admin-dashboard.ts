@@ -6,13 +6,33 @@ import { AuthService } from '../../services/auth.service';
 import { AdminService } from '../../services/admin.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
-import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { NavbarComponent } from './navbar/navbar';
+import { OverviewComponent } from './overview/overview';
+import { VehiclesComponent } from './vehicles/vehicles';
+import { ClaimsComponent } from './claims/claims';
+import { PaymentsComponent } from './payments/payments';
+import { UsersComponent } from './users/users';
+import { PlansComponent } from './plans/plans';
+import { AuditLogsComponent } from './audit-logs/audit-logs';
+import { SettingsComponent } from './settings/settings';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    NavbarComponent,
+    OverviewComponent,
+    VehiclesComponent,
+    ClaimsComponent,
+    PaymentsComponent,
+    UsersComponent,
+    PlansComponent,
+    AuditLogsComponent,
+    SettingsComponent
+  ],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
 })
@@ -43,7 +63,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   showClaimsSortDropdown = signal(false);
   showPaymentsSortDropdown = signal(false);
-  showAuditSortDropdown = signal(false);
+  isAuditSortOpen = signal(false);
 
   // Aggregate Computations
 

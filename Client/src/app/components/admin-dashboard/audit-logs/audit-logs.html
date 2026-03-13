@@ -1,0 +1,69 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <h1 class="page-title">System Audit Trail</h1>
+        <p class="page-subtitle">Track every critical action performed across the platform for accountability.
+        </p>
+    </header>
+
+    <div class="glass-panel" style="padding: 24px;">
+        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="isAuditSortOpen.set(!isAuditSortOpen())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(auditSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="isAuditSortOpen() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (isAuditSortOpen()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="isAuditSortOpen.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateDesc'" (click)="auditSortOption.set('dateDesc'); isAuditSortOpen.set(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateAsc'" (click)="auditSortOption.set('dateAsc'); isAuditSortOpen.set(false)">Oldest First</div>
+                </div>
+                }
+            </div>
+        </div>
+        @if (sortedAuditLogs().length === 0) {
+        <p style="color: var(--text-muted); font-style: italic;">No audit logs
+            recorded yet.</p>
+        }
+        @if (sortedAuditLogs().length > 0) {
+        <table class="vims-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>User (Email)</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                    <th>Category</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (log of sortedAuditLogs(); track (log.id || $index)) {
+                <tr>
+                    <td>#{{ log.id }}</td>
+                    <td style="white-space: nowrap;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.85rem; font-weight: 500;">{{ log.timestamp | date:'MMM d,
+                                y' }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ log.timestamp |
+                                date:'h:mm a' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div>{{ log.email }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">ID: {{ log.userId || 'System'
+                            }}</div>
+                    </td>
+                    <td><span class="status-badge" style="background: rgba(255,255,255,0.05);">{{ log.role
+                            }}</span></td>
+                    <td><strong style="color: var(--accent);">{{ log.action }}</strong></td>
+                    <td>{{ log.category }}</td>
+                    <td style="font-size: 0.85rem; max-width: 300px;">{{ log.details }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+</div>

@@ -1,0 +1,97 @@
+<div class="tab-content fade-in">
+    <header class="page-header">
+        <p style="color: var(--accent); font-weight: 500; font-size: 1.1rem; margin-bottom: 8px;">Platform Administration Hub</p>
+        <h1 class="page-title">Welcome, {{ adminName() }}! 👋</h1>
+        <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
+    </header>
+
+    <div class="dashboard-cards" style="margin-bottom: 32px;">
+        <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
+            <h3>Gross Premiums (Revenue)</h3>
+            <p class="stat-number" style="color: var(--accent);">+{{ totalRevenue() | currency:'INR' }}</p>
+        </div>
+        <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
+            <h3>Claim Payouts (Losses)</h3>
+            <p class="stat-number" style="color: var(--error);">-{{ totalPayoutAmount() | currency:'INR' }}</p>
+        </div>
+        <div class="stat-card glass-panel"
+            [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--success)' : '4px solid var(--error)'}">
+            <h3>Net Profit / Reserve</h3>
+            <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}">
+                {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
+                    currency:'INR' }} </p>
+        </div>
+        <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
+            <h3>Policies & Claims</h3>
+            <p class="stat-number" style="color: var(--warning); font-size: 1.5rem; margin-top: 10px;">{{
+                totalActivePolicies() }} Active | {{ totalClaimsApproved() }} Resolved</p>
+        </div>
+    </div>
+
+    <!-- Dashboard Charts -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 8px;">Revenue History (Current Year)</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Monthly premium
+                collections</p>
+            <div style="height: 280px; width: 100%;">
+                <canvas baseChart [data]="revenueChartData()" [options]="revenueChartOptions()"
+                    [type]="revenueChartType()"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 4px;">Portfolio Health</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Claim status
+                distribution</p>
+            <div style="flex: 1; min-height: 340px;">
+                <canvas baseChart [data]="claimsChartData()" [options]="claimsChartOptions()"
+                    [type]="claimsChartType()"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 8px;">Performance by Policy Type</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial comparison
+                by insurance category</p>
+            <div style="height: 300px; width: 100%;">
+                <canvas baseChart [data]="planPremiumsChartData()" [options]="planAnalyticsOptions()"
+                    [type]="planBarChartType()"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 8px;">Claims by Policy Type</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume of claims
+                handled per category</p>
+            <div style="height: 300px; width: 100%;">
+                <canvas baseChart [data]="planClaimsChartData()" [options]="planClaimsCountOptions()"
+                    [type]="planBarChartType()"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 8px;">Performance by Vehicle Type</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial metrics by
+                vehicle classification</p>
+            <div style="height: 300px; width: 100%;">
+                <canvas baseChart [data]="vehicleTypePremiumsChartData()" [options]="planAnalyticsOptions()"
+                    [type]="planBarChartType()"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 24px;">
+            <h3 style="margin-bottom: 8px;">Claims by Vehicle Type</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume tracking by
+                vehicle category</p>
+            <div style="height: 300px; width: 100%;">
+                <canvas baseChart [data]="vehicleTypeClaimsChartData()" [options]="planClaimsCountOptions()"
+                    [type]="planBarChartType()"></canvas>
+            </div>
+        </div>
+    </div>
+</div>

@@ -15,6 +15,7 @@ describe('ClaimsOfficerDashboard', () => {
     let routerSpy: jasmine.SpyObj<Router>;
 
     beforeEach(async () => {
+        sessionStorage.clear();
         claimsServiceSpy = jasmine.createSpyObj('ClaimsOfficerService', ['getMyAssignedClaims', 'decideClaim']);
         authServiceSpy = jasmine.createSpyObj('AuthService', ['logout']);
         routerSpy = jasmine.createSpyObj('Router', ['navigate']);
