@@ -1,7 +1,8 @@
 <div class="full-screen gradient-bg landing-page" style="overflow-y: auto;">
     <nav class="navbar glass-panel">
         <div class="nav-container">
-            <div class="logo" style="cursor: pointer;" (click)="goHome()">
+            <div class="logo" style="cursor: pointer; display: flex; align-items: center; gap: 12px;" (click)="goHome()">
+                <span class="logo-shield">🛡️</span>
                 <span class="logo-text">VIMS</span>
             </div>
             <nav class="nav-links">
@@ -45,6 +46,12 @@
     @if (successMessage()) {
     <div class="success-toast">
         {{ successMessage() }}
+    </div>
+    }
+
+    @if (errorMessage()) {
+    <div class="error-toast">
+        {{ errorMessage() }}
     </div>
     }
 
@@ -250,6 +257,9 @@
                                 [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" "
                                 min="1900" [max]="currentYear" required>
                             <label for="manufactureYear" class="floating-label">Manufacture Year</label>
+                            @if (quoteForm.ManufactureYear && (currentYear - quoteForm.ManufactureYear > 15)) {
+                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15 years</span>
+                            }
                         </div>
 
                         <div class="form-group">
@@ -319,8 +329,11 @@
                     <div class="direct-apply-preview">
                         <div class="form-group">
                             <input type="number" name="manufactureYear" [(ngModel)]="quoteForm.ManufactureYear"
-                                class="form-control" placeholder=" " required>
+                                class="form-control" placeholder=" " [max]="currentYear" required>
                             <label class="floating-label">Manufacture Year</label>
+                            @if (quoteForm.ManufactureYear && (currentYear - quoteForm.ManufactureYear > 15)) {
+                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15 years</span>
+                            }
                         </div>
                         <div class="form-group">
                             <select id="fuelTypeDirect" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control" [disabled]="isEVPlan()">

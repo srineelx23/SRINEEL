@@ -114,7 +114,9 @@
                     @for (doc of selectedCustomerRecord().documents; track $index) {
                     <a [href]="'https://localhost:7257/' + doc" target="_blank" class="btn-outline"
                         style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                        <span style="font-size: 1.2rem;">📄</span> View Document {{ $index + 1 }}
+                        <i class="fa-solid" [ngClass]="$index === 0 ? 'fa-file-invoice-dollar' : 'fa-address-card'" 
+                           style="font-size: 1.1rem; color: var(--accent);"></i>
+                        {{ $index === 0 ? 'View Invoice' : 'View RC Document' }}
                     </a>
                     }
                 </div>

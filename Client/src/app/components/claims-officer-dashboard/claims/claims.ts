@@ -26,6 +26,7 @@ export class Claims {
   @Output() onSubmitDecision = new EventEmitter<void>();
 
   showSortDropdown = signal(false);
+  currentYear = new Date().getFullYear();
 
   openClaimReview(claim: any) {
     this.onOpenClaimReview.emit(claim);

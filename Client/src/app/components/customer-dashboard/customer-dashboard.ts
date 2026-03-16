@@ -224,6 +224,7 @@ export class CustomerDashboard implements OnInit {
   myVehicles = computed(() => {
     const map = new Map<string, any>();
     this.policies().forEach((p: any) => {
+      if (p.status !== 'Active') return;
       const reg = p.vehicleRegistrationNumber || p.registrationNumber;
       if (reg && !map.has(reg)) {
         map.set(reg, {
@@ -231,7 +232,8 @@ export class CustomerDashboard implements OnInit {
           vehicleName: p.vehicleMake ? `${p.vehicleMake} ${p.vehicleModel}` : (p.vehicleName || reg),
           idv: p.idv || p.invoiceAmount || 0,
           planName: p.planName || 'Standard',
-          status: p.status
+          status: p.status,
+          roadsideAssistanceAvailable: p.roadsideAssistanceAvailable
         });
       }
     });
@@ -377,6 +379,26 @@ export class CustomerDashboard implements OnInit {
         this.router.navigate(['/error'], {
           state: { status: err.status, message: "Failed to download invoice.", title: 'Download Error' }
         });
+      }
+    });
+  }
+
+  downloadClaimReport(claimId: number) {
+    this.customerService.downloadClaimReport(claimId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Claim_Report_${claimId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.successMessage.set("Report downloaded successfully!");
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err: any) => {
+        console.error('Download failed', err);
+        this.errorMessage.set("Failed to download settlement report.");
+        this.autoHideToast();
       }
     });
   }
@@ -773,5 +795,49 @@ export class CustomerDashboard implements OnInit {
         this.autoHideToast();
       }
     });
+  }
+
+  handleRoadsideAssistance(vehicleReg: string) {
+    this.successMessage.set('Fetching your location...');
+    
+    if (!navigator.geolocation) {
+      this.errorMessage.set('Geolocation is not supported by your browser.');
+      this.autoHideToast();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const data = {
+          username: this.customerName(),
+          vehicleNumber: vehicleReg,
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude
+        };
+
+        console.log('Sending Roadside Assistance Request:', data);
+
+        this.customerService.requestRoadsideAssistance(data).subscribe({
+          next: (res: any) => {
+            // Display message from response or a default one
+            console.log('n8n response:', res);
+            const msg = res?.message || res?.msg || 'Assistance is on the way! We have received your location.';
+            this.successMessage.set(msg);
+            setTimeout(() => this.successMessage.set(''), 7000);
+          },
+          error: (err: any) => {
+            console.error('Roadside assistance failed', err);
+            // Even if n8n returns an error, we might want to tell the user something went wrong
+            this.errorMessage.set('Could not contact roadside assistance. Please try again or call support.');
+            this.autoHideToast();
+          }
+        });
+      },
+      (error) => {
+        console.error('Geolocation error', error);
+        this.errorMessage.set('Unable to retrieve your location. Please check your browser permissions.');
+        this.autoHideToast();
+      }
+    );
   }
 }

@@ -28,7 +28,7 @@ export class ExplorePlans implements OnInit {
   filterVehicleType = signal('');
   filterMaxPremium = signal<number | null>(null);
 
-  vehicleCategories = ['Car', 'TwoWheeler', 'EVCar', 'EVTwoWheeler', 'HeavyVehicle', 'ThreeWheeler', 'EVThreeWheeler'];
+  vehicleCategories = ['Car', 'TwoWheeler', 'ThreeWheeler', 'EVCar', 'EVTwoWheeler', 'EVThreeWheeler', 'HeavyVehicle'];
 
   // Feature filters
   filterThirdParty = signal(false);
@@ -265,6 +265,12 @@ export class ExplorePlans implements OnInit {
     }
 
     const currentYear = new Date().getFullYear();
+    if (currentYear - payload.ManufactureYear > 15) {
+      this.errorMessage.set("Cannot buy insurance for vehicles aged greater than 15 years");
+      this.autoHideToast();
+      return;
+    }
+
     if (payload.InvoiceAmount < 0 || payload.KilometersDriven < 0 || payload.ManufactureYear < 0 || payload.ManufactureYear > currentYear) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
@@ -322,6 +328,12 @@ export class ExplorePlans implements OnInit {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
       });
+      return;
+    }
+
+    if (currentYear - manufactureYear > 15) {
+      this.errorMessage.set("Cannot buy insurance for vehicles aged greater than 15 years");
+      this.autoHideToast();
       return;
     }
 

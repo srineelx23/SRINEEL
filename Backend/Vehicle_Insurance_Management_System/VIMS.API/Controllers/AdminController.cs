@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using VIMS.Application.DTOs;
@@ -16,17 +16,20 @@ namespace VIMS.API.Controllers
         private readonly IPolicyPlanService _policyPlanService;
         private readonly IClaimsService _claimsService;
         private readonly IAuditService _auditService;
+        private readonly IInvoiceService _invoiceService;
 
         public AdminController(
             IAdminService adminService,
             IPolicyPlanService policyPlanService,
             IClaimsService claimsService,
-            IAuditService auditService)
+            IAuditService auditService,
+            IInvoiceService invoiceService)
         {
             _adminService = adminService;
             _policyPlanService = policyPlanService;
             _claimsService = claimsService;
             _auditService = auditService;
+            _invoiceService = invoiceService;
         }
 
         [HttpPost("createAgent")]
@@ -123,6 +126,7 @@ namespace VIMS.API.Controllers
                 p.StartDate,
                 p.EndDate,
                 p.SelectedYears,
+                PolicyPlan = p.Plan == null ? null : new { p.Plan.PlanId, p.Plan.PlanName },
                 Vehicle = p.Vehicle == null ? null : new
                 {
                     p.Vehicle.VehicleId,
@@ -138,6 +142,11 @@ namespace VIMS.API.Controllers
                 {
                     p.Customer.UserId,
                     p.Customer.FullName
+                },
+                Agent = p.Agent == null ? null : new
+                {
+                    p.Agent.UserId,
+                    p.Agent.FullName
                 }
             });
             return Ok(result);
@@ -162,6 +171,34 @@ namespace VIMS.API.Controllers
         {
             var logs = await _auditService.GetAuditLogsAsync();
             return Ok(logs);
+        }
+
+        [HttpGet("claim/download/{claimId}")]
+        public async Task<IActionResult> DownloadClaimReport(int claimId)
+        {
+            // First check if claim exists to avoid generic 404
+            var claim = await _claimsService.GetClaimByIdAsync(claimId);
+            if (claim == null)
+                return NotFound(new { message = $"Claim #{claimId} not found." });
+
+            if (claim.Status != VIMS.Domain.Enums.ClaimStatus.Approved)
+                return BadRequest(new { message = "Settlement reports are only available for approved claims." });
+
+            var pdfBytes = _invoiceService.GenerateClaimSettlementPdf(claimId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Settlement breakdown is missing for this claim." });
+
+            return File(pdfBytes, "application/pdf", $"Claim_Settlement_{claimId}.pdf");
+        }
+
+        [HttpGet("invoice/download/{paymentId}")]
+        public IActionResult DownloadInvoice(int paymentId)
+        {
+            var pdfBytes = _invoiceService.GenerateInvoicePdf(paymentId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Invoice not found or could not be generated" });
+
+            return File(pdfBytes, "application/pdf", $"Invoice_{paymentId}.pdf");
         }
     }
 }

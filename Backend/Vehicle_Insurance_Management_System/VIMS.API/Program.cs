@@ -21,6 +21,7 @@ namespace VIMS.API
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddControllers();
+            builder.Services.AddHttpClient();
             builder.Services.AddHttpContextAccessor();
             // Add services to the container.
             builder.Services.AddAuthorization();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -23,6 +23,7 @@ namespace VIMS.Domain.Entities
         // Computed classification after decision: Partial | TotalLoss | ConstructiveTotalLoss
         public string? DecisionType { get; set; }
         public string? RejectionReason { get; set; }
+        public string? SettlementBreakdownJson { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         // Navigation
         public Policy Policy { get; set; } = null!;

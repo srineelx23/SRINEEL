@@ -24,6 +24,8 @@ export class VehiclesComponent {
 
   onViewVehicleDetails = output<any>();
   onBackToVehicles = output<void>();
+  onDownloadReport = output<number>();
+  onDownloadInvoice = output<number>();
 
   viewVehicleDetails(v: any) {
     this.onViewVehicleDetails.emit(v);

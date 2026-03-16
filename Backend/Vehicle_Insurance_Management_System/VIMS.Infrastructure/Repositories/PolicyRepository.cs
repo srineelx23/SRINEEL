@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +56,7 @@ namespace VIMS.Infrastructure.Repositories
                     .ThenInclude(va => va.Documents)
                 .Include(p => p.Plan)
                 .Include(p => p.Customer)
+                .Include(p => p.Agent)
                 .ToListAsync();
         }
         public async Task<Policy?> GetByIdAsync(int policyId)
@@ -65,6 +66,7 @@ namespace VIMS.Infrastructure.Repositories
                     .ThenInclude(v => v!.VehicleApplication)
                     .ThenInclude(a => a!.Documents)
                 .Include(p => p.Plan)
+                .Include(p => p.Agent)
                 .FirstOrDefaultAsync(p => p.PolicyId == policyId);
         }
 

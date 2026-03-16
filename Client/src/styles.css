@@ -30,9 +30,9 @@
     --text-on-success: #FFFFFF;
     --text-on-error: #FFFFFF;
 
-    --error: #FF5A5F;
-    --success: #2E8540;
-    --warning: #F5A623;
+    --error: #FB7185; /* Bright Rose/Red */
+    --success: #10B981; /* Brighter Emerald */
+    --warning: #FBBF24; /* Brighter Amber */
 
     /* Glassmorphism Variables */
     --glass-bg: rgba(255, 255, 255, 0.05);
@@ -909,7 +909,7 @@ select.form-control~.floating-label {
 /* Vehicle Cards Grid */
 .vehicle-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
 }
 
@@ -918,6 +918,9 @@ select.form-control~.floating-label {
     overflow: hidden;
     border-radius: 16px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .vehicle-card:hover {
@@ -947,6 +950,7 @@ select.form-control~.floating-label {
 
 .vehicle-card-body {
     padding: 16px 20px 20px;
+    flex: 1;
 }
 
 .vehicle-reg {
@@ -993,6 +997,10 @@ select.form-control~.floating-label {
 
 .plan-name {
     color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
 }
 
 /* Overview List (recent items) */
@@ -1214,48 +1222,57 @@ select.form-control~.floating-label {
     font-weight: 600;
     display: inline-block;
     letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Default subtle border */
+    backdrop-filter: blur(4px);
 }
 
 .status-badge.active {
-    background: rgba(22, 163, 74, 0.1);
-    color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669; /* Dark Emerald for Light Theme contrast */
+    border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-badge.pending {
-    background: rgba(217, 119, 6, 0.1);
-    color: #D97706;
+    background: rgba(251, 191, 36, 0.1);
+    color: #d97706; /* Darker Amber for Light Theme contrast */
+    border: 1px solid rgba(251, 191, 36, 0.15);
 }
 
 .status-badge.cancelled,
 .status-badge.pendingpayment {
-    background: rgba(220, 38, 38, 0.1);
-    color: var(--error);
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626; /* Deep Red for Light Theme */
+    border: 1px solid rgba(239, 68, 68, 0.15);
 }
 
 .status-badge.expired {
-    background: rgba(100, 116, 139, 0.1);
-    color: var(--text-muted);
+    background: rgba(148, 163, 184, 0.15);
+    color: #CBD5E1;
+    border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .status-badge.claimed {
     background: rgba(124, 58, 237, 0.1);
-    color: #7C3AED;
+    color: #7c3aed; /* Deep Violet for Light Theme */
+    border: 1px solid rgba(124, 58, 237, 0.15);
 }
 
 .status-badge.paid,
 .status-badge.approved {
-    background: rgba(22, 163, 74, 0.1);
-    color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-badge.submitted,
 .status-badge.underreview {
-    background: rgba(217, 119, 6, 0.1);
-    color: var(--warning);
+    background: rgba(251, 191, 36, 0.1);
+    color: #d97706; /* High contrast amber */
+    border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .status-badge.rejected {
-    background: rgba(220, 38, 38, 0.1);
+    background: rgba(239, 68, 68, 0.15);
     color: var(--error);
 }
 
@@ -1489,3 +1506,47 @@ select.form-control~.floating-label {
         opacity: 1;
     }
 }
+
+.validation-error {
+    color: var(--error);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+    font-weight: 500;
+}/* Consolidated High-Visibility Dark Theme Status Colors */
+:root:not([data-theme='light']) .status-badge.active,
+:root:not([data-theme='light']) .status-badge.paid,
+:root:not([data-theme='light']) .status-badge.approved {
+    background: rgba(16, 185, 129, 0.25) !important;
+    color: #4ade80 !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+:root:not([data-theme='light']) .status-badge.pending,
+:root:not([data-theme='light']) .status-badge.submitted,
+:root:not([data-theme='light']) .status-badge.underreview {
+    background: rgba(251, 191, 36, 0.25) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+:root:not([data-theme='light']) .status-badge.cancelled,
+:root:not([data-theme='light']) .status-badge.rejected,
+:root:not([data-theme='light']) .status-badge.pendingpayment {
+    background: rgba(244, 63, 94, 0.25) !important;
+    color: #ff8a9a !important;
+    border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+:root:not([data-theme='light']) .status-badge.expired {
+    background: rgba(148, 163, 184, 0.2) !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+:root:not([data-theme='light']) .status-badge.claimed {
+    background: rgba(139, 92, 246, 0.25) !important;
+    color: #c4b5fd !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+}
+

@@ -100,58 +100,147 @@
     }
 
     @if (!isCreatingPlan()) {
-    <div class="glass-panel" style="padding: 24px;">
-        @if (orderedPlans().length === 0) {
-        <p style="color: var(--text-muted); font-style: italic;">No Plans
-            deployed
-            in system infrastructure.</p>
-        }
-        @if (orderedPlans().length > 0) {
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            @for (p of orderedPlans(); track (p.planId || $index)) {
-            <div class="glass-panel"
-                style="background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); padding: 24px; box-shadow: none; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="margin-bottom: 8px; color: var(--text-main);">
-                        {{ p.planName }}
-                        <span class="status-badge"
-                            [ngStyle]="{'background': p.status === 1 ? 'rgba(43, 214, 123, 0.2)' : 'rgba(255, 90, 95, 0.2)', 'color': p.status === 1 ? 'var(--success)' : 'var(--error)'}">
-                            {{ p.status === 1 ? 'Available' : 'Deactivated' }}
-                        </span>
-                    </h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.8;">
-                        <strong>Type:</strong> {{ p.policyType }} | <strong>Vehicle:</strong> {{
-                        p.applicableVehicleType }}
-                        <br>
-                        <strong>Duration:</strong> {{ p.policyDurationMonths }} Months | <strong>Base
-                            Premium:</strong> {{ p.basePremium | currency:'INR' }}
-                        <br>
-                        <strong>Deductible:</strong> {{ p.deductibleAmount | currency:'INR' }} | <strong>Max
-                            Coverage:</strong> {{ p.maxCoverageAmount | currency:'INR' }}
-                        <br>
-                        <strong>Coverage:</strong>
-                        @if (p.coversOwnDamage) {<span> Own Damage,</span>}
-                        @if (p.coversThirdParty) {<span> 3rd Party,</span>}
-                        @if (p.coversTheft) {<span> Theft,</span>}
-
-                        <br>
-                        <strong>Add-ons:</strong>
-                        @if (p.zeroDepreciationAvailable) {<span style="color: var(--success);"> ✓
-                            Zero-Dep</span>}
-                        @if (p.engineProtectionAvailable) {<span style="color: var(--success);"> ✓
-                            Engine-Prot</span>}
-                        @if (p.roadsideAssistanceAvailable) {<span style="color: var(--success);"> ✓
-                            Roadside-Asst</span>}
-                    </p>
+    <!-- Filters and Sorting -->
+    <div class="plans-filter-bar glass-panel tint">
+        <div class="filters-left">
+            <!-- Vehicle Type Dropdown -->
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showVehicleTypeDropdown.set(!showVehicleTypeDropdown())">
+                    <i class="fa-solid fa-car"></i>
+                    <span>{{ planVehicleTypeFilter() === 'All' ? 'All Vehicles' : planVehicleTypeFilter() }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showVehicleTypeDropdown() ? 'rotate(180deg)' : 'none'"></i>
                 </div>
-                <div>
+                @if (showVehicleTypeDropdown()) {
+                <div class="vims-dropdown-menu left-align fade-in" (mouseleave)="showVehicleTypeDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="planVehicleTypeFilter() === 'All'" 
+                        (click)="planVehicleTypeFilter.set('All'); showVehicleTypeDropdown.set(false)">All Vehicles</div>
+                    <div class="vims-dropdown-divider"></div>
+                    @for (v of vehicleCategories(); track v) {
+                    <div class="vims-dropdown-item" [class.active]="planVehicleTypeFilter() === v" 
+                        (click)="planVehicleTypeFilter.set(v); showVehicleTypeDropdown.set(false)">{{ v }}</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Plan Category Dropdown -->
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="showPlanTypeDropdown.set(!showPlanTypeDropdown())">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>{{ planTypeFilter() === 'All' ? 'All Tiers' : planTypeFilter() }}</span>
+                    <i class="fa-solid fa-chevron-down" [style.transform]="showPlanTypeDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showPlanTypeDropdown()) {
+                <div class="vims-dropdown-menu left-align fade-in" (mouseleave)="showPlanTypeDropdown.set(false)">
+                    <div class="vims-dropdown-item" [class.active]="planTypeFilter() === 'All'" 
+                        (click)="planTypeFilter.set('All'); showPlanTypeDropdown.set(false)">All Tiers</div>
+                    <div class="vims-dropdown-divider"></div>
+                    @for (t of policyCategories(); track t) {
+                    <div class="vims-dropdown-item" [class.active]="planTypeFilter() === t" 
+                        (click)="planTypeFilter.set(t); showPlanTypeDropdown.set(false)">{{ t }}</div>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="vims-dropdown-container">
+            <div class="vims-dropdown-trigger" (click)="showPlansSortDropdown.set(!showPlansSortDropdown())">
+                <i class="fa-solid fa-arrow-down-wide-short"></i>
+                <span>Sort: {{ getSortLabel(plansSortOption()) }}</span>
+                <i class="fa-solid fa-chevron-down" [style.transform]="showPlansSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+            </div>
+            @if (showPlansSortDropdown()) {
+            <div class="vims-dropdown-menu fade-in" (mouseleave)="showPlansSortDropdown.set(false)">
+                <div class="vims-dropdown-item" [class.active]="plansSortOption() === 'popularity'" 
+                    (click)="plansSortOption.set('popularity'); showPlansSortDropdown.set(false)">Most Popular</div>
+                <div class="vims-dropdown-divider"></div>
+                <div class="vims-dropdown-item" [class.active]="plansSortOption() === 'coverageDesc'" 
+                    (click)="plansSortOption.set('coverageDesc'); showPlansSortDropdown.set(false)">Max Coverage: High to Low</div>
+                <div class="vims-dropdown-item" [class.active]="plansSortOption() === 'coverageAsc'" 
+                    (click)="plansSortOption.set('coverageAsc'); showPlansSortDropdown.set(false)">Max Coverage: Low to High</div>
+                <div class="vims-dropdown-divider"></div>
+                <div class="vims-dropdown-item" [class.active]="plansSortOption() === 'premiumDesc'" 
+                    (click)="plansSortOption.set('premiumDesc'); showPlansSortDropdown.set(false)">Base Premium: High to Low</div>
+                <div class="vims-dropdown-item" [class.active]="plansSortOption() === 'premiumAsc'" 
+                    (click)="plansSortOption.set('premiumAsc'); showPlansSortDropdown.set(false)">Base Premium: Low to High</div>
+            </div>
+            }
+        </div>
+    </div>
+
+    <div style="padding: 0 4px;"> <!-- Container for spacing -->
+        @if (orderedPlans().length === 0) {
+        <div class="glass-panel" style="padding: 48px; text-align: center;">
+            <i class="fa-solid fa-layer-group" style="font-size: 3rem; color: var(--text-muted); opacity: 0.2; margin-bottom: 20px; display: block;"></i>
+            <p style="color: var(--text-muted); font-style: italic;">No plans deployed in the system infrastructure.</p>
+        </div>
+        }
+
+        @if (orderedPlans().length > 0) {
+        <div class="plans-grid">
+            @for (p of orderedPlans(); track (p.planId || $index)) {
+            <div class="plan-card fade-in">
+                <div class="plan-header">
+                    <span class="plan-type-badge">{{ p.policyType }}</span>
+                    <h3 class="plan-name">{{ p.planName }}</h3>
+                    <div class="plan-vehicle">
+                        <i class="fa-solid fa-car-side" style="margin-right: 6px; font-size: 0.8rem;"></i>
+                        {{ p.applicableVehicleType }}
+                    </div>
+                </div>
+
+                <div class="plan-metrics">
+                    <div class="metric-item">
+                        <label>Base Premium</label>
+                        <div class="value">{{ p.basePremium | currency:'INR':'symbol':'1.0-0' }}</div>
+                    </div>
+                    <div class="metric-item">
+                        <label>Max Coverage</label>
+                        <div class="value">{{ p.maxCoverageAmount | currency:'INR':'symbol':'1.0-0' }}</div>
+                    </div>
+                    <div class="metric-item">
+                        <label>Duration</label>
+                        <div class="value">{{ p.policyDurationMonths }} Mo</div>
+                    </div>
+                    <div class="metric-item">
+                        <label>Deductible</label>
+                        <div class="value">{{ p.deductibleAmount | currency:'INR':'symbol':'1.0-0' }}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <label style="font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Coverage & Add-ons</label>
+                    <div class="coverage-pills">
+                        <!-- Coverage Pills -->
+                        @if (p.coversOwnDamage) {<span class="pill active">Own Damage</span>}
+                        @if (p.coversThirdParty) {<span class="pill active">3rd Party</span>}
+                        @if (p.coversTheft) {<span class="pill active">Theft</span>}
+                        
+                        <!-- Add-on Pills -->
+                        @if (p.zeroDepreciationAvailable) {<span class="pill accent">Zero-Dep</span>}
+                        @if (p.engineProtectionAvailable) {<span class="pill accent">Engine-Prot</span>}
+                        @if (p.roadsideAssistanceAvailable) {<span class="pill accent">RSA</span>}
+                    </div>
+                </div>
+
+                <div class="plan-footer">
+                    <div class="status-indicator">
+                        <div class="status-dot" [ngClass]="p.status === 1 ? 'active' : 'inactive'"></div>
+                        <span [style.color]="p.status === 1 ? 'var(--success)' : 'var(--error)'">
+                            {{ p.status === 1 ? 'Active' : 'Deactivated' }}
+                        </span>
+                    </div>
+
                     @if (p.status === 1) {
-                    <button class="btn-outline" style="color: var(--error); border-color: var(--error);"
-                        (click)="togglePlanStatus(p.planId, p.status)">Deprecate Plan</button>
+                    <button class="btn-status-toggle deprecate" (click)="togglePlanStatus(p.planId, p.status)">
+                        <i class="fa-solid fa-ban" style="margin-right: 6px;"></i>Deprecate
+                    </button>
                     }
                     @if (p.status !== 1) {
-                    <button class="btn-outline" style="color: var(--success); border-color: var(--success);"
-                        (click)="togglePlanStatus(p.planId, p.status || 0)">Restore Plan</button>
+                    <button class="btn-status-toggle restore" (click)="togglePlanStatus(p.planId, p.status || 0)">
+                        <i class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i>Restore
+                    </button>
                     }
                 </div>
             </div>

@@ -98,6 +98,41 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Redesigned Fraud Risk Score Indicator -->
+            @if (selectedClaim.status === 'Submitted' || selectedClaim.status === 'UnderReview') {
+            <div class="risk-gauge-card" [ngClass]="{
+                'low': selectedClaim.fraudRiskScore < 30,
+                'medium': selectedClaim.fraudRiskScore >= 30 && selectedClaim.fraudRiskScore < 60,
+                'high': selectedClaim.fraudRiskScore >= 60
+            }">
+                <div class="gauge-ring">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" [style.stroke-dasharray]="selectedClaim.fraudRiskScore + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage">{{ selectedClaim.fraudRiskScore }}%</text>
+                    </svg>
+                </div>
+                <div class="gauge-info">
+                    <span class="gauge-label">RISK LEVEL</span>
+                    <span class="gauge-status">{{ selectedClaim.fraudRiskScore < 30 ? 'Low' : (selectedClaim.fraudRiskScore < 60 ? 'Medium' : 'High') }}</span>
+                </div>
+
+                <div class="risk-tooltip-modern">
+                    <header><i class="fa-solid fa-shield-virus"></i> Risk Assessment</header>
+                    @if (selectedClaim.riskReasons?.length > 0) {
+                        <ul class="reason-list">
+                            @for (reason of selectedClaim.riskReasons; track $index) {
+                                <li>{{ reason }}</li>
+                            }
+                        </ul>
+                    } @else {
+                        <p class="clean-record">No high-risk patterns detected for this claim.</p>
+                    }
+                </div>
+            </div>
+            }
+
             <button class="btn-outline" (click)="closeClaimReview()">← Back to List</button>
         </div>
 
@@ -127,7 +162,7 @@
         <!-- Supporting Documents -->
         <div class="supporting-docs-section" style="border-top: 1px solid var(--glass-border); padding-top: 24px;">
             <header>
-                <i class="fa-solid fa-folder-closed" style="color: var(--accent); margin-right: 6px;"></i>Evidence Documents
+                <i class="fa-solid fa-folder-closed" style="color: var(--accent); margin-right: 6px;"></i>Submitted Documents
             </header>
             @if (!selectedClaim.documents || selectedClaim.documents.length === 0) {
             <div class="empty-state-mini" style="justify-content: center; padding: 32px;">
@@ -140,7 +175,7 @@
                 <div class="doc-item">
                     <div class="doc-info">
                         <i class="fa-solid fa-file-pdf" style="color: var(--error);"></i>
-                        <span style="font-size: 0.9rem; font-weight: 600;">Document {{ $index + 1 }}</span>
+                        <span style="font-size: 0.9rem; font-weight: 600;">Submitted Evidence</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
                         @if (docPair.document1) {
@@ -200,19 +235,49 @@
                         @if (selectedClaim.claimType === 'ThirdParty') {
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label class="static-label">3rd Party Vehicle Manufacture Year</label>
-                            <input type="number" name="manufactureYear" class="form-control" [(ngModel)]="decisionForm.manufactureYear" (ngModelChange)="updateBreakdown()" required>
+                            <input type="number" name="manufactureYear" class="form-control" 
+                                [(ngModel)]="decisionForm.manufactureYear" 
+                                (ngModelChange)="updateBreakdown()" 
+                                [max]="currentYear"
+                                required>
+                            @if (decisionForm.manufactureYear > currentYear) {
+                                <div style="color: var(--error); font-size: 0.75rem; margin-top: 4px;">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Year cannot be greater than {{ currentYear }}
+                                </div>
+                            }
                         </div>
                         }
 
                         <!-- Settlement Preview -->
-                        <div class="claim-settlement-banner" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); margin-top: 10px;">
-                            <div>
-                                <label>Calculated Settlement</label>
-                                <p class="claim-amount" style="color: var(--success);">{{ getEstimatedPayout() | currency:'INR':'symbol':'1.0-0' }}</p>
+                        <div class="claim-settlement-container fade-in">
+                            <div class="claim-settlement-banner" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); margin-top: 10px;">
+                                <div>
+                                    <label>Calculated Settlement</label>
+                                    <p class="claim-amount" style="color: var(--success);">{{ getEstimatedPayout() | currency:'INR':'symbol':'1.0-0' }}</p>
+                                </div>
+                                @if (payoutWarning) {
+                                <div style="font-size: 0.8rem; color: #EAB308; background: rgba(234, 179, 8, 0.1); padding: 8px 12px; border-radius: 8px;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> {{ payoutWarning }}
+                                </div>
+                                }
                             </div>
-                            @if (payoutWarning) {
-                            <div style="font-size: 0.8rem; color: #EAB308; background: rgba(234, 179, 8, 0.1); padding: 8px 12px; border-radius: 8px;">
-                                <i class="fa-solid fa-triangle-exclamation"></i> {{ payoutWarning }}
+
+                            <!-- Detailed Breakdown Table -->
+                            @if (payoutBreakdown && payoutBreakdown.items?.length > 0) {
+                            <div class="breakdown-table-wrapper">
+                                <header>Settlement Breakdown:</header>
+                                <table class="breakdown-table">
+                                    <tbody>
+                                        @for (item of payoutBreakdown.items; track $index) {
+                                        <tr [class.total-row]="(item.label || '').toLowerCase().includes('total') || (item.label || '').toLowerCase().includes('final')">
+                                            <td>{{ item.label }}</td>
+                                            <td class="amount" [class.negative]="item.value < 0">
+                                                {{ item.value | currency:'INR':'symbol':'1.0-0' }}
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                             }
                         </div>

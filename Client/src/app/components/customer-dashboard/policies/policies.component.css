@@ -83,3 +83,102 @@
     grid-template-columns: 1fr 1fr; 
     gap: 16px;
 }
+
+/* Policy Cards Grid */
+.policy-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    padding: 8px 0;
+}
+
+.policy-card {
+    padding: 0;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--card-inner-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.policy-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.policy-card-header {
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--card-inner-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.policy-num {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+.policy-card-body {
+    padding: 20px;
+    flex: 1;
+}
+
+.policy-plan {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.policy-vehicle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+}
+
+.policy-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.meta-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.meta-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.policy-card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--card-inner-border);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.view-details {
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 600;
+}

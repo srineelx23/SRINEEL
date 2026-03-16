@@ -30,7 +30,7 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     // Data
     officerName = signal('Officer');
-    userRole = signal('Claims Officer');
+    userRole = signal('VIMS Officer');
     pendingClaims = signal<any[]>([]);
     reviewedClaims = signal<any[]>([]);
 
@@ -118,9 +118,9 @@ export class ClaimsOfficerDashboard implements OnInit {
                 this.officerName.set(name);
 
                 const role = this.authService.getRoleFromStoredToken();
-                if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
+                if (role === 'ClaimsOfficer') this.userRole.set('VIMS Officer');
                 else if (role === 'Admin') this.userRole.set('Executive Admin');
-                else this.userRole.set(role || 'Claims Officer');
+                else this.userRole.set(role || 'VIMS Officer');
             } catch (error) {
                 console.error('Failed to parse token for name', error);
             }

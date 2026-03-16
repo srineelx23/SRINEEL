@@ -121,6 +121,19 @@
                         </div>
                     </div>
                 </div>
+                <div class="vehicle-card-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-light);">
+                    @if (v.roadsideAssistanceAvailable) {
+                    <button class="btn-roadside" (click)="requestRoadside(v.reg)">
+                        <i class="fa-solid fa-truck-pickup"></i>
+                        Roadside Assistance
+                    </button>
+                    } @else {
+                    <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-info-circle"></i>
+                        Roadside assistance not included
+                    </div>
+                    }
+                </div>
             </div>
             }
         </div>

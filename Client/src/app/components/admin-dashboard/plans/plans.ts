@@ -17,6 +17,14 @@ export class PlansComponent {
   vehicleCategories = input.required<string[]>();
   policyCategories = input.required<string[]>();
 
+  planVehicleTypeFilter = model.required<string>();
+  planTypeFilter = model.required<string>();
+  plansSortOption = model.required<string>();
+  showPlansSortDropdown = model.required<boolean>();
+  
+  showVehicleTypeDropdown = signal(false);
+  showPlanTypeDropdown = signal(false);
+
   onOpenPlanForm = output<void>();
   onSubmitPlanRegistration = output<void>();
   onTogglePlanStatus = output<{ planId: number, status: number }>();
@@ -36,5 +44,16 @@ export class PlansComponent {
 
   cancelCreation() {
     this.onSwitchTab.emit('plans');
+  }
+
+  getSortLabel(option: string): string {
+    switch (option) {
+      case 'popularity': return 'Most Popular';
+      case 'coverageDesc': return 'Coverage: High to Low';
+      case 'coverageAsc': return 'Coverage: Low to High';
+      case 'premiumDesc': return 'Premium: High to Low';
+      case 'premiumAsc': return 'Premium: Low to High';
+      default: return 'Most Popular';
+    }
   }
 }

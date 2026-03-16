@@ -9,5 +9,6 @@ namespace VIMS.Application.Interfaces.Services
     public interface IInvoiceService
     {
         byte[] GenerateInvoicePdf(int paymentId);
+        byte[] GenerateClaimSettlementPdf(int claimId);
     }
 }

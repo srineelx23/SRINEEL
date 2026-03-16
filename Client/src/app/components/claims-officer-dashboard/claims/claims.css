@@ -140,8 +140,232 @@
     gap: 12px;
 }
 
+/* Redesigned Risk Gauge Card - Theme Adaptive */
+.risk-gauge-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    cursor: help;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.risk-gauge-card:hover {
+    background: var(--glass-bg);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.gauge-ring {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.circular-chart {
+    display: block;
+    max-width: 100%;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: var(--card-inner-border);
+    stroke-width: 3.5;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.8s ease;
+}
+
+.risk-gauge-card.low .circle { stroke: var(--success); }
+.risk-gauge-card.medium .circle { stroke: var(--warning); }
+.risk-gauge-card.high .circle { stroke: var(--error); }
+
+.percentage {
+    fill: var(--text-main);
+    font-family: var(--font-heading);
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-anchor: middle;
+}
+
+.gauge-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.gauge-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.gauge-status {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-main);
+}
+
+.risk-gauge-card.low .gauge-status { color: var(--success); }
+.risk-gauge-card.medium .gauge-status { color: var(--warning); }
+.risk-gauge-card.high .gauge-status { color: var(--error); }
+
+/* Modern Tooltip Redesign */
+.risk-tooltip-modern {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    width: 320px;
+    background: #0f172a;
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.risk-gauge-card:hover .risk-tooltip-modern {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.risk-tooltip-modern header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.reason-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.reason-list li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.reason-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.clean-record {
+    font-size: 0.85rem;
+    color: var(--success);
+    font-style: italic;
+    margin: 0;
+}
+
+/* Settlement Breakdown (Restored) */
+.breakdown-table-wrapper {
+    margin-top: 16px;
+}
+
+.breakdown-table-wrapper header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.breakdown-table tr {
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.breakdown-table tr:last-child {
+    border-bottom: none;
+}
+
+.breakdown-table td {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.breakdown-table td.amount {
+    text-align: right;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+}
+
+.breakdown-table td.amount.negative {
+    color: var(--error);
+}
+
+.breakdown-table tr.total-row {
+    background: rgba(255,255,255,0.05);
+}
+
+.breakdown-table tr.total-row td {
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 1rem;
+}
+
+.claim-settlement-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
 .fade-in {
     animation: fadeIn 0.4s ease-out;
+}
+
+/* UI Stability - Removed explicit theme overrides in favor of root variables */
+.risk-tooltip-modern {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+}
+
+[data-theme='light'] .breakdown-table tr.total-row {
+    background: var(--card-inner-bg);
 }
 
 @keyframes fadeIn {

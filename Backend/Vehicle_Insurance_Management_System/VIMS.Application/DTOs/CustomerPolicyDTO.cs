@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,5 +21,6 @@ namespace VIMS.Application.DTOs
         public bool IsRenewed { get; set; }
         public bool IsFeePending { get; set; }
         public string VehicleType { get; set; }
+        public bool RoadsideAssistanceAvailable { get; set; }
     }
 }

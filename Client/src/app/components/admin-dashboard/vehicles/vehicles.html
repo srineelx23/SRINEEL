@@ -58,11 +58,16 @@
 
             <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
                 selectedVehicle().registrationNumber }}</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                 <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
                     <h3>Owner Profile</h3>
                     <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
                         selectedVehicle().customerName || 'N/A' }}</p>
+                </div>
+                <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
+                    <h3>Assigned Agent</h3>
+                    <p style="color: var(--text-main); font-size: 1.1rem; margin-top: 8px;">{{
+                        selectedVehicle().agentName || 'No Agent' }}</p>
                 </div>
                 <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
                     <h3>Asset Value</h3>
@@ -103,6 +108,7 @@
                     <th>Type</th>
                     <th>Amount</th>
                     <th>Status</th>
+                    <th>Invoice</th>
                 </tr>
                 @for (pmt of vehicleTransactions(); track (pmt.id || $index)) {
                 <tr>
@@ -132,11 +138,20 @@
                             {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ?
                             'Approved' : 'Pending' }}</span>
                     </td>
+                    <td>
+                        @if (pmt.isCredit && (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved')) {
+                            <button class="btn-outline-sm" (click)="onDownloadInvoice.emit(pmt.id)" title="Download Premium Invoice">
+                                <i class="fa-solid fa-file-invoice"></i> PDF
+                            </button>
+                        } @else {
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>
+                        }
+                    </td>
                 </tr>
                 }
                 @if (vehicleTransactions().length === 0) {
                 <tr>
-                    <td colspan="5"
+                    <td colspan="6"
                         style="color: var(--text-muted); text-align: center; padding: 24px; font-style: italic;">
                         No transactions found for this vehicle.</td>
                 </tr>
@@ -151,8 +166,9 @@
                     <th>Claim No.</th>
                     <th>Filed On</th>
                     <th>Incident Type</th>
-                    <th>Approved</th>
+                    <th>Settlement</th>
                     <th>Status</th>
+                    <th>Report</th>
                 </tr>
                 @for (c of vehicleClaims(); track (c.claimId || $index)) {
                 <tr>
@@ -164,11 +180,27 @@
                             a' }}</div>
                     </td>
                     <td>{{ c.claimType }}</td>
-                    <td style="color: var(--success);">{{ c.approvedAmount ? (c.approvedAmount | currency:'INR')
-                        : 'Pending' }}</td>
+                    <td style="color: var(--success); font-weight: 600;">
+                        @if (c.status === 1 || c.status === 'Approved') {
+                            {{ c.approvedAmount | currency:'INR' }}
+                        } @else if (c.status === 2 || c.status === 'Rejected') {
+                            <span style="color: var(--text-muted);">N/A</span>
+                        } @else {
+                            <span style="color: var(--warning);">Pending</span>
+                        }
+                    </td>
                     <td><span class="status-badge" [ngClass]="c.status.toLowerCase()">{{ c.status === 1 ||
                             c.status === 'Approved' ? 'Approved' : (c.status === 2 || c.status === 'Rejected' ?
                             'Rejected' : 'Under Review') }}</span></td>
+                    <td>
+                        @if (c.status === 1 || c.status === 'Approved') {
+                            <button class="btn-outline-sm" (click)="onDownloadReport.emit(c.claimId)" title="Download Settlement Report">
+                                <i class="fa-solid fa-file-pdf"></i> Report
+                            </button>
+                        } @else {
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>
+                        }
+                    </td>
                 </tr>
                 }
             </table>

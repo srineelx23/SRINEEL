@@ -89,6 +89,10 @@ export class CustomerService {
         return this.http.get(`${this.backendUrl}/invoice/download/${paymentId}`, { responseType: 'blob' });
     }
 
+    downloadClaimReport(claimId: number): Observable<Blob> {
+        return this.http.get(`${this.backendUrl}/claim/download/${claimId}`, { responseType: 'blob' });
+    }
+
     getClaim(claimId: number): Observable<any> {
 
         return this.http.get(`${this.backendUrl}/claim/${claimId}`);
@@ -119,5 +123,9 @@ export class CustomerService {
 
     rejectTransfer(transferId: number): Observable<any> {
         return this.http.post(`${this.backendUrl}/transfer/${transferId}/reject`, {});
+    }
+
+    requestRoadsideAssistance(data: any): Observable<any> {
+        return this.http.post(`${this.backendUrl}/roadside-assistance`, data);
     }
 }

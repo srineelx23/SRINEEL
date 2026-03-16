@@ -56,4 +56,12 @@ export class AdminService {
     getAuditLogs(): Observable<any[]> {
         return this.http.get<any[]>(`${this.apiUrl}/audit-logs`);
     }
+
+    downloadClaimReport(claimId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/claim/download/${claimId}`, { responseType: 'blob' });
+    }
+
+    downloadInvoice(paymentId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/invoice/download/${paymentId}`, { responseType: 'blob' });
+    }
 }

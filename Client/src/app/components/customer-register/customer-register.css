@@ -1,8 +1,10 @@
 .login-page {
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 20px;
+    overflow: hidden;
 }
 
 .login-wrapper {
@@ -15,7 +17,8 @@
     display: flex;
     width: 100%;
     max-width: 1000px;
-    min-height: 600px;
+    height: 85vh;
+    max-height: 720px;
     border-radius: 24px;
     overflow: hidden;
     box-shadow: var(--glass-shadow);
@@ -26,7 +29,7 @@
 .login-info {
     flex: 1;
     background: var(--admin-bg-gradient);
-    padding: 60px 48px;
+    padding: 40px 32px;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -82,15 +85,44 @@
 .login-form-container {
     flex: 1;
     background: var(--glass-bg);
-    padding: 60px 80px;
+    padding: 32px 60px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.login-form-container::-webkit-scrollbar {
+    display: none;
+}
+
+.vims-form {
+    gap: 12px !important;
+}
+
+.form-group {
+    margin-bottom: 2px;
+}
+
+.form-control {
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
 }
 
 .form-title {
-    font-size: 2rem;
-    margin-bottom: 40px;
+    font-size: 1.5rem !important;
+    margin-bottom: 16px !important;
+}
+
+.field-hint-error {
+    margin-top: 2px;
+}
+
+.form-title {
+    font-size: 1.75rem;
+    margin-bottom: 24px;
     text-align: center;
 }
 

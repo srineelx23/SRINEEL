@@ -8,6 +8,8 @@ using VIMS.Application.Interfaces.Services;
 using VIMS.Application.Interfaces.Repositories;
 using VIMS.Application.Services;
 using VIMS.Domain.Entities;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 
 namespace VIMS.API.Controllers
 {
@@ -23,8 +25,9 @@ namespace VIMS.API.Controllers
         private readonly VIMS.Application.Interfaces.Repositories.IClaimsRepository _claimsRepository;
         private readonly VIMS.Application.Interfaces.Repositories.IPaymentRepository _paymentRepository;
         private readonly IInvoiceService _invoiceService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, IInvoiceService invoiceService)
+        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, IInvoiceService invoiceService, IHttpClientFactory httpClientFactory)
         {
             _customerService = customerService;
             _policyPlanService = policyPlanService;
@@ -33,6 +36,7 @@ namespace VIMS.API.Controllers
             _claimsRepository = claimsRepository;
             _paymentRepository = paymentRepository;
             _invoiceService = invoiceService;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("invoice/download/{paymentId}")]
@@ -43,6 +47,16 @@ namespace VIMS.API.Controllers
                 return NotFound(new { message = "Invoice not found or could not be generated" });
 
             return File(pdfBytes, "application/pdf", $"Invoice_{paymentId}.pdf");
+        }
+
+        [HttpGet("claim/download/{claimId}")]
+        public IActionResult DownloadClaimReport(int claimId)
+        {
+            var pdfBytes = _invoiceService.GenerateClaimSettlementPdf(claimId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Settlement report not available for this claim" });
+
+            return File(pdfBytes, "application/pdf", $"Claim_Settlement_{claimId}.pdf");
         }
 
         [HttpGet("policy/{policyId}")]
@@ -112,6 +126,7 @@ namespace VIMS.API.Controllers
                 ApprovedAmount = claim.ApprovedAmount,
                 claim.RejectionReason,
                 DecisionType = claim.DecisionType,
+                claim.SettlementBreakdownJson,
                 claim.CreatedAt,
                 Documents = claim.Documents?.Select(d => new { d.Document1, d.Document2 }),
                 Policy = claim.Policy == null ? null : new { claim.Policy.PolicyId, claim.Policy.PolicyNumber, claim.Policy.InvoiceAmount }
@@ -227,6 +242,10 @@ namespace VIMS.API.Controllers
             if (!isEVPlan && dto.FuelType == "EV")
                 return BadRequest("'EV' fuel type is restricted for specialized plans.");
 
+            int vehicleAge = DateTime.UtcNow.Year - dto.ManufactureYear;
+            if (vehicleAge > 15)
+                return BadRequest("Cannot buy insurance for vehicles aged greater than 15 years");
+
             // Pricing service expects the DTO and plan per its interface signature
             var result = _pricingService.CalculateAnnualPremium(dto, plan, false);
 
@@ -295,6 +314,7 @@ namespace VIMS.API.Controllers
                 Status = c.Status.ToString(),
                 ApprovedAmount = c.ApprovedAmount,
                 c.RejectionReason,
+                c.SettlementBreakdownJson,
                 c.CreatedAt,
                 Documents = c.Documents == null ? null : c.Documents.Select(d => new { d.Document1, d.Document2 }),
                 Policy = c.Policy == null ? null : new
@@ -404,6 +424,33 @@ namespace VIMS.API.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             await _customerService.RejectTransferAsync(transferId, userId);
             return Ok(new { message = "Transfer request rejected." });
+        }
+
+        [HttpPost("roadside-assistance")]
+        public async Task<IActionResult> RoadsideAssistance([FromBody] RoadsideAssistanceDTO dto)
+        {
+            var client = _httpClientFactory.CreateClient();
+            var n8nUrl = "http://localhost:5678/webhook/39b2cd79-6ddc-4b5c-b32d-3566e2a4becc";
+
+            // Log the request payload being sent to n8n
+            Console.WriteLine("Sending Request to n8n Engine:");
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(dto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+            var response = await client.PostAsJsonAsync(n8nUrl, dto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                
+                // Log the response received from n8n
+                Console.WriteLine("Received Response from n8n Engine:");
+                Console.WriteLine(content);
+
+                return Ok(content);
+            }
+
+            Console.WriteLine($"n8n Engine Error: {response.StatusCode}");
+            return StatusCode((int)response.StatusCode, "Failed to connect to roadside assistance engine");
         }
     }
 }

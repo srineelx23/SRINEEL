@@ -11,12 +11,15 @@
                 <div class="vims-dropdown-trigger" (click)="isAuditSortOpen.set(!isAuditSortOpen())">
                     <i class="fa-solid fa-arrow-down-wide-short"></i>
                     <span>{{ getSortLabel(auditSortOption()) }}</span>
-                    <i class="fa-solid fa-chevron-down" [style.transform]="isAuditSortOpen() ? 'rotate(180deg)' : 'none'"></i>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="isAuditSortOpen() ? 'rotate(180deg)' : 'none'"></i>
                 </div>
                 @if (isAuditSortOpen()) {
                 <div class="vims-dropdown-menu fade-in" (mouseleave)="isAuditSortOpen.set(false)">
-                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateDesc'" (click)="auditSortOption.set('dateDesc'); isAuditSortOpen.set(false)">Newest First</div>
-                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateAsc'" (click)="auditSortOption.set('dateAsc'); isAuditSortOpen.set(false)">Oldest First</div>
+                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateDesc'"
+                        (click)="auditSortOption.set('dateDesc'); isAuditSortOpen.set(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="auditSortOption() === 'dateAsc'"
+                        (click)="auditSortOption.set('dateAsc'); isAuditSortOpen.set(false)">Oldest First</div>
                 </div>
                 }
             </div>
@@ -29,13 +32,13 @@
         <table class="vims-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Timestamp</th>
-                    <th>User (Email)</th>
-                    <th>Role</th>
-                    <th>Action</th>
-                    <th>Category</th>
-                    <th>Details</th>
+                    <th style="white-space: normal;">ID</th>
+                    <th style="white-space: normal;">Timestamp</th>
+                    <th style="white-space: normal;">User (Email)</th>
+                    <th style="white-space: normal;">Role</th>
+                    <th style="white-space: normal;">Action</th>
+                    <th style="white-space: normal;">Category</th>
+                    <th style="white-space: normal;">Details</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,7 +53,7 @@
                                 date:'h:mm a' }}</span>
                         </div>
                     </td>
-                    <td>
+                    <td style="white-space: normal; word-break: break-all; min-width: 150px;">
                         <div>{{ log.email }}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">ID: {{ log.userId || 'System'
                             }}</div>
@@ -59,7 +62,8 @@
                             }}</span></td>
                     <td><strong style="color: var(--accent);">{{ log.action }}</strong></td>
                     <td>{{ log.category }}</td>
-                    <td style="font-size: 0.85rem; max-width: 300px;">{{ log.details }}</td>
+                    <td style="font-size: 0.85rem; white-space: normal; word-break: break-word; overflow-wrap: break-word; min-width: 250px;">
+                        {{ log.details }}</td>
                 </tr>
                 }
             </tbody>

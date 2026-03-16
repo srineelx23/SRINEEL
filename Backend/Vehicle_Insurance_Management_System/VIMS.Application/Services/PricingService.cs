@@ -37,6 +37,9 @@ namespace VIMS.Application.Services
             PolicyPlan plan,
             bool isRenewal)
         {
+            int age = DateTime.UtcNow.Year - dto.ManufactureYear;
+            if (age > 15) throw new InvalidOperationException("Cannot buy insurance for vehicles aged greater than 15 years");
+
             decimal idv = CalculateIDV(dto.InvoiceAmount, dto.ManufactureYear);
 
             // Get base components from premium calculation

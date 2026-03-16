@@ -20,9 +20,14 @@ export class OverviewComponent {
 
   @Output() onSwitchTab = new EventEmitter<string>();
   @Output() onSetPolicyFilter = new EventEmitter<string>();
+  @Output() onRoadsideAssistance = new EventEmitter<string>();
 
   handlePendingPayment() {
     this.onSwitchTab.emit('policies');
     this.onSetPolicyFilter.emit('PendingPayment');
+  }
+
+  requestRoadside(vehicleReg: string) {
+    this.onRoadsideAssistance.emit(vehicleReg);
   }
 }

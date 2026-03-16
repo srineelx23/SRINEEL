@@ -34,28 +34,36 @@
                 policies found.</p>
             }
             @if (activePolicies().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Policy No.</th>
-                        <th>Plan Name</th>
-                        <th>Vehicle</th>
-                        <th>Premium</th>
-                        <th>Insured Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (p of activePolicies(); track (p.policyId || $index)) {
-                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
-                        <td>{{ p.policyNumber }}</td>
-                        <td>{{ p.planName }}</td>
-                        <td>{{ p.vehicleRegistrationNumber }}</td>
-                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
-                        <td>{{ p.idv | currency:'INR' }}</td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="policy-cards-grid">
+                @for (p of activePolicies(); track (p.policyId || $index)) {
+                <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
+                    <div class="policy-card-header">
+                        <span class="policy-num">{{ p.policyNumber }}</span>
+                        <span class="status-badge active">Active</span>
+                    </div>
+                    <div class="policy-card-body">
+                        <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
+                        <div class="policy-vehicle">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            {{ p.planName }}
+                        </div>
+                        <div class="policy-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Premium</span>
+                                <span class="meta-value">{{ p.premiumAmount | currency:'INR' }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Insured IDV</span>
+                                <span class="meta-value">{{ p.idv | currency:'INR' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="policy-card-footer">
+                        <span class="view-details">View Details &rarr;</span>
+                    </div>
+                </div>
+                }
+            </div>
             }
         </div>
         }
@@ -68,29 +76,36 @@
                 pending applications awaiting review.</p>
             }
             @if (pendingPolicies().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Policy No.</th>
-                        <th>Vehicle Detail</th>
-                        <th>Premium</th>
-                        <th>Insured Value</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (p of pendingPolicies(); track (p.policyId || $index)) {
-                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
-                        <td>{{ p.policyNumber }}</td>
-                        <td>{{ p.vehicleRegistrationNumber }} ({{p.vehicleModel}})</td>
-                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
-                        <td>{{ p.idv | currency:'INR' }}</td>
-                        <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="policy-cards-grid">
+                @for (p of pendingPolicies(); track (p.policyId || $index)) {
+                <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
+                    <div class="policy-card-header">
+                        <span class="policy-num">{{ p.policyNumber }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                    </div>
+                    <div class="policy-card-body">
+                        <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
+                        <div class="policy-vehicle">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            {{ p.planName || 'Insurance Application' }}
+                        </div>
+                        <div class="policy-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Est. Premium</span>
+                                <span class="meta-value">{{ p.premiumAmount | currency:'INR' }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">IDV</span>
+                                <span class="meta-value">{{ p.idv | currency:'INR' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="policy-card-footer">
+                        <span class="view-details">Under Review &rarr;</span>
+                    </div>
+                </div>
+                }
+            </div>
             }
         </div>
         }
@@ -103,43 +118,41 @@
                 policies found with pending payment.</p>
             }
             @if (pendingPaymentPolicies().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Policy No.</th>
-                        <th>Plan Name</th>
-                        <th>Vehicle Detail</th>
-                        <th>Premium Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (p of pendingPaymentPolicies(); track (p.policyId || $index)) {
-                    <tr style="cursor: pointer;">
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.policyNumber }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.planName }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.vehicleRegistrationNumber }}
-                            ({{p.vehicleModel}})</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)"
-                            style="font-weight: 600; color: var(--error);">{{
-                            p.premiumAmount | currency:'INR'
-                            }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">
-                            <span class="status-badge pendingpayment">Awaiting Payment</span>
-                        </td>
-                        <td>
-                            <button class="btn-primary"
-                                style="padding: 6px 12px; font-size: 0.85rem; background: linear-gradient(135deg, #ef4444, #dc2626);"
-                                (click)="onPayPremium.emit(p.policyId); $event.stopPropagation()">
-                                <i class="fa-solid fa-credit-card" style="margin-right: 4px;"></i>
-                                {{ p.isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Annual Premium' }}
-                            </button>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="policy-cards-grid">
+                @for (p of pendingPaymentPolicies(); track (p.policyId || $index)) {
+                <div class="policy-card glass-panel" style="border-color: rgba(239, 68, 68, 0.3);">
+                    <div class="policy-card-header">
+                        <span class="policy-num">{{ p.policyNumber }}</span>
+                        <span class="status-badge pendingpayment">Awaiting Payment</span>
+                    </div>
+                    <div class="policy-card-body" (click)="onViewPolicyDetails.emit(p.policyId)">
+                        <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
+                        <div class="policy-vehicle">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            {{ p.planName }}
+                        </div>
+                        <div class="policy-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Total Due</span>
+                                <span class="meta-value" style="color: var(--error);">{{ p.premiumAmount | currency:'INR' }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Type</span>
+                                <span class="meta-value">{{ p.isFeePending ? 'Fee' : 'Premium' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="policy-card-footer" style="padding: 10px; background: rgba(239, 68, 68, 0.05);">
+                        <button class="btn-primary"
+                            style="width: 100%; padding: 10px; font-size: 0.9rem; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 8px;"
+                            (click)="onPayPremium.emit(p.policyId)">
+                            <i class="fa-solid fa-credit-card" style="margin-right: 8px;"></i>
+                            {{ p.isFeePending ? 'Pay Fees (₹500)' : 'Complete Payment' }}
+                        </button>
+                    </div>
+                </div>
+                }
+            </div>
             }
         </div>
         }
@@ -152,28 +165,36 @@
                 historical data.</p>
             }
             @if (inactivePolicies().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Policy No.</th>
-                        <th>Plan</th>
-                        <th>Premium</th>
-                        <th>Insured Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (p of inactivePolicies(); track (p.policyId || $index)) {
-                    <tr (click)="onViewPolicyDetails.emit(p.policyId)" style="cursor: pointer;">
-                        <td>{{ p.policyNumber }}</td>
-                        <td>{{ p.planName }}</td>
-                        <td>{{ p.premiumAmount | currency:'INR' }}</td>
-                        <td>{{ p.idv | currency:'INR' }}</td>
-                        <td><span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="policy-cards-grid">
+                @for (p of inactivePolicies(); track (p.policyId || $index)) {
+                <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
+                    <div class="policy-card-header">
+                        <span class="policy-num">{{ p.policyNumber }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                    </div>
+                    <div class="policy-card-body">
+                        <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
+                        <div class="policy-vehicle">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            {{ p.planName }}
+                        </div>
+                        <div class="policy-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Premium</span>
+                                <span class="meta-value">{{ p.premiumAmount | currency:'INR' }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">IDV</span>
+                                <span class="meta-value">{{ p.idv | currency:'INR' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="policy-card-footer">
+                        <span class="view-details" style="color: var(--text-muted);">View Archive &rarr;</span>
+                    </div>
+                </div>
+                }
+            </div>
             }
         </div>
         }
@@ -187,43 +208,35 @@
                 currently eligible for renewal.</p>
             }
             @if (renewablePolicies().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Policy No.</th>
-                        <th>Plan Name</th>
-                        <th>Vehicle</th>
-                        <th>Expiry Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (p of renewablePolicies(); track (p.policyId || $index)) {
-                    <tr style="cursor: pointer;">
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.policyNumber }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.planName }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.vehicleRegistrationNumber }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">{{ p.endDate | date:'medium':'+0530' }}</td>
-                        <td (click)="onViewPolicyDetails.emit(p.policyId)">
-                            <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
-                        </td>
-                        <td>
-                            @if (p.status === 'Expired') {
-                            <span class="status-badge"
-                                style="background: rgba(234,179,8,0.15); color: #EAB308; border: 1px solid rgba(234,179,8,0.3); margin-right: 6px; font-size: 0.7rem;">⏳
-                                Buffer</span>
-                            }
-                            <button class="btn-primary"
-                                style="padding: 6px 12px; font-size: 0.85rem; background: var(--success);"
-                                (click)="onStartRenew.emit(p.policyId); $event.stopPropagation()">
-                                <i class="fa-solid fa-arrows-rotate" style="margin-right: 4px;"></i> Renew Now
-                            </button>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="policy-cards-grid">
+                @for (p of renewablePolicies(); track (p.policyId || $index)) {
+                <div class="policy-card glass-panel" style="border-color: rgba(34, 197, 94, 0.3);">
+                    <div class="policy-card-header">
+                        <span class="policy-num">{{ p.policyNumber }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                    </div>
+                    <div class="policy-card-body" (click)="onViewPolicyDetails.emit(p.policyId)">
+                        <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
+                        <div class="policy-vehicle" style="margin-bottom: 12px;">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            {{ p.planName }}
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--warning); margin-bottom: 20px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-calendar-day"></i>
+                            Expires: {{ p.endDate | date:'mediumDate' }}
+                        </div>
+                    </div>
+                    <div class="policy-card-footer" style="padding: 10px; background: rgba(34, 197, 94, 0.05);">
+                        <button class="btn-primary"
+                            style="width: 100%; padding: 10px; font-size: 0.9rem; background: var(--success); border-radius: 8px;"
+                            (click)="onStartRenew.emit(p.policyId)">
+                            <i class="fa-solid fa-arrows-rotate" style="margin-right: 8px;"></i> 
+                            {{ p.status === 'Expired' ? 'Re-activate Now' : 'Renew Protection' }}
+                        </button>
+                    </div>
+                </div>
+                }
+            </div>
             }
         </div>
         }

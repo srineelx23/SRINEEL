@@ -38,7 +38,8 @@
                 [approvedClaims]="approvedClaims"
                 [myVehicles]="myVehicles"
                 (onSwitchTab)="switchTab($event)"
-                (onSetPolicyFilter)="policyFilter.set($event)">
+                (onSetPolicyFilter)="policyFilter.set($event)"
+                (onRoadsideAssistance)="handleRoadsideAssistance($event)">
             </app-overview>
         }
 
@@ -102,7 +103,8 @@
             (onClaimFileChange)="onClaimFileChange($event.event, $event.type)"
             (onCloseClaimDetails)="closeClaimDetails()"
             (onSetSortOption)="claimsSortOption.set($event)"
-            (onToggleSortDropdown)="showClaimsSortDropdown.set($event)">
+            (onToggleSortDropdown)="showClaimsSortDropdown.set($event)"
+            (onDownloadReport)="downloadClaimReport($event)">
         </app-claims>
         }
 

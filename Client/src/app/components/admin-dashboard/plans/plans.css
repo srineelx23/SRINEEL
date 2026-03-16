@@ -10,6 +10,204 @@
     animation: slideInUp 0.4s ease forwards;
 }
 
+/* Plans List Enhancements */
+.plans-filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    border-radius: 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    z-index: 101; /* Ensure dropdowns float above the list */
+}
+
+.plans-filter-bar.tint {
+    background: rgba(91, 192, 190, 0.03);
+}
+
+.left-align {
+    right: auto !important;
+    left: 0 !important;
+}
+
+.filters-left {
+    display: flex;
+    gap: 16px;
+}
+
+/* Plans Grid System */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+}
+
+.plan-card {
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent);
+}
+
+.plan-header {
+    margin-bottom: 20px;
+}
+
+.plan-type-badge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(91, 192, 190, 0.1);
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.plan-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 4px 0;
+}
+
+.plan-vehicle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.plan-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px 0;
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.metric-item label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.metric-item .value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.coverage-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+}
+
+.pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+}
+
+.pill.active {
+    background: rgba(43, 214, 123, 0.1);
+    border-color: rgba(43, 214, 123, 0.3);
+    color: var(--success);
+}
+
+.pill.accent {
+    background: rgba(91, 192, 190, 0.1);
+    border-color: rgba(91, 192, 190, 0.3);
+    color: var(--accent);
+}
+
+.plan-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+.status-dot.inactive { background: var(--error); }
+
+.btn-status-toggle {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.btn-status-toggle.deprecate {
+    background: rgba(220, 38, 38, 0.1);
+    color: #ef4444;
+    border-color: rgba(220, 38, 38, 0.2);
+}
+
+.btn-status-toggle.restore {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.btn-status-toggle:hover {
+    transform: scale(1.05);
+}
+
+[data-theme='light'] .plan-card {
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='light'] .pill {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

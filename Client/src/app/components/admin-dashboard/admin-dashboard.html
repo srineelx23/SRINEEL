@@ -58,6 +58,8 @@
             [vehicleDocuments]="vehicleDocuments()"
             [(vehicleIdvFilter)]="vehicleIdvFilter"
             (onViewVehicleDetails)="viewVehicleDetails($event)"
+            (onDownloadReport)="downloadClaimReport($event)"
+            (onDownloadInvoice)="downloadInvoice($event)"
             (onBackToVehicles)="backToVehicles()">
         </app-vehicles>
         }
@@ -67,6 +69,7 @@
         <app-claims
             [sortedClaims]="sortedClaims()"
             [(claimsSortOption)]="claimsSortOption"
+            (onDownloadReport)="downloadClaimReport($event)"
             [(showClaimsSortDropdown)]="showClaimsSortDropdown">
         </app-claims>
         }
@@ -106,6 +109,10 @@
             [(planForm)]="planForm"
             [vehicleCategories]="vehicleCategories"
             [policyCategories]="policyCategories"
+            [(planVehicleTypeFilter)]="planVehicleTypeFilter"
+            [(planTypeFilter)]="planTypeFilter"
+            [(plansSortOption)]="plansSortOption"
+            [(showPlansSortDropdown)]="showPlansSortDropdown"
             (onOpenPlanForm)="openPlanForm()"
             (onSubmitPlanRegistration)="submitPlanRegistration()"
             (onTogglePlanStatus)="togglePlanStatus($event.planId, $event.status)"

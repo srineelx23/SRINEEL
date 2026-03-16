@@ -63,7 +63,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   showClaimsSortDropdown = signal(false);
   showPaymentsSortDropdown = signal(false);
+  showPlansSortDropdown = signal(false);
   isAuditSortOpen = signal(false);
+
+  // Plan Filtering & Sorting State
+  planVehicleTypeFilter = signal('All');
+  planTypeFilter = signal('All');
+  plansSortOption = signal('popularity');
 
   // Aggregate Computations
 
@@ -125,7 +131,12 @@ export class AdminDashboard implements OnInit, OnDestroy {
     const vMap = new Map();
     this.policies().forEach(p => {
       if (p.vehicle && !vMap.has(p.vehicle.vehicleId)) {
-        vMap.set(p.vehicle.vehicleId, { ...p.vehicle, currentIdv: p.idv || p.invoiceAmount, customerName: p.customer?.fullName || 'Anonymous' });
+        vMap.set(p.vehicle.vehicleId, { 
+          ...p.vehicle, 
+          currentIdv: p.idv || p.invoiceAmount, 
+          customerName: p.customer?.fullName || 'Anonymous',
+          agentName: p.agent?.fullName || 'No Agent (Direct)'
+        });
       }
     });
     return Array.from(vMap.values());
@@ -200,23 +211,20 @@ export class AdminDashboard implements OnInit, OnDestroy {
     const v = this.selectedVehicle();
     if (!v) return docs;
 
-    // Vehicle Documents
+    // Filter for only RC and Invoice documents
     if (v.documents && Array.isArray(v.documents)) {
       v.documents.forEach((d: any) => {
-        if (d.filePath) docs.push({ name: d.documentType || 'Vehicle Document', url: 'https://localhost:7257/' + d.filePath });
+        const type = (d.documentType || '').toLowerCase();
+        if (d.filePath && (type.includes('rc') || type.includes('invoice'))) {
+          docs.push({ 
+            name: d.documentType || 'Vehicle Document', 
+            url: 'https://localhost:7257/' + d.filePath 
+          });
+        }
       });
     }
 
-    // Claim Documents
-    this.vehicleClaims().forEach(c => {
-      if (c.documents && Array.isArray(c.documents)) {
-        c.documents.forEach((d: any, index: number) => {
-          if (d.document1) docs.push({ name: `Claim ${c.claimNumber} - Primary Evidence`, url: 'https://localhost:7257/' + d.document1 });
-          if (d.document2) docs.push({ name: `Claim ${c.claimNumber} - Secondary Evidence`, url: 'https://localhost:7257/' + d.document2 });
-        });
-      }
-    });
-
+    // Claim Documents are intentionally excluded per request
     return docs;
   });
 
@@ -228,12 +236,34 @@ export class AdminDashboard implements OnInit, OnDestroy {
       if (pId) pCounts.set(pId, (pCounts.get(pId) || 0) + 1);
     });
 
-    const arr = [...this.plans()];
+    let arr = [...this.plans()];
+
+    // Apply Filters
+    const vFilter = this.planVehicleTypeFilter();
+    if (vFilter !== 'All') {
+      arr = arr.filter(p => p.applicableVehicleType === vFilter);
+    }
+
+    const tFilter = this.planTypeFilter();
+    if (tFilter !== 'All') {
+      arr = arr.filter(p => p.policyType === tFilter);
+    }
+
+    // Apply Sorting
+    const sort = this.plansSortOption();
     arr.sort((a, b) => {
-      const countA = pCounts.get(a.planId) || 0;
-      const countB = pCounts.get(b.planId) || 0;
-      return countB - countA;
+      if (sort === 'popularity') {
+        const countA = pCounts.get(a.planId) || 0;
+        const countB = pCounts.get(b.planId) || 0;
+        return countB - countA;
+      }
+      if (sort === 'coverageAsc') return (a.maxCoverageAmount || 0) - (b.maxCoverageAmount || 0);
+      if (sort === 'coverageDesc') return (b.maxCoverageAmount || 0) - (a.maxCoverageAmount || 0);
+      if (sort === 'premiumAsc') return (a.basePremium || 0) - (b.basePremium || 0);
+      if (sort === 'premiumDesc') return (b.basePremium || 0) - (a.basePremium || 0);
+      return 0;
     });
+
     return arr;
   });
 
@@ -1091,6 +1121,40 @@ export class AdminDashboard implements OnInit, OnDestroy {
       error: (err) => {
         this.changePwdLoading.set(false);
         this.errorMessage.set(extractErrorMessage(err));
+      }
+    });
+  }
+
+  downloadClaimReport(claimId: number) {
+    this.adminService.downloadClaimReport(claimId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Claim_Settlement_${claimId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.errorMessage.set('Failed to download claim report.');
+        setTimeout(() => this.errorMessage.set(''), 4000);
+      }
+    });
+  }
+
+  downloadInvoice(paymentId: number) {
+    this.adminService.downloadInvoice(paymentId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Invoice_${paymentId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.errorMessage.set('Failed to download invoice.');
+        setTimeout(() => this.errorMessage.set(''), 4000);
       }
     });
   }

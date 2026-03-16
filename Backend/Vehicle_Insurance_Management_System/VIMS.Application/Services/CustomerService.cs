@@ -53,6 +53,9 @@ namespace VIMS.Application.Services
             if (dto.InvoiceAmount < 0 || dto.KilometersDriven < 0 || dto.Year < 0 || dto.Year > DateTime.UtcNow.Year)
                 throw new BadRequestException("Please enter valid field values.");
 
+            if (DateTime.UtcNow.Year - dto.Year > 15)
+                throw new BadRequestException("Cannot buy insurance for vehicles aged greater than 15 years");
+
             // ==============================
             // 0️⃣ Validate EV Conflict
             // ==============================
@@ -223,7 +226,8 @@ namespace VIMS.Application.Services
                     Status = p.Status.ToString(),
                     IsRenewed = p.IsRenewed,
                     IsFeePending = isFeePending,
-                    VehicleType = p.Vehicle?.VehicleType ?? "N/A"
+                    VehicleType = p.Vehicle?.VehicleType ?? "N/A",
+                    RoadsideAssistanceAvailable = p.Plan?.RoadsideAssistanceAvailable ?? false
                 });
             }
 

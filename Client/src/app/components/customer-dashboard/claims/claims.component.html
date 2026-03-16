@@ -5,7 +5,7 @@
     </header>
 
     @if (!selectedClaim()) {
-    <div class="claims-grid-layout" [ngStyle]="{'grid-template-columns': isFilingClaim() ? '2fr 1fr' : '1fr'}">
+    <div class="claims-grid-layout" [ngStyle]="{'grid-template-columns': isFilingClaim() ? '1.8fr 1fr' : '1fr'}">
         <div class="glass-panel" style="padding: 24px;">
             <div class="claims-history-header">
                 <h3>Claims History</h3>
@@ -60,7 +60,6 @@
                         <th>Type</th>
                         <th>Approved Amt</th>
                         <th>Status</th>
-                        <th>Reason</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,14 +79,6 @@
                         <td><span class="status-badge"
                                 [ngClass]="getStatusString(c.status).toLowerCase().replace(' ', '')">{{
                                 getStatusString(c.status) }}</span></td>
-                        <td
-                            style="font-style: italic; color: var(--error); font-size: 0.85rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            @if (getStatusString(c.status) === 'Rejected') {
-                            {{ c.rejectionReason || 'No reason provided.' }}
-                            } @else {
-                            -
-                            }
-                        </td>
                     </tr>
                     }
                 </tbody>
@@ -188,63 +179,81 @@
             </button>
         </div>
 
-        <!-- Info grid -->
+        <!-- High-level Claim Details -->
         <div class="claim-info-grid">
-
             <div class="claim-info-card">
-                <label>Policy Number</label>
+                <label>Affected Vehicle</label>
+                <p class="value">{{ selectedClaim().vehicle?.registrationNumber || 'N/A' }}</p>
+                <span class="sub-value">{{ selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }}</span>
+            </div>
+            <div class="claim-info-card">
+                <label>Insurance Policy</label>
                 <p class="value">#{{ selectedClaim().policy?.policyNumber }}</p>
+                <span class="sub-value">{{ selectedClaim().policy?.plan?.planName }}</span>
             </div>
-
             <div class="claim-info-card">
-                <label>Claim Type</label>
+                <label>Incident Type</label>
                 <p class="value">{{ selectedClaim().claimType }}</p>
+                <span class="sub-value">Reported Incident</span>
             </div>
-
             <div class="claim-info-card">
-                <label>Vehicle</label>
-                <p class="vehicle-reg">{{ selectedClaim().vehicle?.registrationNumber }}</p>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">{{
-                    selectedClaim().vehicle?.make }} {{ selectedClaim().vehicle?.model }}</p>
-            </div>
-
-            <div class="claim-info-card">
-                <label>Date Filed</label>
-                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">{{
-                    selectedClaim().createdAt | date:'MMM d, y' }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">{{ selectedClaim().createdAt |
-                    date:'h:mm a' }}</div>
+                <label>Filed On</label>
+                <p class="value">{{ selectedClaim().createdAt | date:'MMM d, y' }}</p>
+                <span class="sub-value">{{ selectedClaim().createdAt | date:'shortTime' }}</span>
             </div>
         </div>
 
-        <!-- Settlement — full width -->
-        <div class="claim-settlement-banner"
-            [ngStyle]="{
-                            'background': getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.08)' :
-                                          getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.08)' : 'rgba(234,179,8,0.06)',
-                            'border': '1px solid ' + (getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.2)' :
-                                          getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.2)' : 'rgba(234,179,8,0.15)')
-                        }">
-            <div>
-                <label>Approved Amount</label>
-                @if (getStatusString(selectedClaim().status) === 'Rejected') {
-                <p class="claim-amount" style="color: var(--error);">Claim Rejected</p>
-                } @else if (selectedClaim().approvedAmount) {
-                <p class="claim-amount" style="color: var(--success);">{{
-                    selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0' }}</p>
-                } @else {
-                <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0;">
-                    Pending assessment...</p>
+        <!-- Minimal Payout Banner -->
+        @if (getStatusString(selectedClaim().status) === 'Approved' && getBreakdown(selectedClaim())) {
+            @let breakdown = getBreakdown(selectedClaim());
+            <div class="minimal-payout-banner fade-in">
+                <div class="payout-info">
+                    <div class="payout-badge-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div class="payout-text">
+                        <label>Claim Payout</label>
+                        <div class="amount">{{ (selectedClaim().approvedAmount || breakdown.finalPayout) | currency:'INR':'symbol':'1.0-0' }}</div>
+                    </div>
+                </div>
+
+                <div class="payout-actions">
+                    <button class="btn-download-report" (click)="onDownloadReport.emit(selectedClaim().claimId)">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Settlement Report</span>
+                    </button>
+                </div>
+            </div>
+        } @else {
+            <!-- Fallback for legacy approved claims or pending/rejected -->
+            <div class="claim-settlement-banner"
+                [ngStyle]="{
+                                'background': getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.08)' :
+                                              getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.08)' : 'rgba(234,179,8,0.06)',
+                                'border': '1px solid ' + (getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.2)' :
+                                              getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.2)' : 'rgba(234,179,8,0.15)')
+                            }">
+                <div>
+                    <label>Settlement Status</label>
+                    @if (getStatusString(selectedClaim().status) === 'Rejected') {
+                    <p class="claim-amount" style="color: var(--error);">Claim Rejected</p>
+                    } @else if (selectedClaim().approvedAmount) {
+                        <p class="claim-amount" style="color: var(--success);">{{
+                            selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0' }}</p>
+                    } @else {
+                        <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0;">
+                        Pending assessment...</p>
+                    }
+                </div>
+                @if (selectedClaim().rejectionReason) {
+                <div class="rejection-reason-box">
+                    <label>Reason for Decision</label>
+                    <p style="font-size: 0.85rem; color: var(--text-main); margin: 0; font-style: italic;">"{{
+                        selectedClaim().rejectionReason }}"</p>
+                </div>
                 }
             </div>
-            @if (selectedClaim().rejectionReason) {
-            <div class="rejection-reason-box">
-                <label>Reason for Rejection</label>
-                <p style="font-size: 0.85rem; color: var(--text-main); margin: 0; font-style: italic;">"{{
-                    selectedClaim().rejectionReason }}"</p>
-            </div>
-            }
-        </div>
+        }
 
         <!-- Documents -->
         @if (selectedClaim().documents && selectedClaim().documents.length > 0) {

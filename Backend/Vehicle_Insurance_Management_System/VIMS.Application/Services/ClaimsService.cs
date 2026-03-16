@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -52,7 +53,6 @@ namespace VIMS.Application.Services
         {
             return await _claimsRepository.GetByOfficerIdAsync(officerId);
         }
-
         public async Task<string> SubmitClaimAsync(SubmitClaimDTO dto, int customerId)
         {
             var policy = await _policyRepository.GetByIdAsync(dto.PolicyId);
@@ -215,11 +215,13 @@ namespace VIMS.Application.Services
 
             var insuredIdv = _pricingService.CalculateIDV(policy.InvoiceAmount, insuredVehicle.Year);
 
+            // compute breakdown and save it as JSON for permanent record
             var breakdown = await CalculateClaimBreakdownAsync(claimId, dto);
             
             // mark claim approved and store approved amount
             claim.Status = ClaimStatus.Approved;
             claim.ApprovedAmount = breakdown.FinalPayout;
+            claim.SettlementBreakdownJson = JsonSerializer.Serialize(breakdown, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             // determine decision type
             var decisionType = "Partial";
@@ -385,4 +387,3 @@ namespace VIMS.Application.Services
 
     }
 }
-

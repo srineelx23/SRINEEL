@@ -31,6 +31,7 @@ export class ClaimsComponent {
   @Output() onCloseClaimDetails = new EventEmitter<void>();
   @Output() onSetSortOption = new EventEmitter<string>();
   @Output() onToggleSortDropdown = new EventEmitter<boolean>();
+  @Output() onDownloadReport = new EventEmitter<number>();
 
   getStatusString(status: any): string {
     const s = status?.toString();
@@ -38,6 +39,16 @@ export class ClaimsComponent {
     if (s === '1' || s === 'Approved') return 'Approved';
     if (s === '2' || s === 'Rejected') return 'Rejected';
     return 'Under Review';
+  }
+  
+  getBreakdown(claim: any): any {
+    if (!claim?.settlementBreakdownJson) return null;
+    try {
+      return JSON.parse(claim.settlementBreakdownJson);
+    } catch (e) {
+      console.error("Failed to parse breakdown", e);
+      return null;
+    }
   }
 
   getSortLabel(option: string): string {

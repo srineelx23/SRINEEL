@@ -12,6 +12,7 @@ export class ClaimsComponent {
   sortedClaims = input.required<any[]>();
   claimsSortOption = model<string>('dateDesc');
   showClaimsSortDropdown = model<boolean>(false);
+  onDownloadReport = output<number>();
 
   getSortLabel(option: string): string {
     switch (option) {
