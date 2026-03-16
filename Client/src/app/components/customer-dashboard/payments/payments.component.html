@@ -183,6 +183,7 @@
                     <th>Amount</th>
                     <th>Date</th>
                     <th>Status</th>
+                    <th>Certificate</th>
                 </tr>
             </thead>
             <tbody>
@@ -204,6 +205,13 @@
                         </div>
                     </td>
                     <td><span class="status-badge" [ngClass]="p.status?.toLowerCase()">{{ p.status }}</span></td>
+                    <td>
+                        @if (p.status?.toLowerCase() === 'paid' || p.status === 1) {
+                        <button class="btn-outline-sm" (click)="onDownloadInvoice.emit(p.paymentId)">
+                            <i class="fa-solid fa-file-pdf"></i> Certificate
+                        </button>
+                        }
+                    </td>
                 </tr>
                 }
             </tbody>

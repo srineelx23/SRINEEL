@@ -9,7 +9,7 @@
     background: var(--nav-bg);
     border: 1px solid var(--border-light);
     border-radius: 40px;
-    padding: 0 40px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -41,7 +41,25 @@
     align-items: center;
     gap: 8px;
     flex: 1;
-    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 40px;
+    /* Faded transition at the ends */
+    mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+}
+
+/* Centering trick that allows scrolling left/right when overflowing */
+.sidebar-nav::before,
+.sidebar-nav::after {
+    content: '';
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-item {
@@ -55,6 +73,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nav-item:hover {

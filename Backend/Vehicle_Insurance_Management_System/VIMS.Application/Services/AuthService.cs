@@ -1,4 +1,4 @@
-﻿//using Microsoft.AspNet.Identity;
+//using Microsoft.AspNet.Identity;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -37,7 +37,12 @@ namespace VIMS.Application.Services
                 throw new BadRequestException("Customer Already Exists");
             }
             var user = _mapper.Map<User>(registerDTO);
+            if (string.IsNullOrEmpty(registerDTO.Password))
+            {
+                throw new BadRequestException("Password is required for registration.");
+            }
             user.PasswordHash = _hasher.HashPassword(user, registerDTO.Password);
+
             if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
                 user.SecurityAnswerHash = _hasher.HashPassword(user, registerDTO.SecurityAnswer.Trim().ToLower());
             }
@@ -55,7 +60,12 @@ namespace VIMS.Application.Services
             }
             var user= _mapper.Map<User>(registerDTO);
             user.Role = UserRole.Admin;
+            if (string.IsNullOrEmpty(registerDTO.Password))
+            {
+                throw new BadRequestException("Password is required for registration.");
+            }
             user.PasswordHash= _hasher.HashPassword(user,registerDTO.Password);
+
             if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
                 user.SecurityAnswerHash = _hasher.HashPassword(user, registerDTO.SecurityAnswer.Trim().ToLower());
             }
@@ -82,8 +92,10 @@ namespace VIMS.Application.Services
                 token = token,
                 name = customer.FullName,
                 Role = customer.Role.ToString(),
-                IsSecurityQuestionSet = !string.IsNullOrEmpty(customer.SecurityQuestion)
+                IsSecurityQuestionSet = !string.IsNullOrEmpty(customer.SecurityQuestion),
+                IsFirstLogin = customer.IsFirstLogin
             };
+
 
             await _auditService.LogActionWithUserAsync("Login", "Auth", $"User logged in: {customer.Email}", customer.UserId, customer.Email, customer.Role.ToString());
 
@@ -145,5 +157,23 @@ namespace VIMS.Application.Services
 
             await _authRepository.UpdateUserAsync(user);
         }
+        public async Task CompleteFirstLoginAsync(CompleteFirstLoginDTO dto)
+        {
+            var user = await _authRepository.UserExistsAsync(dto.Email);
+            if (user == null)
+                throw new NotFoundException("User not found");
+
+            if (dto.NewPassword == "DefaultAgentPassword@123")
+                throw new BadRequestException("You cannot use the default password. Please choose a new secure password.");
+
+            user.PasswordHash = _hasher.HashPassword(user, dto.NewPassword);
+            user.SecurityQuestion = dto.SecurityQuestion;
+            user.SecurityAnswerHash = _hasher.HashPassword(user, dto.SecurityAnswer.Trim().ToLower());
+            user.IsFirstLogin = false;
+
+            await _authRepository.UpdateUserAsync(user);
+            await _auditService.LogActionWithUserAsync("CompleteFirstLogin", "Auth", $"User completed first login: {user.Email}", user.UserId, user.Email, user.Role.ToString());
+        }
     }
 }
+

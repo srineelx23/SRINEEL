@@ -4,7 +4,7 @@
     min-height: 100vh;
     background-color: var(--bg-dark);
     position: relative;
-    padding-top: 100px; /* Space for the top navbar */
+    padding-top: 120px; /* Increased space for the top navbar to prevent covering content */
 }
 
 /* Main Content area */

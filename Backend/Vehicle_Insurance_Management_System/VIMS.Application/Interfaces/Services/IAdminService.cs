@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,8 +10,9 @@ namespace VIMS.Application.Interfaces.Services
 {
     public interface IAdminService
     {
-        public Task<User> CreateAgentAsync(RegisterDTO registerDTO);
-        public Task<User> CreateClaimsOfficerAsync(RegisterDTO registerDTO);
+        public Task<ProvisioningResultDTO> CreateAgentAsync(RegisterDTO registerDTO);
+        public Task<ProvisioningResultDTO> CreateClaimsOfficerAsync(RegisterDTO registerDTO);
+
         public Task<PolicyPlan> CreatePolicyPlanAsync(PolicyPlan policyPlan);
         public Task<List<PolicyPlan>> GetAllPolicyPlansAsync();
         public Task<PolicyPlan?> GetPolicyPlanByIdAsync(int planId);
@@ -21,5 +22,6 @@ namespace VIMS.Application.Interfaces.Services
         Task<List<Claims>> GetAllClaimsAsync();
         Task<List<Payment>> GetAllPaymentsAsync();
         Task<List<Policy>> GetAllPoliciesAsync();
+        Task<List<PolicyTransfer>> GetAllTransfersAsync();
     }
 }

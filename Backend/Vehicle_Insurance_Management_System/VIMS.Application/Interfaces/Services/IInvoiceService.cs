@@ -10,5 +10,6 @@ namespace VIMS.Application.Interfaces.Services
     {
         byte[] GenerateInvoicePdf(int paymentId);
         byte[] GenerateClaimSettlementPdf(int claimId);
+        byte[] GenerateTransferReportPdf(int transferId);
     }
 }

@@ -73,8 +73,8 @@
                     </td>
                     <td>
                         @if (c.status === 'Approved' || c.status === 1) {
-                        <button class="btn-outline-sm" (click)="onDownloadReport.emit(c.claimId)" title="Download Report">
-                            <i class="fa-solid fa-file-pdf"></i>
+                        <button class="btn-outline-sm" (click)="onDownloadReport.emit(c.claimId)" title="Download Claim Report">
+                            <i class="fa-solid fa-file-pdf"></i> Claim Report
                         </button>
                         } @else {
                         <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>

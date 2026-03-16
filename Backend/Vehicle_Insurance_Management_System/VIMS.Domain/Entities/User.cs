@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +19,8 @@ namespace VIMS.Domain.Entities
         //public string? LicenseNumber { get; set; }
         //public string? AgentCode { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsFirstLogin { get; set; } = false;
+
         // Navigation
         public ICollection<Vehicle>? Vehicles { get; set; }
         public ICollection<Policy>? CustomerPolicies { get; set; }

@@ -1,0 +1,77 @@
+<div class="transfers-container fade-in">
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Ownership Transfers</h1>
+            <p>History of vehicle insurance protocol transfers between users</p>
+        </div>
+    </div>
+
+    @if (transfers().length === 0) {
+    <div class="empty-state card">
+        <div class="empty-icon">📂</div>
+        <h3>No transfer operations found</h3>
+        <p>There are no recorded policy ownership transfers in the system yet.</p>
+    </div>
+    } @else {
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Transfer #</th>
+                        <th>Policy</th>
+                        <th>Sender (Seller)</th>
+                        <th>Recipient (Buyer)</th>
+                        <th>Vehicle</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="text-right">Documents</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (trf of transfers(); track trf.policyTransferId) {
+                    <tr>
+                        <td class="semi-bold">#TRF-{{ trf.policyTransferId }}</td>
+                        <td>
+                            <div class="policy-badge">{{ trf.policyNumber }}</div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <span class="name">{{ trf.senderName }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <span class="name">{{ trf.recipientName }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            @if (trf.vehicle) {
+                            <div class="vehicle-mini">
+                                <span>{{ trf.vehicle.make }} {{ trf.vehicle.model }}</span>
+                                <small>{{ trf.vehicle.registrationNumber }}</small>
+                            </div>
+                            } @else {
+                            <span class="muted">N/A</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="status-pill" [class]="trf.status.toLowerCase()">
+                                {{ trf.status }}
+                            </span>
+                        </td>
+                        <td>{{ trf.createdAt | date:'dd MMM yyyy' }}</td>
+                        <td class="text-right">
+                            <button class="btn-icon" (click)="onDownloadReport.emit(trf.policyTransferId)" title="Download Transfer Report">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span>Transfer Certificate</span>
+                            </button>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    }
+</div>

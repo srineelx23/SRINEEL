@@ -79,6 +79,17 @@ namespace VIMS.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<PolicyTransfer>> GetAllAsync()
+        {
+            return await _context.PolicyTransfers
+                .Include(t => t.Policy)
+                    .ThenInclude(p => p.Vehicle)
+                .Include(t => t.SenderCustomer)
+                .Include(t => t.RecipientCustomer)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

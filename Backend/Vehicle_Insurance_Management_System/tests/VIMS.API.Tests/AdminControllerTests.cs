@@ -16,7 +16,10 @@ namespace VIMS.API.Tests
         private readonly Mock<IPolicyPlanService> _planServiceMock;
         private readonly Mock<IClaimsService> _claimsServiceMock;
         private readonly Mock<IAuditService> _auditMock;
+
+        private readonly Mock<IInvoiceService> _invoiceMock;
         private readonly AdminController _adminController;
+
 
         public AdminControllerTests()
         {
@@ -24,13 +27,16 @@ namespace VIMS.API.Tests
             _planServiceMock = new Mock<IPolicyPlanService>();
             _claimsServiceMock = new Mock<IClaimsService>();
             _auditMock = new Mock<IAuditService>();
+            _invoiceMock = new Mock<IInvoiceService>();
 
             _adminController = new AdminController(
                 _adminServiceMock.Object,
                 _planServiceMock.Object,
                 _claimsServiceMock.Object,
-                _auditMock.Object);
+                _auditMock.Object,
+                _invoiceMock.Object);
         }
+
 
         [Fact]
         public async Task CreateAgent_ShouldReturnOk_WhenSuccessful()
@@ -38,7 +44,8 @@ namespace VIMS.API.Tests
             // Arrange
             var dto = new RegisterDTO { Email = "agent@vims.com" };
             _adminServiceMock.Setup(s => s.CreateAgentAsync(dto))
-                .ReturnsAsync(new User { Email = "agent@vims.com" });
+                .ReturnsAsync(new ProvisioningResultDTO { User = new User { Email = "agent@vims.com" }, WebhookResponse = "Success" });
+
 
             // Act
             var result = await _adminController.CreateAgentAsync(dto);

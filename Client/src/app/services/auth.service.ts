@@ -79,7 +79,14 @@ export class AuthService {
         });
     }
 
+    completeFirstLogin(data: any): Observable<any> {
+        return this.http.post(`${this.backendUrl}/complete-first-login`, data, {
+            responseType: 'text'
+        });
+    }
+
     logout(): void {
+
         sessionStorage.removeItem('token');
         this.router.navigate(['/login']);
     }

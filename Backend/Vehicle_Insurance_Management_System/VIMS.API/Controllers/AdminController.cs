@@ -173,6 +173,26 @@ namespace VIMS.API.Controllers
             return Ok(logs);
         }
 
+        [HttpGet("transfers")]
+        public async Task<IActionResult> GetAllTransfers()
+        {
+            var transfers = await _adminService.GetAllTransfersAsync();
+            var result = transfers.Select(t => new
+            {
+                t.PolicyTransferId,
+                t.PolicyId,
+                t.SenderCustomerId,
+                t.RecipientCustomerId,
+                Status = t.Status.ToString(),
+                t.CreatedAt,
+                PolicyNumber = t.Policy?.PolicyNumber,
+                SenderName = t.SenderCustomer?.FullName,
+                RecipientName = t.RecipientCustomer?.FullName,
+                Vehicle = t.Policy?.Vehicle == null ? null : new { t.Policy.Vehicle.Make, t.Policy.Vehicle.Model, t.Policy.Vehicle.RegistrationNumber }
+            });
+            return Ok(result);
+        }
+
         [HttpGet("claim/download/{claimId}")]
         public async Task<IActionResult> DownloadClaimReport(int claimId)
         {
@@ -199,6 +219,16 @@ namespace VIMS.API.Controllers
                 return NotFound(new { message = "Invoice not found or could not be generated" });
 
             return File(pdfBytes, "application/pdf", $"Invoice_{paymentId}.pdf");
+        }
+
+        [HttpGet("transfer/download/{transferId}")]
+        public IActionResult DownloadTransferReport(int transferId)
+        {
+            var pdfBytes = _invoiceService.GenerateTransferReportPdf(transferId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Transfer certificate not found or could not be generated" });
+
+            return File(pdfBytes, "application/pdf", $"Transfer_Certificate_{transferId}.pdf");
         }
     }
 }

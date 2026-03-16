@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -69,5 +69,12 @@ namespace VIMS.API.Controllers
             await _authService.SetSecurityQuestionAsync(dto);
             return Ok("Security question set successfully.");
         }
+        [HttpPost("complete-first-login")]
+        public async Task<IActionResult> CompleteFirstLogin([FromBody] CompleteFirstLoginDTO dto)
+        {
+            await _authService.CompleteFirstLoginAsync(dto);
+            return Ok("Account setup completed successfully.");
+        }
     }
 }
+

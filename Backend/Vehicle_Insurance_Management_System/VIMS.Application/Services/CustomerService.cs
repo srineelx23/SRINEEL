@@ -258,7 +258,7 @@ namespace VIMS.Application.Services
                     Amount = 500, // Fixed Transfer Fee
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
-                    TransactionReference = "Transfer Fees",
+                    TransactionReference = "Transfer Fee",
                     PaymentMethod = PaymentMethod.NetBanking
                 };
 

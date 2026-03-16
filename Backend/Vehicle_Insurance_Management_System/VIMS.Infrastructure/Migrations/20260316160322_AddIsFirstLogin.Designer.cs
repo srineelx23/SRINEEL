@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VIMS.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using VIMS.Infrastructure.Persistence;
 namespace VIMS.Infrastructure.Migrations
 {
     [DbContext(typeof(VehicleInsuranceContext))]
-    partial class VehicleInsuranceContextModelSnapshot : ModelSnapshot
+    [Migration("20260316160322_AddIsFirstLogin")]
+    partial class AddIsFirstLogin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

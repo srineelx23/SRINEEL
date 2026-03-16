@@ -57,11 +57,19 @@ export class AdminService {
         return this.http.get<any[]>(`${this.apiUrl}/audit-logs`);
     }
 
+    getAllTransfers(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/transfers`);
+    }
+
     downloadClaimReport(claimId: number): Observable<Blob> {
         return this.http.get(`${this.apiUrl}/claim/download/${claimId}`, { responseType: 'blob' });
     }
 
     downloadInvoice(paymentId: number): Observable<Blob> {
         return this.http.get(`${this.apiUrl}/invoice/download/${paymentId}`, { responseType: 'blob' });
+    }
+
+    downloadTransferReport(transferId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/transfer/download/${transferId}`, { responseType: 'blob' });
     }
 }

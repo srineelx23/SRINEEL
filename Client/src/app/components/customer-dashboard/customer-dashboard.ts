@@ -368,7 +368,11 @@ export class CustomerDashboard implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Invoice_${paymentId}.pdf`;
+        const payment = this.payments().find(p => p.paymentId === paymentId);
+        const fileName = (payment?.transactionReference === 'Transfer Fee' || payment?.transactionReference === 'Transfer Fees') 
+          ? `Transfer_Certificate_${paymentId}.pdf` 
+          : `Invoice_${paymentId}.pdf`;
+        a.download = fileName;
         a.click();
         window.URL.revokeObjectURL(url);
         this.successMessage.set("Invoice downloaded successfully!");

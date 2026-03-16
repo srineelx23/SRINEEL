@@ -61,10 +61,15 @@ export class ClaimsLogin implements OnInit {
           sessionStorage.setItem('token', response.token);
 
           const role = this.authService.getRoleFromToken(response.token);
+          this.pendingRole = role || '';
+
+          if (response.isFirstLogin) {
+            this.isFirstLoginMode.set(true);
+            return;
+          }
 
           if (response.isSecurityQuestionSet === false) {
             this.isSettingSecurityQuestion.set(true);
-            this.pendingRole = role || '';
             return;
           }
 
@@ -97,7 +102,15 @@ export class ClaimsLogin implements OnInit {
 
   successMessage = signal('');
 
+  // ==== First Time Login Flow ====
+  isFirstLoginMode = signal(false);
+  firstLoginPassword = '';
+  firstLoginConfirmPassword = '';
+  firstLoginSecurityQuestion = '';
+  firstLoginSecurityAnswer = '';
+
   // ==== Set Security Question Flow ====
+
   isSettingSecurityQuestion = signal(false);
   newSecurityQuestion = '';
   newSecurityAnswer = '';
@@ -152,6 +165,53 @@ export class ClaimsLogin implements OnInit {
       }
     });
   }
+
+  submitFirstLoginAction() {
+    this.errorMessage.set('');
+    if (!this.firstLoginPassword || !this.firstLoginConfirmPassword || !this.firstLoginSecurityQuestion || !this.firstLoginSecurityAnswer) {
+      this.errorMessage.set('All fields are required.');
+      this.autoHideToast();
+      return;
+    }
+    if (this.firstLoginPassword !== this.firstLoginConfirmPassword) {
+      this.errorMessage.set('Passwords do not match.');
+      this.autoHideToast();
+      return;
+    }
+    if (this.firstLoginPassword.length < 6) {
+      this.errorMessage.set('Password must be at least 6 characters.');
+      this.autoHideToast();
+      return;
+    }
+
+    if (this.firstLoginPassword === 'DefaultAgentPassword@123') {
+      this.errorMessage.set('You cannot use the default password. Please choose a new secure password.');
+      this.autoHideToast();
+      return;
+    }
+
+    const payload = {
+      Email: this.email,
+      NewPassword: this.firstLoginPassword,
+      SecurityQuestion: this.firstLoginSecurityQuestion,
+      SecurityAnswer: this.firstLoginSecurityAnswer
+    };
+
+    this.authService.completeFirstLogin(payload).subscribe({
+      next: () => {
+        this.successMessage.set('Account secured successfully! Welcome.');
+        setTimeout(() => {
+          this.successMessage.set('');
+          this.routeToDashboard(this.pendingRole);
+        }, 1500);
+      },
+      error: (err: any) => {
+        this.errorMessage.set(err.error?.message || err.error || 'Failed to complete first login.');
+        this.autoHideToast();
+      }
+    });
+  }
+
 
   openForgotPassword() {
     this.errorMessage.set('');

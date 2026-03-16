@@ -74,6 +74,14 @@
         </app-claims>
         }
 
+        <!-- Ownership Transfers Tab -->
+        @if (activeTab() === 'transfers') {
+        <app-transfers
+            [transfers]="transfers()"
+            (onDownloadReport)="downloadTransferReport($event)">
+        </app-transfers>
+        }
+
         <!-- All Payments Tab -->
         @if (activeTab() === 'payments') {
         <app-payments

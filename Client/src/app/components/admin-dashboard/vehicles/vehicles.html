@@ -126,7 +126,7 @@
                         <span class="status-badge"
                             [style.background]="pmt.isCredit ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'"
                             [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
-                            {{ pmt.isCredit ? '↑ Premium' : '↓ Claim Payout' }}
+                            {{ pmt.isCredit ? (pmt.type === 'Transfer Fee' ? '↑ Transfer Fee' : '↑ Premium') : '↓ Claim Payout' }}
                         </span>
                     </td>
                     <td style="font-weight: 700;"
@@ -140,8 +140,10 @@
                     </td>
                     <td>
                         @if (pmt.isCredit && (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved')) {
-                            <button class="btn-outline-sm" (click)="onDownloadInvoice.emit(pmt.id)" title="Download Premium Invoice">
-                                <i class="fa-solid fa-file-invoice"></i> PDF
+                            <button class="btn-outline-sm" (click)="onDownloadInvoice.emit(pmt.id)" 
+                                [title]="pmt.type === 'Transfer Fee' ? 'Download Transfer Certificate' : 'Download Premium Invoice'">
+                                <i class="fa-solid" [ngClass]="pmt.type === 'Transfer Fee' ? 'fa-file-shield' : 'fa-file-invoice'"></i> 
+                                {{ pmt.type === 'Transfer Fee' ? 'Transfer Certificate' : 'Invoice' }}
                             </button>
                         } @else {
                             <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>
@@ -195,7 +197,7 @@
                     <td>
                         @if (c.status === 1 || c.status === 'Approved') {
                             <button class="btn-outline-sm" (click)="onDownloadReport.emit(c.claimId)" title="Download Settlement Report">
-                                <i class="fa-solid fa-file-pdf"></i> Report
+                                <i class="fa-solid fa-file-pdf"></i> Claim Report
                             </button>
                         } @else {
                             <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>

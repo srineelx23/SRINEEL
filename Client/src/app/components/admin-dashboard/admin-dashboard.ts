@@ -16,6 +16,7 @@ import { UsersComponent } from './users/users';
 import { PlansComponent } from './plans/plans';
 import { AuditLogsComponent } from './audit-logs/audit-logs';
 import { SettingsComponent } from './settings/settings';
+import { TransfersComponent } from './transfers/transfers';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -31,7 +32,8 @@ import { SettingsComponent } from './settings/settings';
     UsersComponent,
     PlansComponent,
     AuditLogsComponent,
-    SettingsComponent
+    SettingsComponent,
+    TransfersComponent
   ],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
@@ -53,6 +55,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   payments = signal<any[]>([]);
   plans = signal<any[]>([]);
   auditLogs = signal<any[]>([]);
+  transfers = signal<any[]>([]);
   showUserDropdown = signal(false);
   showRoleDropdown = signal(false);
 
@@ -190,7 +193,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return {
         id: p.paymentId,
         date: p.paymentDate,        // from payments table — always set
-        type: isClaimPayout ? 'Claim Payout' : 'Premium Payment',
+        type: isClaimPayout ? 'Claim Payout' : (p.transactionReference === 'Transfer Fee' || p.transactionReference === 'Transfer Fees' ? 'Transfer Fee' : 'Premium Payment'),
         amount: p.amount,
         status: p.status,
         isCredit: !isClaimPayout
@@ -327,7 +330,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
         amount: p.amount,
         status: p.status,
         isCredit: !isClaimPayout,
-        type: isClaimPayout ? 'Claim Payout' : 'Premium Payment',
+        type: isClaimPayout ? 'Claim Payout' : (p.transactionReference === 'Transfer Fee' || p.transactionReference === 'Transfer Fees' ? 'Transfer Fee' : 'Premium Payment'),
         transactionRef: p.transactionReference || ''
       });
     });
@@ -593,7 +596,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   isCreatingClaimsOfficer = signal(false);
   isCreatingPlan = signal(false);
 
-  registerForm = { fullName: '', email: '', password: '', role: '' };
+  registerForm = { fullName: '', email: '', role: '' };
 
   vehicleCategories = ['Car', 'TwoWheeler', 'EVCar', 'EVTwoWheeler', 'HeavyVehicle', 'ThreeWheeler', 'EVThreeWheeler'];
   policyCategories = ['Comprehensive', 'ThirdParty', 'ZeroDepreciation'];
@@ -711,6 +714,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
       this.rebuildPlanCharts();
     });
     this.adminService.getAllUsers().subscribe(res => this.users.set(res));
+    this.adminService.getAllTransfers().subscribe(res => this.transfers.set(res));
   }
 
   rebuildRevenueChart() {
@@ -981,6 +985,12 @@ export class AdminDashboard implements OnInit, OnDestroy {
   submitUserRegistration() {
     this.errorMessage.set('');
 
+    if (!this.registerForm.fullName || this.registerForm.fullName.trim().length === 0) {
+      this.errorMessage.set('Full Name is required.');
+      setTimeout(() => this.errorMessage.set(''), 5000);
+      return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.registerForm.email)) {
       this.errorMessage.set('Please provide a valid email address.');
@@ -990,25 +1000,26 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     if (this.isCreatingAgent()) {
       this.adminService.createAgent(this.registerForm).subscribe({
-        next: () => {
-          this.successMessage.set('Agent Created Successfully!');
+        next: (res: any) => {
+          this.successMessage.set(`Agent Created!`);
           this.isCreatingAgent.set(false);
           this.loadAllData();
-          setTimeout(() => this.successMessage.set(''), 3000);
+          setTimeout(() => this.successMessage.set(''), 5000);
         },
         error: (err: any) => this.showError(err)
       });
     } else {
       this.adminService.createClaimsOfficer(this.registerForm).subscribe({
-        next: () => {
-          this.successMessage.set('Claims Officer Created Successfully!');
+        next: (res: any) => {
+          this.successMessage.set(`Claims Officer Created!`);
           this.isCreatingClaimsOfficer.set(false);
           this.loadAllData();
-          setTimeout(() => this.successMessage.set(''), 3000);
+          setTimeout(() => this.successMessage.set(''), 5000);
         },
         error: (err: any) => this.showError(err)
       });
     }
+
   }
 
   submitPlanRegistration() {
@@ -1060,7 +1071,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   openUserForm(role: string) {
-    this.registerForm = { fullName: '', email: '', password: '', role: role };
+    this.registerForm = { fullName: '', email: '', role: role };
+
     if (role === 'Agent') {
       this.isCreatingAgent.set(true);
       this.isCreatingClaimsOfficer.set(false);
@@ -1131,13 +1143,22 @@ export class AdminDashboard implements OnInit, OnDestroy {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Claim_Settlement_${claimId}.pdf`;
+        a.download = `Claim_Report_${claimId}.pdf`;
         a.click();
         window.URL.revokeObjectURL(url);
       },
-      error: () => {
-        this.errorMessage.set('Failed to download claim report.');
-        setTimeout(() => this.errorMessage.set(''), 4000);
+      error: (err: any) => {
+        // Handle Blob errors (400, 404, 500)
+        if (err.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.errorMessage.set(extractErrorMessage({ ...err, error: e.target.result }));
+          };
+          reader.readAsText(err.error);
+        } else {
+          this.errorMessage.set(extractErrorMessage(err));
+        }
+        setTimeout(() => this.errorMessage.set(''), 5000);
       }
     });
   }
@@ -1148,13 +1169,49 @@ export class AdminDashboard implements OnInit, OnDestroy {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Invoice_${paymentId}.pdf`;
+        const payment = this.payments().find(p => p.paymentId === paymentId);
+        const isTransfer = payment?.transactionReference === 'Transfer Fee' || payment?.transactionReference === 'Transfer Fees';
+        const fileName = isTransfer ? `Transfer_Certificate_${paymentId}.pdf` : `Invoice_Payment_${paymentId}.pdf`;
+        a.download = fileName;
         a.click();
         window.URL.revokeObjectURL(url);
       },
-      error: () => {
-        this.errorMessage.set('Failed to download invoice.');
-        setTimeout(() => this.errorMessage.set(''), 4000);
+      error: (err: any) => {
+        if (err.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.errorMessage.set(extractErrorMessage({ ...err, error: e.target.result }));
+          };
+          reader.readAsText(err.error);
+        } else {
+          this.errorMessage.set(extractErrorMessage(err));
+        }
+        setTimeout(() => this.errorMessage.set(''), 5000);
+      }
+    });
+  }
+
+  downloadTransferReport(transferId: number) {
+    this.adminService.downloadTransferReport(transferId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Transfer_Certificate_${transferId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err: any) => {
+        if (err.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.errorMessage.set(extractErrorMessage({ ...err, error: e.target.result }));
+          };
+          reader.readAsText(err.error);
+        } else {
+          this.errorMessage.set(extractErrorMessage(err));
+        }
+        setTimeout(() => this.errorMessage.set(''), 5000);
       }
     });
   }

@@ -11,6 +11,7 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<List<PolicyTransfer>> GetByRecipientIdAsync(int recipientId);
         Task<List<PolicyTransfer>> GetByNewVehicleApplicationIdAsync(int vehicleApplicationId);
         Task<List<PolicyTransfer>> GetTransfersByPolicyIdAsync(int policyId);
+        Task<List<PolicyTransfer>> GetAllAsync();
         Task SaveChangesAsync();
     }
 }

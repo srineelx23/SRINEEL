@@ -32,7 +32,8 @@
             </div>
 
             <!-- Right Form Side (Login Flow) -->
-            @if (!isForgotPasswordMode() && !isSettingSecurityQuestion()) {
+            @if (!isForgotPasswordMode() && !isSettingSecurityQuestion() && !isFirstLoginMode()) {
+
             <div class="login-form-container">
                 <h2 class="form-title">Claims Authentication</h2>
                 <form class="vims-form" (ngSubmit)="login()">
@@ -78,7 +79,8 @@
             }
 
             <!-- Forgot Password Flow -->
-            @if (isForgotPasswordMode() && !isSettingSecurityQuestion()) {
+            @if (isForgotPasswordMode() && !isSettingSecurityQuestion() && !isFirstLoginMode()) {
+
             <div class="login-form-container fade-in">
                 <h2 class="form-title">Reset Officer Password</h2>
                 <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">
@@ -148,7 +150,8 @@
             }
 
             <!-- Set Security Question Flow -->
-            @if (isSettingSecurityQuestion()) {
+            @if (isSettingSecurityQuestion() && !isFirstLoginMode()) {
+
             <div class="login-form-container fade-in">
                 <h2 class="form-title">Action Required</h2>
                 <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">
@@ -179,6 +182,49 @@
                 </form>
             </div>
             }
+
+            <!-- First Time Login (Password Reset + Security Question) -->
+            @if (isFirstLoginMode()) {
+            <div class="login-form-container fade-in">
+                <h2 class="form-title">Complete Account Setup</h2>
+
+                <form class="vims-form" (ngSubmit)="submitFirstLoginAction()">
+                    <div class="form-group">
+                        <input type="password" id="fNewPwd" name="firstLoginPassword" [(ngModel)]="firstLoginPassword"
+                            class="form-control" placeholder="" required>
+                        <label for="fNewPwd" class="floating-label">New Password</label>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" id="fConfirmPwd" name="firstLoginConfirmPassword"
+                            [(ngModel)]="firstLoginConfirmPassword" class="form-control" placeholder="" required>
+                        <label for="fConfirmPwd" class="floating-label">Confirm New Password</label>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label class="static-label">Security Question</label>
+                        <select name="firstLoginSecurityQuestion" class="form-control" [(ngModel)]="firstLoginSecurityQuestion"
+                            required>
+                            <option value="" disabled selected>Select a Security Question</option>
+                            @for (q of securityQuestions; track q) {
+                            <option [value]="q">{{ q }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="text" id="fSecAnswer" name="firstLoginSecurityAnswer" [(ngModel)]="firstLoginSecurityAnswer"
+                            class="form-control" placeholder="" required>
+                        <label for="fSecAnswer" class="floating-label">Secret Answer</label>
+                    </div>
+
+                    <button type="submit" class="btn-primary full-width-btn"
+                        style="background: var(--success); color: var(--bg-card)">Secure Account &
+                        Continue</button>
+                </form>
+            </div>
+            }
+
         </div>
     </div>
 </div>

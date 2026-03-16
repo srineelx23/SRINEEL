@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,5 +17,7 @@ namespace VIMS.Application.Interfaces.Services
         Task<string> GetSecurityQuestionAsync(string email);
         Task ResetPasswordAsync(ForgotPasswordDTO dto);
         Task SetSecurityQuestionAsync(SetSecurityQuestionDTO dto);
+        Task CompleteFirstLoginAsync(CompleteFirstLoginDTO dto);
     }
 }
+
