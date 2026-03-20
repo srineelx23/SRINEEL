@@ -72,4 +72,24 @@ export class AdminService {
     downloadTransferReport(transferId: number): Observable<Blob> {
         return this.http.get(`${this.apiUrl}/transfer/download/${transferId}`, { responseType: 'blob' });
     }
+
+    getAllGarages(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/garages`);
+    }
+
+    getGarageById(id: number): Observable<any> {
+        return this.http.get<any>(`${this.apiUrl}/garage/${id}`);
+    }
+
+    addGarage(garage: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/garage`, garage);
+    }
+
+    updateGarage(id: number, garage: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/garage/${id}`, garage);
+    }
+
+    deleteGarage(id: number): Observable<any> {
+        return this.http.delete(`${this.apiUrl}/garage/${id}`);
+    }
 }

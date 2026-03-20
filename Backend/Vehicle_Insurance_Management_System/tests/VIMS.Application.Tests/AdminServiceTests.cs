@@ -1,5 +1,6 @@
 using AutoMapper;
 using Moq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using VIMS.Application.DTOs;
 using VIMS.Application.Exceptions;
@@ -21,6 +22,8 @@ namespace VIMS.Application.Tests
         private readonly Mock<IClaimsRepository> _claimsRepoMock;
         private readonly Mock<IPaymentRepository> _paymentRepoMock;
         private readonly Mock<IPolicyRepository> _policyRepoMock;
+        private readonly Mock<IPolicyTransferRepository> _transferRepoMock;
+        private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
         private readonly AdminService _adminService;
 
         public AdminServiceTests()
@@ -32,6 +35,8 @@ namespace VIMS.Application.Tests
             _claimsRepoMock = new Mock<IClaimsRepository>();
             _paymentRepoMock = new Mock<IPaymentRepository>();
             _policyRepoMock = new Mock<IPolicyRepository>();
+            _transferRepoMock = new Mock<IPolicyTransferRepository>();
+            _httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
             _adminService = new AdminService(
                 _adminRepoMock.Object,
@@ -40,7 +45,9 @@ namespace VIMS.Application.Tests
                 _auditServiceMock.Object,
                 _claimsRepoMock.Object,
                 _paymentRepoMock.Object,
-                _policyRepoMock.Object);
+                _policyRepoMock.Object,
+                _transferRepoMock.Object,
+                _httpClientFactoryMock.Object);
         }
 
         [Fact]
@@ -74,7 +81,7 @@ namespace VIMS.Application.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(UserRole.Agent, result.Role);
+            Assert.Equal(UserRole.Agent, result.User.Role);
             _adminRepoMock.Verify(repo => repo.CreateAgentAsync(It.IsAny<User>()), Times.Once);
         }
     }

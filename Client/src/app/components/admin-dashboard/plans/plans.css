@@ -46,8 +46,10 @@
 }
 
 .plan-card {
-    background: var(--card-inner-bg);
-    border: 1px solid var(--card-inner-border);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.2); 
     border-radius: 16px;
     padding: 24px;
     display: flex;
@@ -56,12 +58,14 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .plan-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-    border-color: var(--accent);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--accent); /* Highlight all edges */
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
 }
 
 .plan-header {
@@ -200,12 +204,73 @@
 
 [data-theme='light'] .plan-card {
     background: #ffffff;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+    backdrop-filter: none;
+}
+
+[data-theme='light'] .plan-card:hover {
+    background: #f8fbff;
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme='light'] .pill {
     background: #f1f5f9;
     border-color: #e2e8f0;
+}
+
+/* Status Toggle Group */
+.status-toggle-group {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.status-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-btn i {
+    font-size: 0.75rem;
+}
+
+.status-btn.active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(91, 192, 190, 0.3);
+}
+
+.status-btn:not(.active):hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+[data-theme='light'] .status-toggle-group {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+[data-theme='light'] .status-btn.active {
+    background: var(--accent);
+    box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2);
+}
+
+[data-theme='light'] .status-btn:not(.active):hover {
+    background: #e2e8f0;
 }
 
 @keyframes fadeIn {

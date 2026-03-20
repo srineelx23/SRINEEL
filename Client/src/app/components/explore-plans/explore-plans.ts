@@ -56,6 +56,14 @@ export class ExplorePlans implements OnInit {
   showVehicleDropdown = signal(false);
   isEVPlan = signal(false);
 
+  // Custom Dropdown States
+  showFuelDropdown = signal(false);
+  showUsageDropdown = signal(false);
+  showDurationDropdown = signal(false);
+  showDirectFuelDropdown = signal(false);
+  showDirectUsageDropdown = signal(false);
+  showDirectDurationDropdown = signal(false);
+
   // Application State
   isApplying = signal(false);
   applicationForm = {
@@ -133,6 +141,17 @@ export class ExplorePlans implements OnInit {
     if (this.filterRoadside()) results = results.filter(p => p.roadsideAssistanceAvailable);
 
     this.filteredPlans.set(results);
+    
+    // Get top 3 plans by purchase count (only those with at least 1 purchase)
+    const top3Ids = [...this.plans()]
+      .filter(p => (p.purchaseCount || 0) > 0)
+      .sort((a, b) => (b.purchaseCount || 0) - (a.purchaseCount || 0))
+      .slice(0, 3)
+      .map(p => p.planId);
+    
+    results.forEach(p => {
+      p.isPopular = top3Ids.includes(p.planId);
+    });
   }
 
   updateFilter(event: any, type: string) {

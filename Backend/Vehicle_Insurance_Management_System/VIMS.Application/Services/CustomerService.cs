@@ -44,9 +44,30 @@ namespace VIMS.Application.Services
             _fileStorageService = fileStorageService;
             _claimsRepository = claimsRepository;
         }
-        public async Task<List<PolicyPlan>> ViewAllPoliciesAsync()
+        public async Task<IEnumerable<object>> ViewAllPoliciesAsync()
         {
-            return await _customerRepository.ViewAllPolicyPlansAsync();
+            var plans = await _customerRepository.ViewAllPolicyPlansAsync();
+            var counts = await _policyRepository.GetPlanPurchaseCountsAsync();
+
+            return plans.Select(p => new
+            {
+                p.PlanId,
+                p.PlanName,
+                p.PolicyType,
+                p.BasePremium,
+                p.PolicyDurationMonths,
+                p.DeductibleAmount,
+                p.MaxCoverageAmount,
+                p.CoversThirdParty,
+                p.CoversOwnDamage,
+                p.CoversTheft,
+                p.ZeroDepreciationAvailable,
+                p.EngineProtectionAvailable,
+                p.RoadsideAssistanceAvailable,
+                p.ApplicableVehicleType,
+                p.Status,
+                PurchaseCount = counts.ContainsKey(p.PlanId) ? counts[p.PlanId] : 0
+            });
         }
         public async Task CreateApplicationAsync(CreateVehicleApplicationDTO dto,int userId)
         {
@@ -161,6 +182,9 @@ namespace VIMS.Application.Services
             {
                 VehicleApplicationId = a.VehicleApplicationId,
                 RegistrationNumber = a.RegistrationNumber,
+                Make = a.Make,
+                Model = a.Model,
+                InvoiceAmount = a.InvoiceAmount,
                 Status = a.Status.ToString(),   
                 RejectionReason = a.RejectionReason,
                 CreatedAt = a.CreatedAt

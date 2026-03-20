@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, Signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -21,6 +21,10 @@ export class PoliciesComponent {
   @Input() renewForm!: any;
   @Input() filteredRenewPlans!: Signal<any[]>;
 
+  // Dropdown States
+  showPlanDropdown = signal(false);
+  showYearsDropdown = signal(false);
+
   @Output() onSetPolicyFilter = new EventEmitter<string>();
   @Output() onViewPolicyDetails = new EventEmitter<number>();
   @Output() onPayPremium = new EventEmitter<number>();
@@ -30,4 +34,20 @@ export class PoliciesComponent {
   @Output() onCancelPolicy = new EventEmitter<number>();
   @Output() onSubmitRenew = new EventEmitter<void>();
   @Output() onCancelRenew = new EventEmitter<void>();
+
+  selectPlan(planId: number) {
+    this.renewForm.NewPlanId = planId;
+    this.showPlanDropdown.set(false);
+  }
+
+  selectYears(years: number) {
+    this.renewForm.SelectedYears = years;
+    this.showYearsDropdown.set(false);
+  }
+
+  getPlanName(planId: any) {
+    if (!planId) return 'Upgrade / Change Plan';
+    const plan = this.filteredRenewPlans().find(p => p.planId == planId || p.id == planId);
+    return plan ? plan.planName : 'Upgrade / Change Plan';
+  }
 }

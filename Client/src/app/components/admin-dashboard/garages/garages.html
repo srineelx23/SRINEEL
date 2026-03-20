@@ -1,0 +1,139 @@
+<div class="garages-section">
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Network Garages</h1>
+            <p>Manage authorized service centers and cash-less facility locations.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-primary add-btn" (click)="openAddModal()">
+                <i class="fas fa-plus"></i> New Garage
+            </button>
+        </div>
+    </div>
+
+    <div class="table-card fade-in">
+        @if (isLoading()) {
+            <div class="loader-overlay">
+                <div class="spinner"></div>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>G-ID</th>
+                        <th>Garage Name</th>
+                        <th>Location (Lat, Long)</th>
+                        <th>Phone Number</th>
+                        <th>Created At</th>
+                        <th class="actions-col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (garage of garages(); track garage.garageId) {
+                        <tr>
+                            <td class="id-field">#{{garage.garageId}}</td>
+                            <td class="semi-bold">
+                                <div class="garage-info">
+                                    <i class="fas fa-tools" style="margin-right: 10px; color: var(--accent);"></i>
+                                    <span>{{garage.garageName}}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="location-pill">
+                                    <i class="fas fa-map-marker-alt" style="margin-right: 6px; color: var(--accent);"></i>
+                                    <span>{{garage.latitude}}, {{garage.longitude}}</span>
+                                </div>
+                            </td>
+                            <td>{{garage.phoneNumber}}</td>
+                            <td>{{garage.createdAt | date:'mediumDate'}}</td>
+                            <td class="actions-cell">
+                                <button class="icon-btn edit" (click)="openEditModal(garage)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="icon-btn delete" (click)="deleteGarage(garage.garageId)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (garages().length === 0 && !isLoading()) {
+                        <tr>
+                            <td colspan="6" class="empty-state" style="padding: 48px; text-align: center;">
+                                <i class="fas fa-warehouse" style="font-size: 3rem; opacity: 0.2; margin-bottom: 20px; display: block;"></i>
+                                <p style="color: var(--text-muted); font-style: italic;">No garages added to the network yet.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit -->
+    @if (showModal()) {
+        <div class="modal-backdrop" (click)="closeModal()">
+            <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>{{ isEditMode() ? 'Edit Garage' : 'Add New Garage' }}</h3>
+                    <button class="close-btn" (click)="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form (ngSubmit)="saveGarage()">
+                        <div class="form-group">
+                            <label>Garage Name</label>
+                            <input type="text" [(ngModel)]="currentGarage().garageName" name="garageName" required placeholder="Enter garage name">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Search Address</label>
+                            <div class="search-box-wrapper">
+                                <input type="text" [(ngModel)]="addressSearch" name="addressSearch" placeholder="Enter city, street or landmark" (keyup.enter)="searchAddress()" (keyup)="onSearchKeyUp()" autocomplete="off">
+                                <button type="button" class="icon-btn search-btn" (click)="searchAddress()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                
+                                @if (suggestions().length > 0) {
+                                    <ul class="suggestions-list glass-panel">
+                                        @for (item of suggestions(); track item.place_id) {
+                                            <li (click)="selectSuggestion(item, $event)">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <span>{{ item.display_name }}</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Map Selection -->
+                        <div class="map-picker-container">
+                            <label class="static-label">Select Location on Map</label>
+                            <div id="garage-map" class="map-box"></div>
+                            <p class="map-hint"><i class="fas fa-info-circle"></i> Click anywhere on the map to set coordinates</p>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Latitude</label>
+                                <input type="number" step="0.000001" [(ngModel)]="currentGarage().latitude" name="latitude" required (change)="updateLocation(currentGarage().latitude, currentGarage().longitude)">
+                            </div>
+                            <div class="form-group">
+                                <label>Longitude</label>
+                                <input type="number" step="0.000001" [(ngModel)]="currentGarage().longitude" name="longitude" required (change)="updateLocation(currentGarage().latitude, currentGarage().longitude)">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" [(ngModel)]="currentGarage().phoneNumber" name="phoneNumber" required placeholder="Enter contact number">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-text" (click)="closeModal()">Cancel</button>
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

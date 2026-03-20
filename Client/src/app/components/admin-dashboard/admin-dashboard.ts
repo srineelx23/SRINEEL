@@ -17,13 +17,14 @@ import { PlansComponent } from './plans/plans';
 import { AuditLogsComponent } from './audit-logs/audit-logs';
 import { SettingsComponent } from './settings/settings';
 import { TransfersComponent } from './transfers/transfers';
+import { GaragesComponent } from './garages/garages';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
+    CommonModule,
+    FormsModule,
     NavbarComponent,
     OverviewComponent,
     VehiclesComponent,
@@ -33,7 +34,8 @@ import { TransfersComponent } from './transfers/transfers';
     PlansComponent,
     AuditLogsComponent,
     SettingsComponent,
-    TransfersComponent
+    TransfersComponent,
+    GaragesComponent
   ],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
@@ -129,20 +131,49 @@ export class AdminDashboard implements OnInit, OnDestroy {
     return this.policies().filter((p: any) => p.status === 'Active' || p.status === 0).length;
   });
 
+  lossRatio = computed(() => {
+    const rev = this.totalRevenue();
+    if (!rev) return 0;
+    return (this.totalPayoutAmount() / rev) * 100;
+  });
+
+  pendingClaimsCount = computed(() => {
+    return this.claims().filter((c: any) => c.status === 'Pending' || c.status === 0).length;
+  });
+
+  totalClaimsCount = computed(() => {
+    return this.claims().length;
+  });
+
+  totalCustomersCount = computed(() => {
+    return this.users().filter((u: any) => u.role === 'Customer' || u.roles?.includes('Customer') || u.Role === 'Customer' || u.role === 3).length;
+  });
+
   vehicles = computed(() => {
     // Extract unique vehicles from policies
-    const vMap = new Map();
+    const vMap = new Map<number, any>();
     this.policies().forEach(p => {
-      if (p.vehicle && !vMap.has(p.vehicle.vehicleId)) {
-        vMap.set(p.vehicle.vehicleId, { 
-          ...p.vehicle, 
-          currentIdv: p.idv || p.invoiceAmount, 
-          customerName: p.customer?.fullName || 'Anonymous',
-          agentName: p.agent?.fullName || 'No Agent (Direct)'
-        });
+      if (p.vehicle) {
+        const vid = p.vehicle.vehicleId;
+        // Use the active policy's details if available, otherwise use any first-seen policy
+        const isExistingActive = vMap.has(vid) && (vMap.get(vid).policyStatus === 'Active' || vMap.get(vid).policyStatus === 0);
+        const isCurrentActive = p.status === 'Active' || p.status === 0;
+
+        if (!vMap.has(vid) || (isCurrentActive && !isExistingActive)) {
+          vMap.set(vid, {
+            ...p.vehicle,
+            currentIdv: p.idv ?? p.IDV ?? 0,
+            invoiceAmount: p.invoiceAmount,
+            customerName: p.customer?.fullName || 'Anonymous',
+            agentName: p.agent?.fullName || 'No Agent (Direct)',
+            policyStatus: p.status,
+            premiumAmount: p.premiumAmount,
+            planName: p.policyPlan?.planName || 'Standard'
+          });
+        }
       }
     });
-    return Array.from(vMap.values());
+    return Array.from(vMap.values()).sort((a, b) => b.vehicleId - a.vehicleId);
   });
 
   selectedVehicle = signal<any | null>(null);
@@ -154,7 +185,17 @@ export class AdminDashboard implements OnInit, OnDestroy {
   });
 
   sortedClaims = computed(() => {
-    const data = [...this.claims()];
+    const rawClaims = this.claims();
+    const policies = this.policies();
+
+    const data = rawClaims.map(c => {
+      const policy = policies.find(p => p.policyId === c.policyId);
+      return {
+        ...c,
+        vehicle: policy?.vehicle || null
+      };
+    });
+
     const option = this.claimsSortOption();
     return data.sort((a, b) => {
       const dateA = new Date(a.createdAt || 0).getTime();
@@ -164,6 +205,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
       if (option === 'amountDesc') return (b.approvedAmount || 0) - (a.approvedAmount || 0);
       if (option === 'amountAsc') return (a.approvedAmount || 0) - (b.approvedAmount || 0);
       return 0;
+    });
+  });
+
+  sortedPolicies = computed(() => {
+    return [...this.policies()].sort((a, b) => {
+      const idA = a.policyId || 0;
+      const idB = b.policyId || 0;
+      return idB - idA;
     });
   });
 
@@ -219,9 +268,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
       v.documents.forEach((d: any) => {
         const type = (d.documentType || '').toLowerCase();
         if (d.filePath && (type.includes('rc') || type.includes('invoice'))) {
-          docs.push({ 
-            name: d.documentType || 'Vehicle Document', 
-            url: 'https://localhost:7257/' + d.filePath 
+          docs.push({
+            name: d.documentType || 'Vehicle Document',
+            url: 'https://localhost:7257/' + d.filePath
           });
         }
       });
@@ -240,6 +289,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
     });
 
     let arr = [...this.plans()];
+
+    // Apply Status Filter
+    const activeFilter = this.planStatusFilter();
+    if (activeFilter === 'Active') {
+      arr = arr.filter(p => p.status === 1 || p.status === 'Active');
+    } else {
+      arr = arr.filter(p => p.status === 0 || p.status === 'Inactive');
+    }
 
     // Apply Filters
     const vFilter = this.planVehicleTypeFilter();
@@ -271,9 +328,28 @@ export class AdminDashboard implements OnInit, OnDestroy {
   });
 
   // Filters
-  vehicleIdvFilter = signal<number>(0);
+  vehicleSearchFilter = signal('');
+  vehicleStatusFilter = signal('All');
+  planStatusFilter = signal<'Active' | 'Inactive'>('Active');
+
   filteredVehicles = computed(() => {
-    return this.vehicles().filter(v => (v.currentIdv || v.year) >= this.vehicleIdvFilter());
+    let list = this.vehicles();
+    const search = this.vehicleSearchFilter().toLowerCase();
+    const status = this.vehicleStatusFilter();
+
+    if (search) {
+      list = list.filter(v =>
+        v.registrationNumber?.toLowerCase().includes(search) ||
+        v.make?.toLowerCase().includes(search) ||
+        v.model?.toLowerCase().includes(search)
+      );
+    }
+
+    if (status !== 'All') {
+      list = list.filter(v => v.policyStatus === status);
+    }
+
+    return list;
   });
 
   // Per-vehicle premium collected and claims paid out (for the vehicles list table)
@@ -324,7 +400,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
       txns.push({
         id: p.paymentId,
         policyId: p.policyId,
-        vehicle: policy?.vehicle ? `${policy.vehicle.make || ''} ${policy.vehicle.model || ''} (${policy.vehicle.registrationNumber || ''})` : 'N/A',
+        vehicle: policy?.vehicle || null,
         customer: policy?.customer?.fullName || 'N/A',
         date,
         amount: p.amount,
@@ -401,154 +477,246 @@ export class AdminDashboard implements OnInit, OnDestroy {
   // Theme tracker (must be declared before computed chart options that use it)
   isDarkMode = signal(true);
 
-  // Chart Properties
-  revenueChartOptions = computed<ChartConfiguration['options']>(() => ({
+  // Chart Properties - High-End Redesign
+  premiumChartOptions = computed<ChartConfiguration['options']>(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { top: 20 } },
     scales: {
       y: {
         beginAtZero: true,
-        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' },
+        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', drawTicks: false },
         ticks: {
-          color: this.isDarkMode() ? '#94A3B8' : '#475569',
+          color: this.isDarkMode() ? '#94A3B8' : '#64748B',
+          font: { family: "'Outfit', sans-serif", weight: 500, size: 12 },
+          padding: 8,
           callback: (v: any) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
         },
-        border: { display: false }
+        border: { display: false, dash: [5, 5] }
       },
       x: {
         grid: { display: false },
-        ticks: { color: this.isDarkMode() ? '#94A3B8' : '#475569' },
+        ticks: { color: this.isDarkMode() ? '#CBD5E1' : '#475569', font: { family: "'Inter', sans-serif", weight: 600, size: 12 }, padding: 8 },
         border: { display: false }
       }
     },
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: this.isDarkMode() ? 'rgba(15,26,54,0.95)' : 'rgba(255,255,255,0.97)',
-        titleColor: this.isDarkMode() ? '#5BC0BE' : '#2563EB',
-        bodyColor: this.isDarkMode() ? '#F1F5F9' : '#0F172A',
-        borderColor: this.isDarkMode() ? 'rgba(91,192,190,0.3)' : 'rgba(37,99,235,0.2)',
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#CBD5E1' : '#475569',
+        bodyColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13, weight: 500 },
+        bodyFont: { family: "'Inter', sans-serif", size: 15, weight: 'bold' },
+        borderColor: this.isDarkMode() ? 'rgba(91,192,190,0.4)' : 'rgba(37,99,235,0.2)',
         borderWidth: 1,
-        padding: 12,
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true,
         callbacks: {
-          label: (ctx: any) => ' ₹' + ctx.parsed.y.toLocaleString('en-IN')
+          label: (ctx: any) => ` Revenue: ₹${ctx.parsed.y.toLocaleString('en-IN')}`
         }
       }
     }
   }));
-  revenueChartData: ChartData<'bar'> = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    datasets: [{
-      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], label: 'Monthly Revenue',
-      backgroundColor: 'rgba(91,192,190,0.8)', hoverBackgroundColor: '#5BC0BE',
-      borderRadius: 6, borderSkipped: false
-    }]
-  };
-  revenueChartType: ChartType = 'bar';
 
-  claimsChartOptions = computed<ChartConfiguration['options']>(() => ({
+  premiumChartData: ChartData<'bar'> = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: []
+  };
+
+  claimsPaidChartOptions = computed<ChartConfiguration['options']>(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '68%',
+    layout: { padding: { top: 20 } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', drawTicks: false },
+        ticks: {
+          color: this.isDarkMode() ? '#94A3B8' : '#64748B',
+          font: { family: "'Outfit', sans-serif", weight: 500, size: 12 },
+          padding: 8,
+          callback: (v: any) => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
+        },
+        border: { display: false, dash: [5, 5] }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: this.isDarkMode() ? '#CBD5E1' : '#475569', font: { family: "'Inter', sans-serif", weight: 600, size: 12 }, padding: 8 },
+        border: { display: false }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#EF4444' : '#DC2626',
+        bodyColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13, weight: 500 },
+        bodyFont: { family: "'Inter', sans-serif", size: 15, weight: 'bold' },
+        borderColor: 'rgba(239, 68, 68, 0.4)',
+        borderWidth: 1,
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true,
+        callbacks: {
+          label: (ctx: any) => ` Claims Paid: ₹${ctx.parsed.y.toLocaleString('en-IN')}`
+        }
+      }
+    }
+  }));
+
+  claimsPaidChartData: ChartData<'line'> = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: []
+  };
+
+  policyDistributionChartOptions = computed<ChartConfiguration['options']>(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    layout: { padding: 10 },
     plugins: {
       legend: {
         position: 'bottom',
         labels: {
-          color: this.isDarkMode() ? '#E2E8F0' : '#1E293B',
-          padding: 20,
-          font: { size: 13, family: "'Inter', sans-serif", weight: '500' },
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          padding: 24,
+          font: { size: 13, family: "'Outfit', sans-serif", weight: 500 },
           usePointStyle: true,
           pointStyle: 'circle'
         }
       },
       tooltip: {
-        backgroundColor: this.isDarkMode() ? 'rgba(15,26,54,0.95)' : 'rgba(255,255,255,0.97)',
-        titleColor: this.isDarkMode() ? '#F1F5F9' : '#0F172A',
-        bodyColor: this.isDarkMode() ? '#94A3B8' : '#475569',
-        borderColor: this.isDarkMode() ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'Inter', sans-serif", size: 15, weight: 'bold' },
+        bodyColor: this.isDarkMode() ? '#A78BFA' : '#8B5CF6',
+        borderColor: this.isDarkMode() ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
         borderWidth: 1,
-        padding: 12,
-        callbacks: {
-          label: (ctx: any) => ` ${ctx.label}: ${ctx.parsed} claims`
-        }
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true
       }
     }
-  } as any));
-  claimsChartData: ChartData<'doughnut'> = {
-    labels: ['✅ Approved', '❌ Rejected', '⏳ Under Review'],
+  }));
+
+  policyDistributionChartData: ChartData<'doughnut'> = {
+    labels: [],
+    datasets: []
+  };
+
+  claimsStatusChartOptions = computed<ChartConfiguration['options']>(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    layout: { padding: 10 },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          padding: 24,
+          font: { size: 14, family: "'Outfit', sans-serif", weight: 600 },
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'Inter', sans-serif", size: 15, weight: 'bold' },
+        bodyColor: this.isDarkMode() ? '#60A5FA' : '#3B82F6',
+        borderColor: this.isDarkMode() ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+        borderWidth: 1,
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true
+      }
+    }
+  }));
+
+  claimsStatusChartData: ChartData<'doughnut'> = {
+    labels: ['Approved', 'Rejected', 'Under Review'],
     datasets: [{
       data: [0, 0, 0],
-      backgroundColor: ['rgba(34, 197, 94, 0.85)', 'rgba(239, 68, 68, 0.85)', 'rgba(251, 191, 36, 0.85)'],
-      hoverBackgroundColor: ['#22C55E', '#EF4444', '#FBB724'],
-      borderColor: this.isDarkMode() ? '#0F1A36' : '#F8FAFC',
-      borderWidth: 3,
+      backgroundColor: ['rgba(52, 211, 153, 0.9)', 'rgba(251, 113, 133, 0.9)', 'rgba(251, 191, 36, 0.9)'],
+      hoverBackgroundColor: ['#34D399', '#FB7185', '#FBBF24'],
+      borderColor: this.isDarkMode() ? '#070F22' : '#FFFFFF',
+      borderWidth: 4,
       hoverOffset: 8
     }]
   };
-  claimsChartType: ChartType = 'doughnut';
 
-  // ── Plan Analytics Charts ────────────────────────────────────────────────
-  planAnalyticsOptions = computed<ChartConfiguration['options']>(() => ({
+  vehicleTypeChartOptions = computed<ChartConfiguration['options']>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y' as const,
+    layout: { padding: { right: 20 } },
     scales: {
       x: {
         beginAtZero: true,
-        stacked: false,
-        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', drawTicks: false },
         ticks: {
-          color: this.isDarkMode() ? '#94A3B8' : '#475569',
+          color: this.isDarkMode() ? '#94A3B8' : '#64748B',
+          font: { family: "'Outfit', sans-serif" },
+          padding: 8,
           callback: (v: any) => '₹' + (v >= 1_00_000 ? (v / 1_00_000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
         },
         border: { display: false }
       },
       y: {
         grid: { display: false },
-        ticks: { color: this.isDarkMode() ? '#CBD5E1' : '#1E293B', font: { weight: '600' as const } },
+        ticks: {
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          font: { weight: 600, family: "'Inter', sans-serif", size: 12 },
+          padding: 8
+        },
         border: { display: false }
       }
     },
     plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          color: this.isDarkMode() ? '#E2E8F0' : '#1E293B',
-          padding: 16,
-          usePointStyle: true,
-          pointStyle: 'circle',
-          font: { size: 12, family: "'Inter', sans-serif" }
-        }
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: this.isDarkMode() ? 'rgba(15,26,54,0.95)' : 'rgba(255,255,255,0.97)',
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
         titleColor: this.isDarkMode() ? '#5BC0BE' : '#2563EB',
-        bodyColor: this.isDarkMode() ? '#F1F5F9' : '#0F172A',
-        borderColor: this.isDarkMode() ? 'rgba(91,192,190,0.3)' : 'rgba(37,99,235,0.2)',
+        bodyColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'Inter', sans-serif", size: 14, weight: 'bold' },
+        borderColor: this.isDarkMode() ? 'rgba(91,192,190,0.4)' : 'rgba(37,99,235,0.2)',
         borderWidth: 1,
-        padding: 12,
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true,
         callbacks: {
-          label: (ctx: any) => {
-            const val = ctx.parsed.x;
-            const formatted = '₹' + val.toLocaleString('en-IN');
-            return ` ${ctx.dataset.label}: ${formatted}`;
-          }
+          label: (ctx: any) => ` ${ctx.dataset.label}: ₹${ctx.parsed.x.toLocaleString('en-IN')}`
         }
       }
     }
-  } as any));
+  }));
+
+  vehicleTypeChartData: ChartData<'bar'> = {
+    labels: [],
+    datasets: []
+  };
 
   planClaimsCountOptions = computed<ChartConfiguration['options']>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y' as const,
+    layout: { padding: { right: 20 } },
     scales: {
       x: {
         beginAtZero: true,
         stacked: false,
-        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', drawTicks: false },
         ticks: {
-          color: this.isDarkMode() ? '#94A3B8' : '#475569',
+          color: this.isDarkMode() ? '#94A3B8' : '#64748B',
+          font: { family: "'Outfit', sans-serif" },
+          padding: 8,
           stepSize: 1,
           callback: (v: any) => Number.isInteger(v) ? v : ''
         },
@@ -556,7 +724,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
       },
       y: {
         grid: { display: false },
-        ticks: { color: this.isDarkMode() ? '#CBD5E1' : '#1E293B', font: { weight: '600' as const } },
+        ticks: {
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          font: { weight: '600' as const, family: "'Inter', sans-serif", size: 12 },
+          padding: 8
+        },
         border: { display: false }
       }
     },
@@ -564,20 +736,25 @@ export class AdminDashboard implements OnInit, OnDestroy {
       legend: {
         position: 'top',
         labels: {
-          color: this.isDarkMode() ? '#E2E8F0' : '#1E293B',
-          padding: 16,
+          color: this.isDarkMode() ? '#CBD5E1' : '#334155',
+          padding: 20,
           usePointStyle: true,
           pointStyle: 'circle',
-          font: { size: 12, family: "'Inter', sans-serif" }
+          font: { size: 13, family: "'Outfit', sans-serif", weight: 500 }
         }
       },
       tooltip: {
-        backgroundColor: this.isDarkMode() ? 'rgba(15,26,54,0.95)' : 'rgba(255,255,255,0.97)',
-        titleColor: this.isDarkMode() ? '#5BC0BE' : '#2563EB',
-        bodyColor: this.isDarkMode() ? '#F1F5F9' : '#0F172A',
-        borderColor: this.isDarkMode() ? 'rgba(91,192,190,0.3)' : 'rgba(37,99,235,0.2)',
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#A78BFA' : '#8B5CF6',
+        bodyColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'Inter', sans-serif", size: 14, weight: 'bold' },
+        borderColor: this.isDarkMode() ? 'rgba(167,139,250,0.4)' : 'rgba(139,92,246,0.2)',
         borderWidth: 1,
-        padding: 12,
+        padding: 16,
+        cornerRadius: 12,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
           label: (ctx: any) => ` ${ctx.dataset.label}: ${ctx.parsed.x}`
         }
@@ -700,67 +877,78 @@ export class AdminDashboard implements OnInit, OnDestroy {
     });
     this.loadAuditLogs();
 
-    // Load payments and claims together so we can cross-reference claim payouts
     this.adminService.getAllPayments().subscribe(payments => {
       this.payments.set(payments);
-      this.rebuildRevenueChart();
+      this.rebuildFinancialChart();
       this.rebuildPlanCharts();
     });
 
     this.adminService.getAllClaims().subscribe(res => {
       this.claims.set(res);
       this.updateClaimsChart(res);
-      this.rebuildRevenueChart();
+      this.rebuildFinancialChart();
       this.rebuildPlanCharts();
     });
     this.adminService.getAllUsers().subscribe(res => this.users.set(res));
     this.adminService.getAllTransfers().subscribe(res => this.transfers.set(res));
   }
 
-  rebuildRevenueChart() {
-    // Build the set of claim payout payment amounts to exclude
-    const claimSignatures = new Set<string>();
-    this.claims()
-      .filter((c: any) => c.status === 'Approved' || c.status === 1)
-      .forEach((c: any) => {
-        if (c.approvedAmount && c.policyId) {
-          claimSignatures.add(`${c.policyId}:${c.approvedAmount}`);
-        }
-      });
-
-    const premiumOnly = this.payments().filter((p: any) => {
-      const key = `${p.policyId}:${p.amount}`;
-      return !claimSignatures.has(key);
-    });
-
-    this.updateRevenueChart(premiumOnly);
-  }
-
-  updateRevenueChart(paymentData: any[]) {
-    const monthlyTotals = new Array(12).fill(0);
+  rebuildFinancialChart() {
+    const premiumTotals = new Array(12).fill(0);
+    const claimsTotals = new Array(12).fill(0);
     const now = new Date();
     const currentYear = now.getFullYear();
 
-    paymentData.forEach(p => {
-      const status = String(p.status || '').toLowerCase();
-      if (status === 'paid' || p.status === 1) {
-        const date = new Date(p.paymentDate);
-        if (date.getFullYear() === currentYear) {
-          monthlyTotals[date.getMonth()] += (p.amount || 0);
+    this.premiumPayments().forEach(p => {
+      const date = new Date(p.paymentDate);
+      if (date.getFullYear() === currentYear) {
+        premiumTotals[date.getMonth()] += (p.amount || 0);
+      }
+    });
+
+    this.claims().forEach(c => {
+      const status = String(c.status || c.Status || '').toLowerCase();
+      if (status === 'approved' || c.status === 1 || c.Status === 1) {
+        // Essential FIX: Added 'createdAt' which is the primary date field for claims
+        const dateStr = c.approvedDate || c.createdAt || c.CreatedAt || c.claimDate || c.ClaimDate || c.date || c.Date;
+        if (dateStr) {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            claimsTotals[d.getMonth()] += (c.approvedAmount || c.ApprovedAmount || 0);
+          }
         }
       }
     });
 
-    this.revenueChartData = {
+    this.premiumChartData = {
       labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       datasets: [
         {
-          data: monthlyTotals,
-          label: `Monthly Revenue (${currentYear})`,
-          backgroundColor: 'rgba(91,192,190,0.8)',
-          hoverBackgroundColor: '#5BC0BE',
-          borderRadius: 6,
-          borderSkipped: false
+          label: `Premium Revenue`,
+          data: premiumTotals,
+          backgroundColor: 'rgba(59,130,246,0.85)',
+          hoverBackgroundColor: '#60A5FA',
+          borderRadius: Number.MAX_VALUE,
+          borderSkipped: false,
+          barThickness: 24,
+          categoryPercentage: 0.8
+        }
+      ]
+    };
+
+    this.claimsPaidChartData = {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      datasets: [
+        {
+          label: `Claims Paid`,
+          data: claimsTotals,
+          borderColor: '#EF4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          borderWidth: 3,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#fff'
         }
       ]
     };
@@ -778,14 +966,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
       else pending++;
     });
 
-    this.claimsChartData = {
-      labels: ['✅ Approved', '❌ Rejected', '⏳ Under Review'],
+    this.claimsStatusChartData = {
+      labels: ['Approved', 'Rejected', 'Under Review'],
       datasets: [{
         data: [approved, rejected, pending],
-        backgroundColor: ['rgba(34, 197, 94, 0.85)', 'rgba(239, 68, 68, 0.85)', 'rgba(251, 191, 36, 0.85)'],
-        hoverBackgroundColor: ['#22C55E', '#EF4444', '#FBB724'],
-        borderColor: this.isDarkMode() ? '#0F1A36' : '#F8FAFC',
-        borderWidth: 3,
+        backgroundColor: ['rgba(52, 211, 153, 0.9)', 'rgba(251, 113, 133, 0.9)', 'rgba(251, 191, 36, 0.9)'],
+        hoverBackgroundColor: ['#34D399', '#FB7185', '#FBBF24'],
+        borderColor: this.isDarkMode() ? '#070F22' : '#FFFFFF',
+        borderWidth: 0,
         hoverOffset: 8
       }]
     };
@@ -905,33 +1093,39 @@ export class AdminDashboard implements OnInit, OnDestroy {
     ])).sort();
 
     // 8. Final Chart Construction
-    this.planPremiumsChartData = {
+    this.policyDistributionChartData = {
       labels: allPolicyTypes,
       datasets: [
-        { label: 'Premiums Collected', data: allPolicyTypes.map(t => premByPType.get(t) || 0), backgroundColor: 'rgba(91,192,190,0.82)', borderRadius: 5, barThickness: 18 },
-        { label: 'Claims Paid Out', data: allPolicyTypes.map(t => payoutByPType.get(t) || 0), backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 5, barThickness: 18 }
+        {
+          label: 'Active Policies',
+          data: allPolicyTypes.map(t => volByPType.get(t) || 0),
+          backgroundColor: [
+            'rgba(91,192,190,0.9)',
+            'rgba(59,130,246,0.9)',
+            'rgba(167,139,250,0.9)',
+            'rgba(244,63,94,0.9)',
+            'rgba(245,158,11,0.9)'
+          ],
+          hoverBackgroundColor: ['#7CE5E3', '#60A5FA', '#C4B5FD', '#FB7185', '#FCD34D'],
+          borderColor: this.isDarkMode() ? '#070F22' : '#FFFFFF',
+          borderWidth: 0,
+          hoverOffset: 8
+        }
       ]
     };
 
-    this.planClaimsChartData = {
-      labels: allPolicyTypes,
-      datasets: [
-        { label: 'Claim Volume', data: allPolicyTypes.map(t => volByPType.get(t) || 0), backgroundColor: 'rgba(251,191,36,0.85)', borderRadius: 5, barThickness: 18 }
-      ]
-    };
-
-    this.vehicleTypePremiumsChartData = {
+    this.vehicleTypeChartData = {
       labels: allVehicleTypes,
       datasets: [
-        { label: 'Premiums Collected', data: allVehicleTypes.map(t => premByVType.get(t) || 0), backgroundColor: 'rgba(59,130,246,0.82)', borderRadius: 5, barThickness: 18 },
-        { label: 'Claims Paid Out', data: allVehicleTypes.map(t => payoutByVType.get(t) || 0), backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 5, barThickness: 18 }
-      ]
-    };
-
-    this.vehicleTypeClaimsChartData = {
-      labels: allVehicleTypes,
-      datasets: [
-        { label: 'Claim Volume', data: allVehicleTypes.map(t => volByVType.get(t) || 0), backgroundColor: 'rgba(168,85,247,0.85)', borderRadius: 5, barThickness: 18 }
+        {
+          label: 'Premiums Collected',
+          data: allVehicleTypes.map(t => premByVType.get(t) || 0),
+          backgroundColor: 'rgba(59,130,246,0.9)',
+          hoverBackgroundColor: '#60A5FA',
+          borderRadius: Number.MAX_VALUE,
+          borderSkipped: false,
+          barThickness: 16
+        }
       ]
     };
   }

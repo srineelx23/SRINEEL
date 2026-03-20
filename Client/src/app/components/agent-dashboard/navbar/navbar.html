@@ -10,8 +10,7 @@
         <a (click)="switchTab('applications')" [class.active]="activeTab() === 'applications'"
             class="nav-item">Applications</a>
         <a (click)="switchTab('history')" [class.active]="activeTab() === 'history'" class="nav-item">History</a>
-        <a (click)="switchTab('customers')" [class.active]="activeTab() === 'customers'"
-            class="nav-item">Customers</a>
+        <a (click)="switchTab('customers')" [class.active]="activeTab() === 'customers'" class="nav-item">Customers</a>
     </div>
 
     <div class="sidebar-footer">
@@ -22,8 +21,7 @@
                     <span class="profile-role">{{ userRole() }}</span>
                     <span class="profile-name">{{ agentName() }}</span>
                 </div>
-                <i class="fa-solid fa-chevron-down"
-                    [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
+                <i class="fa-solid fa-chevron-down" [style.transform]="showUserDropdown() ? 'rotate(180deg)' : 'none'"
                     style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
             </div>
 

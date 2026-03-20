@@ -1,11 +1,13 @@
 <div class="tab-content fade-in">
-    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-            <h1 class="page-title">Policy Architect</h1>
-            <p class="page-subtitle">Deploy or modify underlying insurance products globally.</p>
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Policy Architect</h1>
+            <p>Deploy or modify underlying insurance products globally.</p>
         </div>
-        <button class="btn-primary" (click)="openPlanForm()">+ Architect New Plan</button>
-    </header>
+        <div class="header-actions" *ngIf="!isCreatingPlan()">
+            <button class="btn-primary" (click)="openPlanForm()">+ Architect New Plan</button>
+        </div>
+    </div>
 
     @if (isCreatingPlan()) {
     <div class="glass-panel slide-in"
@@ -22,12 +24,22 @@
                 </div>
                 <div class="form-group">
                     <label>Policy Category / Type <span style="color: var(--error);">*</span></label>
-                    <select name="policyType" class="form-control" [(ngModel)]="planForm().policyType" required>
-                        <option value="" disabled selected>Select Policy Type</option>
-                        @for (cat of policyCategories(); track cat) {
-                        <option [value]="cat">{{ cat }}</option>
+                    <div class="vims-custom-select" (click)="showFormPolicyTypeDropdown.set(!showFormPolicyTypeDropdown())">
+                        <div class="vims-select-trigger" [class.open]="showFormPolicyTypeDropdown()">
+                            <span>{{ planForm().policyType || 'Select Policy Type' }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        @if (showFormPolicyTypeDropdown()) {
+                        <div class="vims-select-options glass-panel fade-in" (mouseleave)="showFormPolicyTypeDropdown.set(false)">
+                            @for (cat of policyCategories(); track cat) {
+                            <div class="vims-option" [class.active]="planForm().policyType === cat" 
+                                (click)="planForm().policyType = cat; showFormPolicyTypeDropdown.set(false); $event.stopPropagation()">
+                                {{ cat }}
+                            </div>
+                            }
+                        </div>
                         }
-                    </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Base Premium (INR) <span style="color: var(--error);">*</span></label>
@@ -41,13 +53,22 @@
                 </div>
                 <div class="form-group">
                     <label>Applicable Vehicle Classification <span style="color: var(--error);">*</span></label>
-                    <select name="applicableVehicleType" class="form-control"
-                        [(ngModel)]="planForm().applicableVehicleType" required>
-                        <option value="" disabled selected>Select Vehicle Class</option>
-                        @for (vCat of vehicleCategories(); track vCat) {
-                        <option [value]="vCat">{{ vCat }}</option>
+                    <div class="vims-custom-select" (click)="showFormVehicleTypeDropdown.set(!showFormVehicleTypeDropdown())">
+                        <div class="vims-select-trigger" [class.open]="showFormVehicleTypeDropdown()">
+                            <span>{{ planForm().applicableVehicleType || 'Select Vehicle Class' }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        @if (showFormVehicleTypeDropdown()) {
+                        <div class="vims-select-options glass-panel fade-in" (mouseleave)="showFormVehicleTypeDropdown.set(false)">
+                            @for (vCat of vehicleCategories(); track vCat) {
+                            <div class="vims-option" [class.active]="planForm().applicableVehicleType === vCat" 
+                                (click)="planForm().applicableVehicleType = vCat; showFormVehicleTypeDropdown.set(false); $event.stopPropagation()">
+                                {{ vCat }}
+                            </div>
+                            }
+                        </div>
                         }
-                    </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -103,6 +124,18 @@
     <!-- Filters and Sorting -->
     <div class="plans-filter-bar glass-panel tint">
         <div class="filters-left">
+            <!-- New: Active/Inactive Toggles -->
+            <div class="status-toggle-group">
+                <button class="status-btn" [class.active]="planStatusFilter() === 'Active'" (click)="planStatusFilter.set('Active')">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Active Plans</span>
+                </button>
+                <button class="status-btn" [class.active]="planStatusFilter() === 'Inactive'" (click)="planStatusFilter.set('Inactive')">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                    <span>Inactive Plans</span>
+                </button>
+            </div>
+
             <!-- Vehicle Type Dropdown -->
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="showVehicleTypeDropdown.set(!showVehicleTypeDropdown())">

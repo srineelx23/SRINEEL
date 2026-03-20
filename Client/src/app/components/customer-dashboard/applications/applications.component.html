@@ -1,16 +1,11 @@
 <div class="tab-content fade-in">
-    <header class="page-header">
-        <h1 class="page-title">Vehicle Applications</h1>
-        <p class="page-subtitle">Track your submitted applications that are still under review or completed.</p>
-    </header>
-
-    <div class="glass-panel applications-panel">
-        @if (applications().length === 0) {
-        <p class="empty-applications">No applications found.</p>
-        }
-
-        @if (applications().length > 0) {
-        <div class="table-header-actions">
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Vehicle Applications</h1>
+            <p>Track your submitted applications that are still under review or completed.</p>
+        </div>
+        <div class="header-actions">
+            @if (applications().length > 0) {
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showApplicationsSortDropdown())">
                     <i class="fa-solid fa-arrow-down-wide-short"></i>
@@ -24,44 +19,64 @@
                 </div>
                 }
             </div>
+            }
         </div>
-        <table class="vims-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Registration No.</th>
-                    <th>Date Applied</th>
-                    <th>Status</th>
-                    <th>Rejection Reason</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (a of sortedApplications(); track (a.vehicleApplicationId || a.id || $index)) {
-                <tr>
-                    <td><span class="app-id">#{{ a.vehicleApplicationId }}</span></td>
-                    <td><span class="reg-no">{{ a.registrationNumber }}</span></td>
-                    <td>
-                        <div class="date-applied">
-                            <span class="date">{{ a.createdAt | date:'MMM d, y' }}</span>
-                            <span class="time">{{ a.createdAt | date:'h:mm a' }}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="status-badge" [ngClass]="a.status ? a.status.toLowerCase() : ''">
-                            {{ a.status === 'Pending' ? 'Under Review' : a.status }}
-                        </span>
-                    </td>
-                    <td>
-                        @if (a.status === 'Rejected') {
-                            <span class="rejection-text">{{ a.rejectionReason || 'No reason provided.' }}</span>
-                        } @else {
-                            <span style="color: var(--text-muted);">-</span>
-                        }
-                    </td>
-                </tr>
-                }
-            </tbody>
-        </table>
+    </div>
+
+    <div class="table-card">
+        @if (applications().length === 0) {
+            <p style="color: var(--text-muted); padding: 48px; text-align: center; font-style: italic;">No pending application history found for your account.</p>
+        }
+
+        @if (applications().length > 0) {
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>APP ID</th>
+                        <th>Vehicle</th>
+                        <th>Invoice Amount</th>
+                        <th>Applied Date</th>
+                        <th>Review Status</th>
+                        <th>Remarks/Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (a of sortedApplications(); track (a.vehicleApplicationId || a.id || $index)) {
+                    <tr>
+                        <td class="id-field">#{{ a.vehicleApplicationId }}</td>
+                        <td>
+                            <div class="vehicle-mini">
+                                <span class="reg-no">{{ a.registrationNumber }}</span>
+                                <span class="model-info">{{ a.make }} {{ a.model }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="semi-bold text-accent">{{ a.invoiceAmount | currency:'INR' }}</div>
+                        </td>
+                        <td>
+                            <div class="user-info">
+                                <span class="name" style="font-size: 0.9rem;">{{ a.createdAt | date:'MMM d, y' }}</span>
+                                <span class="sub">{{ a.createdAt | date:'h:mm a' }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-pill" [ngClass]="(a.status?.toString().toLowerCase() === 'approved' || a.status === 1) ? 'approved' : (a.status?.toString().toLowerCase() === 'rejected' || a.status === 2) ? 'rejected' : 'underreview'">
+                                {{ a.status?.toString().toLowerCase() === 'underreview' ? 'Under Review' : (a.status === 0 ? 'Under Review' : a.status) }}
+                            </span>
+                        </td>
+                        <td style="max-width: 300px;">
+                            @if (a.status === 'Rejected') {
+                                <span class="rejection-text italic-muted">{{ a.rejectionReason || 'No reason provided.' }}</span>
+                            } @else {
+                                <span style="color: var(--text-muted);">-</span>
+                            }
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
         }
     </div>
 </div>

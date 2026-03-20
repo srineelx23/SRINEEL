@@ -329,20 +329,38 @@
             <form class="vims-form" (ngSubmit)="onSubmitRenew.emit()">
                 <div class="renewal-grid">
                     <div class="form-group">
-                        <select id="newPlan" name="newPlan" [(ngModel)]="renewForm.NewPlanId" class="form-control" required>
-                            <option [ngValue]="null" disabled selected>Upgrade/Change Insurance Plan</option>
-                            @for (plan of filteredRenewPlans(); track (plan.planId || plan.id || $index)) {
-                            <option [value]="plan.planId">{{ plan.planName }}</option>
+                        <div class="vims-custom-select" (click)="showPlanDropdown.set(!showPlanDropdown())">
+                            <div class="vims-select-trigger" [class.open]="showPlanDropdown()">
+                                <span>{{ getPlanName(renewForm.NewPlanId) }}</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            @if (showPlanDropdown()) {
+                            <div class="vims-select-options glass-panel fade-in" (mouseleave)="showPlanDropdown.set(false)">
+                                @for (plan of filteredRenewPlans(); track (plan.planId || plan.id || $index)) {
+                                <div class="vims-option" [class.active]="renewForm.NewPlanId == plan.planId" (click)="selectPlan(plan.planId); $event.stopPropagation()">
+                                    {{ plan.planName }}
+                                </div>
+                                }
+                            </div>
                             }
-                        </select>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <select id="renewYears" name="renewYears" [(ngModel)]="renewForm.SelectedYears" class="form-control">
-                            <option value="1">Extend by 1 Year</option>
-                            <option value="2">Extend by 2 Years</option>
-                            <option value="3">Extend by 3 Years</option>
-                            <option value="4">Extend by 4 Years</option>
-                        </select>
+                        <div class="vims-custom-select" (click)="showYearsDropdown.set(!showYearsDropdown())">
+                            <div class="vims-select-trigger" [class.open]="showYearsDropdown()">
+                                <span>{{ renewForm.SelectedYears }} {{ renewForm.SelectedYears == 1 ? 'Year' : 'Years' }} Protection</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            @if (showYearsDropdown()) {
+                            <div class="vims-select-options glass-panel fade-in" (mouseleave)="showYearsDropdown.set(false)">
+                                <div class="vims-option" [class.active]="renewForm.SelectedYears == 1" (click)="selectYears(1); $event.stopPropagation()">1 Year Protection</div>
+                                <div class="vims-option" [class.active]="renewForm.SelectedYears == 2" (click)="selectYears(2); $event.stopPropagation()">2 Years Protection</div>
+                                <div class="vims-option" [class.active]="renewForm.SelectedYears == 3" (click)="selectYears(3); $event.stopPropagation()">3 Years Protection</div>
+                                <div class="vims-option" [class.active]="renewForm.SelectedYears == 4" (click)="selectYears(4); $event.stopPropagation()">4 Years Protection</div>
+                            </div>
+                            }
+                        </div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 16px; margin-top: 16px;">

@@ -53,7 +53,7 @@ namespace VIMS.Application.Services
             _passwordHasher = new PasswordHasher<User>();
         }
 
-        private const string DefaultPassword = "DefaultAgentPassword@123";
+        private const string DefaultPassword = "DefaultPassword@123";
         private const string WebhookUrl = "http://localhost:5678/webhook/send-account-email";
 
 

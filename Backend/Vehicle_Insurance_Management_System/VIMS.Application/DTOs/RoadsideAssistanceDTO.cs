@@ -15,5 +15,14 @@ namespace VIMS.Application.DTOs
 
         [JsonPropertyName("latitude")]
         public double Latitude { get; set; }
+
+        [JsonPropertyName("garageName")]
+        public string GarageName { get; set; } = string.Empty;
+
+        [JsonPropertyName("garagePhone")]
+        public string GaragePhone { get; set; } = string.Empty;
+
+        [JsonPropertyName("distance")]
+        public double Distance { get; set; }
     }
 }

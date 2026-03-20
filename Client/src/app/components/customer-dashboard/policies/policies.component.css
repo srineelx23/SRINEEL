@@ -84,6 +84,25 @@
     gap: 16px;
 }
 
+/* Renew Policy Specific Select Styling: No borders, focus on shadow/background */
+.renewal-grid .vims-select-trigger {
+    background-color: var(--card-inner-bg);
+}
+
+.renewal-grid .vims-select-trigger:hover,
+.renewal-grid .vims-select-trigger.open {
+    background-color: var(--bg-card);
+}
+
+/* Ensure label matches the background of the renewal module when active */
+.renewal-grid .vims-custom-select + .floating-label.active {
+    background: #0d1b2a; /* Solid Navy to match placeholder background */
+}
+
+[data-theme='light'] .renewal-grid .vims-custom-select + .floating-label.active {
+    background: #ffffff; /* Clean White for light mode */
+}
+
 /* Policy Cards Grid */
 .policy-cards-grid {
     display: grid;

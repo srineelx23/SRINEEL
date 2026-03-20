@@ -20,7 +20,9 @@ export class VehiclesComponent {
   vehicleClaims = input.required<any[]>();
   vehicleDocuments = input.required<any[]>();
 
-  vehicleIdvFilter = model<number>(0);
+  vehicleSearchFilter = model<string>('');
+  vehicleStatusFilter = model<string>('All');
+  showStatusDropdown = signal(false);
 
   onViewVehicleDetails = output<any>();
   onBackToVehicles = output<void>();

@@ -26,8 +26,18 @@ namespace VIMS.API.Controllers
         private readonly VIMS.Application.Interfaces.Repositories.IPaymentRepository _paymentRepository;
         private readonly IInvoiceService _invoiceService;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IGarageRepository _garageRepository;
 
-        public CustomerController(ICustomerService customerService, IPolicyPlanService policyPlanService, IPricingService pricingService, IPolicyRepository policyRepository, VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, IInvoiceService invoiceService, IHttpClientFactory httpClientFactory)
+        public CustomerController(
+            ICustomerService customerService, 
+            IPolicyPlanService policyPlanService, 
+            IPricingService pricingService, 
+            IPolicyRepository policyRepository, 
+            VIMS.Application.Interfaces.Repositories.IClaimsRepository claimsRepository, 
+            VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, 
+            IInvoiceService invoiceService, 
+            IHttpClientFactory httpClientFactory,
+            IGarageRepository garageRepository)
         {
             _customerService = customerService;
             _policyPlanService = policyPlanService;
@@ -37,6 +47,7 @@ namespace VIMS.API.Controllers
             _paymentRepository = paymentRepository;
             _invoiceService = invoiceService;
             _httpClientFactory = httpClientFactory;
+            _garageRepository = garageRepository;
         }
 
         [HttpGet("invoice/download/{paymentId}")]
@@ -429,11 +440,53 @@ namespace VIMS.API.Controllers
         [HttpPost("roadside-assistance")]
         public async Task<IActionResult> RoadsideAssistance([FromBody] RoadsideAssistanceDTO dto)
         {
+            var garages = await _garageRepository.GetAllAsync();
+            if (garages == null || !garages.Any())
+                return BadRequest("No active service centers available in the network.");
+
+            // Find closest garage based on coordinates
+            Garage? closestGarage = null;
+            double minDistance = double.MaxValue;
+
+            foreach (var g in garages)
+            {
+                var d = CalculateDistance(dto.Latitude, dto.Longitude, g.Latitude, g.Longitude);
+                if (d < minDistance)
+                {
+                    minDistance = d;
+                    closestGarage = g;
+                }
+            }
+
+            if (closestGarage != null)
+            {
+                dto.GarageName = closestGarage.GarageName;
+                
+                // Keep only numeric digits from the stored phone number
+                string digitsOnly = new string(closestGarage.PhoneNumber.Where(char.IsDigit).ToArray());
+                
+                // If it already starts with 91 and has 12 digits, just append '+'
+                if (digitsOnly.Length == 12 && digitsOnly.StartsWith("91"))
+                {
+                    dto.GaragePhone = "+" + digitsOnly;
+                }
+                else
+                {
+                    // For standard 10-digit numbers or other lengths, ensure +91 prefix
+                    // If it's 10 digits, we just prepend +91. 
+                    // If it was e.g. 090144... we should probably trim the leading 0 if we are adding +91
+                    string baseNumber = digitsOnly.Length > 10 && digitsOnly.StartsWith("0") ? digitsOnly.Substring(1) : digitsOnly;
+                    dto.GaragePhone = "+91" + (baseNumber.Length > 10 && baseNumber.StartsWith("91") ? baseNumber.Substring(2) : baseNumber);
+                }
+                
+                dto.Distance = Math.Round(minDistance, 2);
+            }
+
             var client = _httpClientFactory.CreateClient();
             var n8nUrl = "http://localhost:5678/webhook/39b2cd79-6ddc-4b5c-b32d-3566e2a4becc";
 
-            // Log the request payload being sent to n8n
-            Console.WriteLine("Sending Request to n8n Engine:");
+            // Log the enriched request payload being sent to n8n
+            Console.WriteLine("Sending Enriched Request to n8n Engine:");
             Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(dto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
             var response = await client.PostAsJsonAsync(n8nUrl, dto);
@@ -452,5 +505,19 @@ namespace VIMS.API.Controllers
             Console.WriteLine($"n8n Engine Error: {response.StatusCode}");
             return StatusCode((int)response.StatusCode, "Failed to connect to roadside assistance engine");
         }
+
+        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            var R = 6371; // Earth radius in km
+            var dLat = ToRadians(lat2 - lat1);
+            var dLon = ToRadians(lon2 - lon1);
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+        private double ToRadians(double deg) => deg * (Math.PI / 180);
     }
 }

@@ -75,5 +75,13 @@ namespace VIMS.Infrastructure.Repositories
             _vehicleInsuranceContext.Policies.Update(policy);
             await _vehicleInsuranceContext.SaveChangesAsync();
         }
+
+        public async Task<Dictionary<int, int>> GetPlanPurchaseCountsAsync()
+        {
+            return await _vehicleInsuranceContext.Policies
+                .GroupBy(p => p.PlanId)
+                .Select(g => new { PlanId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.PlanId, x => x.Count);
+        }
     }
 }

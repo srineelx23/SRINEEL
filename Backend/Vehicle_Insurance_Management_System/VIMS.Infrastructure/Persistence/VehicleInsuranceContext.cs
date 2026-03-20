@@ -24,6 +24,7 @@ namespace VIMS.Infrastructure.Persistence
         public DbSet<VehicleDocument> VehicleDocuments => Set<VehicleDocument>();
         public DbSet<PolicyTransfer> PolicyTransfers => Set<PolicyTransfer>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<Garage> Garages => Set<Garage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

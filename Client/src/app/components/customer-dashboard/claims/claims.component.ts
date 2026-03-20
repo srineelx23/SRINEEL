@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, Signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -21,6 +21,10 @@ export class ClaimsComponent {
   @Input() availableClaimTypes!: Signal<any[]>;
   @Input() claimsSortOption!: Signal<string>;
   @Input() showClaimsSortDropdown!: Signal<boolean>;
+
+  // Custom Dropdown State
+  showPolicyDropdown = signal(false);
+  showTypeDropdown = signal(false);
 
   @Output() onViewClaimDetails = new EventEmitter<any>();
   @Output() onStartClaim = new EventEmitter<void>();

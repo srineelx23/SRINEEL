@@ -1,10 +1,10 @@
-<div class="tab-content fade-in">
-    <header class="page-header">
-        <h1 class="page-title">All Claims</h1>
-        <p class="page-subtitle">Platform-wide insurance claims and their resolution status.</p>
-    </header>
-    <div class="glass-panel" style="padding: 24px;">
-        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+<div class="claims-container fade-in">
+    <div class="header-section">
+        <div class="header-text">
+            <h1>All Claims</h1>
+            <p>Platform-wide insurance claims and their resolution status.</p>
+        </div>
+        <div class="header-actions">
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="showClaimsSortDropdown.set(!showClaimsSortDropdown())">
                     <i class="fa-solid fa-arrow-down-wide-short"></i>
@@ -22,68 +22,84 @@
                 }
             </div>
         </div>
-        @if (sortedClaims().length === 0) {
-        <p style="color: var(--text-muted); font-style: italic;">No claims found.
-        </p>
-        }
-        @if (sortedClaims().length > 0) {
-        <table class="vims-table">
-            <thead>
-                <tr>
-                    <th>Claim No.</th>
-                    <th>Policy ID</th>
-                    <th>Type</th>
-                    <th>Filed Date</th>
-                    <th>Settlement</th>
-                    <th>Status</th>
-                    <th>Report</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (c of sortedClaims(); track (c.claimId || $index)) {
-                <tr>
-                    <td style="font-family: monospace; font-size: 0.9rem;">{{ c.claimNumber || '#' + c.claimId
-                        }}</td>
-                    <td style="color: var(--text-muted);">{{ c.policyId }}</td>
-                    <td>{{ c.claimType }}</td>
-                    <td>
-                        <div style="display: flex; flex-direction: column;">
-                            <span style="font-size: 0.9rem; font-weight: 600;">{{ c.createdAt | date:'dd MMM
-                                yyyy':'+0530' }}</span>
-                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt |
-                                date:'shortTime':'+0530' }}</span>
-                        </div>
-                    </td>
-                    <td style="font-weight: 700;">
-                        @if (c.status === 'Approved' || c.status === 1) {
-                            <span style="color: var(--error);">-{{ c.approvedAmount | currency:'INR' }}</span>
-                        } @else if (c.status === 'Rejected' || c.status === 2) {
-                            <span style="color: var(--text-muted);">N/A</span>
-                        } @else {
-                            <span style="color: var(--warning);">Pending...</span>
-                        }
-                    </td>
-                    <td>
-                        <span class="status-badge"
-                            [style.background]="(c.status === 'Approved' || c.status === 1) ? 'rgba(34,197,94,0.12)' : (c.status === 'Rejected' || c.status === 2) ? 'rgba(239,68,68,0.12)' : 'rgba(251,191,36,0.12)'"
-                            [style.color]="(c.status === 'Approved' || c.status === 1) ? 'var(--success)' : (c.status === 'Rejected' || c.status === 2) ? 'var(--error)' : 'var(--warning)'">
-                            {{ (c.status === 'Approved' || c.status === 1) ? 'Approved' : (c.status ===
-                            'Rejected' || c.status === 2) ? 'Rejected' : 'Under Review' }}
-                        </span>
-                    </td>
-                    <td>
-                        @if (c.status === 'Approved' || c.status === 1) {
-                        <button class="btn-outline-sm" (click)="onDownloadReport.emit(c.claimId)" title="Download Claim Report">
-                            <i class="fa-solid fa-file-pdf"></i> Claim Report
-                        </button>
-                        } @else {
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">--</span>
-                        }
-                    </td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        }
     </div>
+
+    @if (sortedClaims().length === 0) {
+    <div class="empty-state card">
+        <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+        <h3>No claims found</h3>
+        <p>Try adjusting your search or filter settings.</p>
+    </div>
+    }
+
+    @if (sortedClaims().length > 0) {
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Claim No.</th>
+                        <th>Policy ID</th>
+                        <th>Vehicle</th>
+                        <th>Type</th>
+                        <th>Filed Date</th>
+                        <th>Settlement</th>
+                        <th>Status</th>
+                        <th class="text-center" style="text-align: center !important;">Report</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (c of sortedClaims(); track (c.claimId || $index)) {
+                    <tr>
+                        <td class="id-field">#{{ c.claimNumber || c.claimId }}</td>
+                        <td><span class="policy-badge">{{ c.policyNumber || c.policyId }}</span></td>
+                        <td>
+                            @if (c.vehicle) {
+                            <div class="vehicle-mini">
+                                <span class="reg-no">{{ c.vehicle.registrationNumber }}</span>
+                                <span class="model-info">{{ c.vehicle.make }} {{ c.vehicle.model }}</span>
+                            </div>
+                            } @else {
+                            <span class="muted">N/A</span>
+                            }
+                        </td>
+                        <td>{{ c.claimType }}</td>
+                        <td>
+                            <div class="user-info">
+                                <span class="name" style="font-size: 0.9rem;">{{ c.createdAt | date:'dd MMM yyyy' }}</span>
+                                <span class="sub">{{ c.createdAt | date:'shortTime' }}</span>
+                            </div>
+                        </td>
+                        <td class="semi-bold">
+                            @if (c.status === 'Approved' || c.status === 1) {
+                                <span style="color: var(--error); font-weight: 800;">-{{ c.approvedAmount | currency:'INR' }}</span>
+                            } @else if (c.status === 'Rejected' || c.status === 2) {
+                                <span class="muted">N/A</span>
+                            } @else {
+                                <span class="text-warning">Pending...</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="status-pill" [class]="(c.status === 'Approved' || c.status === 1) ? 'approved' : (c.status === 'Rejected' || c.status === 2) ? 'rejected' : 'underreview'">
+                                {{ (c.status === 'Approved' || c.status === 1) ? 'Approved' : (c.status ===
+                                'Rejected' || c.status === 2) ? 'Rejected' : 'Under Review' }}
+                            </span>
+                        </td>
+                        <td class="text-center" style="text-align: center !important;">
+                            @if (c.status === 'Approved' || c.status === 1) {
+                            <button class="btn-icon" (click)="onDownloadReport.emit(c.claimId)" title="Download Claim Report">
+                                <i class="fa-solid fa-file-pdf"></i> 
+                                <span>Report</span>
+                            </button>
+                            } @else {
+                            <span class="muted">--</span>
+                            }
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    }
 </div>

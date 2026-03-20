@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;700&display=swap');
-@import '@fortawesome/fontawesome-free/css/all.min.css';
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
 
@@ -415,7 +416,139 @@ a:hover {
     box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
-/* Specific Select Styling */
+/* Global Custom Select Architecture (Matches All-Vehicles grid design) */
+.vims-custom-select {
+    position: relative;
+    width: 100%;
+    cursor: pointer;
+}
+
+.vims-select-trigger {
+    width: 100%;
+    padding: 16px 20px;
+    background-color: #0d1b2a; /* Solid Navy */
+    border: 2px solid transparent; /* Hide border by default */
+    border-radius: 12px;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); /* Integrated shadow provides definition */
+}
+
+[data-theme='light'] .vims-select-trigger {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.vims-select-trigger:hover, .vims-select-trigger.open {
+    background-color: #172a45;
+    border-color: var(--accent); /* Show border on hover */
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); /* Enhanced shadow on interaction */
+}
+
+[data-theme='light'] .vims-select-trigger:hover, 
+[data-theme='light'] .vims-select-trigger.open {
+    background-color: #f1f5f9;
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.vims-select-trigger i {
+    font-size: 0.9rem;
+    color: var(--accent);
+    transition: transform 0.3s ease;
+}
+
+.vims-select-trigger.open i {
+    transform: rotate(180deg);
+}
+
+.vims-select-options {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: 100%;
+    min-width: 280px;
+    background: #0d1b2a;
+    border: none; /* Removed border from options container */
+    border-radius: 16px;
+    padding: 12px;
+    z-index: 2000;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    display: grid;
+    grid-template-columns: 1fr; /* Default to list */
+    gap: 8px;
+}
+
+/* Dynamic grid scaling for dropdown options */
+.vims-select-options:has(.vims-option:nth-child(5)) {
+    grid-template-columns: 1fr 1fr;
+    min-width: 480px;
+}
+
+.vims-select-options:has(.vims-option:nth-child(7)) {
+    grid-template-columns: 1fr 1fr 1fr;
+    min-width: 700px;
+}
+
+[data-theme='light'] .vims-select-options {
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.vims-option {
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.vims-option:hover, .vims-option.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+[data-theme='light'] .vims-option {
+    color: #475569;
+}
+
+[data-theme='light'] .vims-option:hover, 
+[data-theme='light'] .vims-option.active {
+    background: #f1f5f9;
+    color: var(--accent);
+}
+
+/* Ensure floating labels work with custom selects */
+.vims-custom-select + .floating-label.active {
+    top: 0;
+    left: 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #3b82f6; /* Prominent Blue */
+    background: #0d1b2a; /* Solid Dark Background */
+    transform: translateY(-50%);
+    opacity: 1;
+    z-index: 10;
+}
+
+[data-theme='light'] .vims-custom-select + .floating-label.active {
+    background: #ffffff;
+    color: #2563eb; /* Primary Blue for light theme */
+}
+
+/* Specific Select Styling - Unified Premium Look */
 select.form-control {
     cursor: pointer;
     appearance: none;
@@ -424,20 +557,35 @@ select.form-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%235BC0BE' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
     background-position: right 1.25rem center !important;
-    background-size: 1rem !important;
+    background-size: 1.1rem !important;
     padding-right: 3.5rem !important;
-    background-color: var(--bg-card);
+    background-color: #0d1b2a; /* Solid background for dark mode */
+    border: 2px solid transparent; /* Hide border by default */
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transition: all 0.25s ease;
+}
+
+select.form-control:hover, select.form-control:focus {
+    border-color: var(--accent);
 }
 
 [data-theme='light'] select.form-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
     background-color: #ffffff;
+    border-color: transparent;
 }
 
 select.form-control option {
-    background: var(--bg-card);
+    background-color: #0d1b2a;
     color: var(--text-main);
     padding: 12px;
+}
+
+[data-theme='light'] select.form-control option {
+    background-color: #ffffff;
+    color: #1e293b;
 }
 
 /* Global Select Reset to match premium design */
@@ -469,9 +617,15 @@ select.form-control~.floating-label {
     font-size: 0.8rem;
     font-weight: 700;
     color: var(--accent);
-    background: var(--bg-card);
+    background: #0d1b2a; /* Match the new solid select background */
     transform: translateY(-50%);
     opacity: 1;
+}
+
+[data-theme='light'] .form-control:focus~.floating-label,
+[data-theme='light'] .form-control:not(:placeholder-shown)~.floating-label,
+[data-theme='light'] select.form-control~.floating-label {
+    background: #ffffff;
 }
 
 /* Small Select Variation */
@@ -483,27 +637,27 @@ select.form-control~.floating-label {
     background-repeat: no-repeat !important;
     background-position: right 16px center !important;
     background-size: 14px !important;
-    background-color: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    border-radius: 14px; /* Unified radius */
-    padding: 11px 44px 11px 20px;
+    background-color: #0d1b2a;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 10px 44px 10px 16px;
     color: var(--text-main);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    min-width: 170px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .vims-select-sm:hover {
     border-color: var(--accent);
-    background-color: var(--accent-glow);
+    box-shadow: 0 0 0 4px var(--accent-glow);
     transform: translateY(-1px);
 }
 
 [data-theme='light'] .vims-select-sm {
     background-color: #ffffff;
+    border-color: var(--accent);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232563EB' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
@@ -704,7 +858,7 @@ select.form-control~.floating-label {
 /* KPI Grid */
 .overview-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
     margin-bottom: 32px;
 }
@@ -712,8 +866,8 @@ select.form-control~.floating-label {
 .kpi-card {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 20px 22px;
+    justify-content: space-around;
+    padding: 16px 20px;
     border-radius: 16px;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -736,49 +890,43 @@ select.form-control~.floating-label {
 }
 
 .kpi-icon {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.08);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 .kpi-icon i {
     font-size: 1.15rem;
 }
 
-.kpi-body {
-    flex: 1;
-    min-width: 0;
-}
+/* kpi-body is removed from HTML */
 
 .kpi-value {
     font-family: var(--font-heading);
-    font-size: 1.9rem;
-    font-weight: 700;
+    font-size: 1.7rem;
+    font-weight: 800;
     line-height: 1;
-    margin-bottom: 4px;
+    margin: 0;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .kpi-label {
-    font-size: 0.82rem;
-    font-weight: 500;
+    font-size: 0.9rem;
+    font-weight: 700;
     opacity: 0.8;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .kpi-arrow {
-    font-size: 1.2rem;
-    opacity: 0.5;
-    flex-shrink: 0;
-    transition: opacity 0.2s, transform 0.2s;
+    display: none;
 }
 
 .kpi-card:hover .kpi-arrow {
@@ -818,24 +966,23 @@ select.form-control~.floating-label {
 }
 
 .kpi-info {
-    background: linear-gradient(135deg, rgba(99, 179, 237, 0.15), rgba(99, 179, 237, 0.06));
-    border-color: rgba(99, 179, 237, 0.25);
-    color: #63B3ED;
+    background: linear-gradient(135deg, rgba(43, 108, 176, 0.2), rgba(43, 108, 176, 0.08));
+    border-color: rgba(43, 108, 176, 0.4);
+    color: #4299E1;
 }
 
 .kpi-info .kpi-value {
-    color: #63B3ED;
+    color: #4299E1;
 }
 
 .kpi-payments {
-    background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(167, 139, 250, 0.06));
-    border-color: rgba(167, 139, 250, 0.25);
-    color: #A78BFA;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.08));
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #EF4444;
 }
 
 .kpi-payments .kpi-value {
-    color: #A78BFA;
-    font-size: 1.4rem;
+    color: #EF4444;
 }
 
 /* Light theme overrides for KPI cards */
@@ -852,16 +999,23 @@ select.form-control~.floating-label {
 }
 
 [data-theme='light'] .kpi-info {
-    background: linear-gradient(135deg, rgba(99, 179, 237, 0.12), rgba(99, 179, 237, 0.04));
+    background: linear-gradient(135deg, rgba(43, 108, 176, 0.15), rgba(43, 108, 176, 0.05));
+    color: #2b6cb0;
+    border-color: rgba(43, 108, 176, 0.3);
+}
+
+[data-theme='light'] .kpi-info .kpi-value {
+    color: #2c5282;
 }
 
 [data-theme='light'] .kpi-payments {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(139, 92, 246, 0.04));
-    color: #8b5cf6;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(220, 38, 38, 0.05));
+    color: #dc2626;
+    border-color: rgba(220, 38, 38, 0.3);
 }
 
 [data-theme='light'] .kpi-payments .kpi-value {
-    color: #7c3aed;
+    color: #b91c1c;
 }
 
 [data-theme='light'] .kpi-label {
@@ -1548,5 +1702,334 @@ select.form-control~.floating-label {
     background: rgba(139, 92, 246, 0.25) !important;
     color: #c4b5fd !important;
     border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+
+/* ========================================
+   ADMIN DASHBOARD STANDARDIZED COMPONENTS
+   ======================================== */
+
+/* Header & Typography */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.header-text h1 {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px 0 !important;
+    letter-spacing: -0.02em;
+}
+
+.header-text p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0 !important;
+    line-height: 1.5;
+}
+
+.header-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+/* Custom Dropdown System */
+.vims-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.vims-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text-main);
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.vims-dropdown-trigger:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    transform: translateY(-1px);
+}
+
+.vims-dropdown-trigger i {
+    color: var(--accent);
+    font-size: 0.85rem;
+}
+
+.vims-dropdown-trigger i:last-child {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    margin-left: 4px;
+}
+
+.vims-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 220px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    z-index: 1000;
+    animation: dropdownFade 0.2s ease-out;
+}
+
+@keyframes dropdownFade {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vims-dropdown-item {
+    width: 100%;
+    padding: 12px 20px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: block;
+}
+
+.vims-dropdown-item:hover {
+    background: var(--accent-glow);
+    padding-left: 24px;
+    color: var(--accent);
+}
+
+.vims-dropdown-item.active {
+    background: rgba(91, 192, 190, 0.1);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.vims-dropdown-divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 6px 0;
+}
+
+/* Unified Page Header & Action Section */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-text h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.header-text p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Shared Data Table Styles */
+.table-card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.data-table, .vims-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .vims-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.4rem 1.6rem;
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-light);
+    font-weight: 700;
+}
+
+.data-table td, .vims-table td {
+    padding: 1.4rem 1.6rem;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.95rem;
+    color: var(--text-main);
+    vertical-align: middle;
+}
+
+.data-table tr:hover, .vims-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.data-table tr:last-child td, .vims-table tr:last-child td {
+    border-bottom: none;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.id-field {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.status-pill.completed, .status-pill.accepted, .status-pill.paid, .status-pill.approved, .status-pill.active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+}
+
+.status-pill.pending, .status-pill.underreview, .status-pill.submitted {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning);
+}
+
+.status-pill.rejected, .status-pill.cancelled, .status-pill.inactive, .status-pill.expired {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+}
+
+.status-pill.neutral {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: 1px solid var(--border-light);
+}
+
+.status-pill.claimed {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa; /* Soft purple for dark theme */
+}
+
+[data-theme='light'] .status-pill.claimed {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed; /* Deeper purple for light theme */
+}
+
+.policy-badge {
+    background: rgba(91, 192, 190, 0.1);
+    color: var(--accent);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid rgba(91, 192, 190, 0.2);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info .name {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.user-info .sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.vehicle-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vehicle-mini .reg-no {
+    font-family: 'Courier New', Monaco, 'Lucida Console', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.vehicle-mini .model-info {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(91, 192, 190, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(91, 192, 190, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.btn-icon:hover {
+    background: rgba(91, 192, 190, 0.2);
+    transform: translateY(-2px);
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center !important;
 }
 

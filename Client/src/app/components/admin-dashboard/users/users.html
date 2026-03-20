@@ -1,10 +1,10 @@
-<div class="tab-content fade-in">
-    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-            <h1 class="page-title">Identity Access Management</h1>
-            <p class="page-subtitle">Configure system users, support officers, and agents.</p>
+<div class="users-dashboard fade-in">
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Identity Access Management</h1>
+            <p>Configure system users, support officers, and agents.</p>
         </div>
-        <div style="display: flex; gap: 16px; align-items: center;">
+        <div class="header-actions">
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="showRoleDropdown.set(!showRoleDropdown())">
                     <i class="fa-solid fa-filter" style="font-size: 0.9rem; color: var(--accent);"></i>
@@ -14,41 +14,56 @@
                         style="transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted);"></i>
                 </div>
                 @if (showRoleDropdown()) {
-                <div class="vims-dropdown-menu fade-in" (mouseleave)="showRoleDropdown.set(false)">
+                <div class="vims-dropdown-menu right-align fade-in" (mouseleave)="showRoleDropdown.set(false)">
                     @for (role of rolesList(); track role) {
                     <div class="vims-dropdown-item" [class.active]="userRoleFilter() === role"
-                        (click)="userRoleFilter.set(role); showRoleDropdown.set(false)">
-                        {{ role === 'All' ? 'All Roles' : role }}
+                        (click)="userRoleFilter.set(role); showRoleDropdown.set(false)"
+                        style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid" [ngClass]="{
+                            'fa-users': role === 'All',
+                            'fa-user-gear': role === 'Admin',
+                            'fa-headset': role === 'Agent',
+                            'fa-user-shield': role === 'ClaimsOfficer',
+                            'fa-user': role === 'Customer'
+                        }" style="width: 16px; text-align: center; opacity: 0.7;"></i>
+                        <span>{{ role === 'All' ? 'All Roles' : role }}</span>
                     </div>
                     }
                 </div>
                 }
             </div>
-            <button class="btn-primary" (click)="openUserForm('Agent')">+ Provision Agent</button>
-            <button class="btn-primary" (click)="openUserForm('ClaimsOfficer')"
-                style="background: var(--accent);">+ Provision Officer</button>
+            <button class="btn-icon" (click)="openUserForm('Agent')">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>Provision Agent</span>
+            </button>
+            <button class="btn-icon" (click)="openUserForm('ClaimsOfficer')">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Provision Officer</span>
+            </button>
         </div>
-    </header>
+    </div>
 
     <!-- Creation Module -->
     @if (isCreatingAgent() || isCreatingClaimsOfficer()) {
     <div class="glass-panel slide-in"
-        style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative;">
-        <button class="btn-outline" style="position: absolute; top: 24px; right: 24px; min-width: auto;"
-            (click)="cancelCreation()">Cancel</button>
-        <h2 style="margin-bottom: 24px;">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New
-            Claims Officer' }}</h2>
+        style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); margin-bottom: 24px; position: relative; border-radius: 16px;">
+        <button class="btn-icon" style="position: absolute; top: 24px; right: 24px;"
+            (click)="cancelCreation()">
+            <i class="fa-solid fa-xmark"></i>
+            <span>Cancel</span>
+        </button>
+        <h2 style="margin-bottom: 24px; font-family: var(--font-heading); color: var(--text-main);">{{ isCreatingAgent() ? 'Provision New Support Agent' : 'Provision New Claims Officer' }}</h2>
         <form class="vims-form" (ngSubmit)="submitUserRegistration()">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                 <div>
-                    <label>Full Assigned Name</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Full Assigned Name</label>
                     <input type="text" name="fullName" class="form-control" [(ngModel)]="registerForm().fullName"
-                        required>
+                        required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-light); border-radius: 8px; color: var(--text-main);">
                 </div>
                 <div>
-                    <label>Secure Identifier (Email)</label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Secure Identifier (Email)</label>
                     <input type="email" name="email" class="form-control" [(ngModel)]="registerForm().email"
-                        required email #emailInput="ngModel">
+                        required email #emailInput="ngModel" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-light); border-radius: 8px; color: var(--text-main);">
                     @if (emailInput.invalid && (emailInput.dirty || emailInput.touched)) {
                     <div style="color: var(--error); font-size: 0.8rem; margin-top: 4px;">
                         Please enter a valid email address.
@@ -57,43 +72,58 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary">Provision Identity</button>
-
+            <button type="submit" class="btn-icon" style="background: var(--accent); color: white; border: none; padding: 12px 24px;">
+                <i class="fa-solid fa-check"></i>
+                <span>Provision Identity</span>
+            </button>
         </form>
     </div>
     }
 
     <!-- Users List -->
     @if (!isCreatingAgent() && !isCreatingClaimsOfficer()) {
-    <div class="glass-panel" style="padding: 24px;">
         @if (filteredUsers().length === 0) {
-        <p style="color: var(--text-muted); font-style: italic;">No users
-            mapped to this filter.</p>
+        <div class="empty-state card">
+            <div class="empty-icon"><i class="fas fa-users-slash"></i></div>
+            <h3>No users found</h3>
+            <p>No identities are mapped to this current filter.</p>
+        </div>
         }
         @if (filteredUsers().length > 0) {
-        <table class="vims-table">
-            <thead>
-                <tr>
-                    <th>Database ID</th>
-                    <th>Full Name</th>
-                    <th>Identifier (Email)</th>
-                    <th>Authorization Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (u of filteredUsers(); track (u.userId || $index)) {
-                <tr>
-                    <td>#{{ u.userId }}</td>
-                    <td>{{ u.fullName }}</td>
-                    <td>{{ u.email }}</td>
-                    <td><span class="status-badge"
-                            style="background: var(--card-inner-border); color: var(--text-main);">{{
-                            u.displayRole }}</span></td>
-                </tr>
-                }
-            </tbody>
-        </table>
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Database ID</th>
+                            <th>Full Name</th>
+                            <th>Identifier (Email)</th>
+                            <th>Authorization Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (u of filteredUsers(); track (u.userId || $index)) {
+                        <tr>
+                            <td class="id-field">#{{ u.userId }}</td>
+                            <td class="semi-bold">{{ u.fullName }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                <span class="status-pill neutral" style="gap: 8px;">
+                                    <i class="fa-solid" [ngClass]="{
+                                        'fa-user-gear': u.displayRole === 'Admin',
+                                        'fa-headset': u.displayRole === 'Agent',
+                                        'fa-user-shield': u.displayRole === 'ClaimsOfficer',
+                                        'fa-user': u.displayRole === 'Customer'
+                                    }" style="opacity: 0.7; font-size: 0.8rem;"></i>
+                                    {{ u.displayRole }}
+                                </span>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
         }
-    </div>
     }
 </div>

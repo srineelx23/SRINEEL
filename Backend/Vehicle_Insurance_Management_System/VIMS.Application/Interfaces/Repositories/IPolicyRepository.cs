@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,5 +16,6 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<Policy?> GetByIdAsync(int policyId);
         Task UpdateAsync(Policy policy);
         Task<List<Policy>> GetAllAsync();
+        Task<Dictionary<int, int>> GetPlanPurchaseCountsAsync();
     }
 }

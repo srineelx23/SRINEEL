@@ -18,6 +18,7 @@ namespace VIMS.API.Tests
         private readonly Mock<IAuditService> _auditMock;
 
         private readonly Mock<IInvoiceService> _invoiceMock;
+        private readonly Mock<IGarageService> _garageServiceMock;
         private readonly AdminController _adminController;
 
 
@@ -28,13 +29,15 @@ namespace VIMS.API.Tests
             _claimsServiceMock = new Mock<IClaimsService>();
             _auditMock = new Mock<IAuditService>();
             _invoiceMock = new Mock<IInvoiceService>();
+            _garageServiceMock = new Mock<IGarageService>();
 
             _adminController = new AdminController(
                 _adminServiceMock.Object,
                 _planServiceMock.Object,
                 _claimsServiceMock.Object,
                 _auditMock.Object,
-                _invoiceMock.Object);
+                _invoiceMock.Object,
+                _garageServiceMock.Object);
         }
 
 

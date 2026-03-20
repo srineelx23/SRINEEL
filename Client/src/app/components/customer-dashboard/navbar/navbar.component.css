@@ -47,18 +47,22 @@
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 0 40px;
+    padding: 10px 40px;
     /* Faded transition at the ends */
     mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
 }
 
-/* Centering trick that allows scrolling left/right when overflowing */
-.sidebar-nav::before,
-.sidebar-nav::after {
+.sidebar-nav::before {
     content: '';
     flex: 1;
     min-width: 0;
+}
+
+.sidebar-nav::after {
+    content: '';
+    flex: 1;
+    min-width: 40px; /* Ensure last item + badge don't get masked */
 }
 
 .sidebar-nav::-webkit-scrollbar {

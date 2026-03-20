@@ -19,11 +19,14 @@ export class PlansComponent {
 
   planVehicleTypeFilter = model.required<string>();
   planTypeFilter = model.required<string>();
+  planStatusFilter = model.required<'Active' | 'Inactive'>();
   plansSortOption = model.required<string>();
   showPlansSortDropdown = model.required<boolean>();
   
   showVehicleTypeDropdown = signal(false);
   showPlanTypeDropdown = signal(false);
+  showFormPolicyTypeDropdown = signal(false);
+  showFormVehicleTypeDropdown = signal(false);
 
   onOpenPlanForm = output<void>();
   onSubmitPlanRegistration = output<void>();

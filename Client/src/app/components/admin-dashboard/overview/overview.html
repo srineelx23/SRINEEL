@@ -1,97 +1,182 @@
-<div class="tab-content fade-in">
-    <header class="page-header">
-        <p style="color: var(--accent); font-weight: 500; font-size: 1.1rem; margin-bottom: 8px;">Platform Administration Hub</p>
-        <h1 class="page-title">Welcome, {{ adminName() }}! 👋</h1>
-        <p class="page-subtitle">Platform-wide statistics, revenue generation, and claims tracking.</p>
-    </header>
-
-    <div class="dashboard-cards" style="margin-bottom: 32px;">
-        <div class="stat-card glass-panel" style="border-left: 4px solid var(--accent);">
-            <h3>Gross Premiums (Revenue)</h3>
-            <p class="stat-number" style="color: var(--accent);">+{{ totalRevenue() | currency:'INR' }}</p>
-        </div>
-        <div class="stat-card glass-panel" style="border-left: 4px solid var(--error);">
-            <h3>Claim Payouts (Losses)</h3>
-            <p class="stat-number" style="color: var(--error);">-{{ totalPayoutAmount() | currency:'INR' }}</p>
-        </div>
-        <div class="stat-card glass-panel"
-            [ngStyle]="{'border-left': netProfit() >= 0 ? '4px solid var(--success)' : '4px solid var(--error)'}">
-            <h3>Net Profit / Reserve</h3>
-            <p class="stat-number" [ngStyle]="{'color': netProfit() >= 0 ? 'var(--success)' : 'var(--error)'}">
-                {{ netProfit() < 0 ? '-' : '+' }}{{ (netProfit() < 0 ? -netProfit() : netProfit()) |
-                    currency:'INR' }} </p>
-        </div>
-        <div class="stat-card glass-panel" style="border-left: 4px solid var(--warning);">
-            <h3>Policies & Claims</h3>
-            <p class="stat-number" style="color: var(--warning); font-size: 1.5rem; margin-top: 10px;">{{
-                totalActivePolicies() }} Active | {{ totalClaimsApproved() }} Resolved</p>
-        </div>
-    </div>
-
-    <!-- Dashboard Charts -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
-        <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 8px;">Revenue History (Current Year)</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Monthly premium
-                collections</p>
-            <div style="height: 280px; width: 100%;">
-                <canvas baseChart [data]="revenueChartData()" [options]="revenueChartOptions()"
-                    [type]="revenueChartType()"></canvas>
+<div class="dash-wrapper">
+    <!-- Top KPIs -->
+    <div class="top-kpis">
+        <div class="bg-white kpi-main-box">
+            <div class="kpi-header-row">
+                <div class="title-sm">Gross Written Premium</div>
+                <div class="val-xl text-success">{{ grossPremium() | currency:'INR':'symbol':'1.0-2' }}</div>
+            </div>
+            <div class="text-muted kpi-middle-row">
+                More than yesterday
+                <div class="trend-pill green"><i class="fas fa-caret-up"></i> 11.9%</div>
             </div>
         </div>
 
-        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 4px;">Portfolio Health</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;">Claim status
-                distribution</p>
-            <div style="flex: 1; min-height: 340px;">
-                <canvas baseChart [data]="claimsChartData()" [options]="claimsChartOptions()"
-                    [type]="claimsChartType()"></canvas>
+        <div class="bg-white kpi-main-box">
+            <div class="kpi-header-row">
+                <div class="title-sm">Total Claims Paid</div>
+                <div class="val-xl text-danger">{{ claimsPaid() | currency:'INR':'symbol':'1.0-2' }}</div>
+            </div>
+            <div class="text-muted kpi-middle-row">
+                More than yesterday
+                <div class="trend-pill red"><i class="fas fa-caret-down"></i> 1.2%</div>
+            </div>
+        </div>
+
+        <div class="bg-white kpi-main-box">
+            <div class="kpi-header-row">
+                <div class="title-sm">Net Reserve</div>
+                <div class="val-xl" [class.text-success]="netReserve() >= 0" [class.text-danger]="netReserve() < 0">
+                    {{ netReserve() | currency:'INR':'symbol':'1.0-2' }}
+                </div>
+            </div>
+            <div class="text-muted kpi-middle-row">
+                Stable growth
+                <div class="trend-pill green"><i class="fas fa-caret-up"></i> 5.4%</div>
+            </div>
+        </div>
+
+        <div class="bg-white kpi-main-box">
+            <div class="kpi-header-row">
+                <div class="title-sm">Average Loss Ratio</div>
+                <div class="val-xl" [class.text-danger]="lossRatio() > 100">{{ lossRatio() | number:'1.2-2' }}%</div>
+            </div>
+            <div class="text-muted kpi-middle-row">
+                More than yesterday
+                <div class="trend-pill green"><i class="fas fa-caret-up"></i> 11.9%</div>
             </div>
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-        <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 8px;">Performance by Policy Type</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial comparison
-                by insurance category</p>
-            <div style="height: 300px; width: 100%;">
-                <canvas baseChart [data]="planPremiumsChartData()" [options]="planAnalyticsOptions()"
-                    [type]="planBarChartType()"></canvas>
+    <!-- Separate Main Charts Row -->
+    <div class="chart-grid-2" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 24px;">
+        <!-- Premium Revenue Bar Chart -->
+        <div class="bg-white chart-card-medium" style="height: 400px; display: flex; flex-direction: column;">
+            <div class="chart-header-row" style="margin-bottom: 24px;">
+                <div>
+                    <div class="title-sm">Premium Revenue</div>
+                    <div class="val-xl text-success" style="margin: 8px 0;">{{ grossPremium() | currency:'INR':'symbol':'1.0-2' }}</div>
+                    <span class="text-muted" style="display: flex; align-items: center; gap: 8px;">
+                        Income from written premiums
+                        <div class="trend-pill green" style="margin-left: 0;"><i class="fas fa-caret-up"></i> 11.9%</div>
+                    </span>
+                </div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas baseChart [data]="premiumChartData()" [options]="premiumChartOptions()" [type]="'bar'"></canvas>
             </div>
         </div>
 
-        <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 8px;">Claims by Policy Type</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume of claims
-                handled per category</p>
-            <div style="height: 300px; width: 100%;">
-                <canvas baseChart [data]="planClaimsChartData()" [options]="planClaimsCountOptions()"
-                    [type]="planBarChartType()"></canvas>
+        <!-- Claims Paid Line Chart -->
+        <div class="bg-white chart-card-medium" style="height: 400px; display: flex; flex-direction: column;">
+            <div class="chart-header-row" style="margin-bottom: 24px;">
+                <div>
+                    <div class="title-sm">Claims Paid</div>
+                    <div class="val-xl text-danger" style="margin: 8px 0;">{{ claimsPaid() | currency:'INR':'symbol':'1.0-2' }}</div>
+                    <span class="text-muted" style="display: flex; align-items: center; gap: 8px;">
+                        Total claim payouts
+                        <div class="trend-pill red" style="margin-left: 0;"><i class="fas fa-caret-down"></i> 3.4%</div>
+                    </span>
+                </div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas baseChart [data]="claimsPaidChartData()" [options]="claimsPaidChartOptions()" [type]="'line'"></canvas>
             </div>
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
-        <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 8px;">Performance by Vehicle Type</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Financial metrics by
-                vehicle classification</p>
-            <div style="height: 300px; width: 100%;">
-                <canvas baseChart [data]="vehicleTypePremiumsChartData()" [options]="planAnalyticsOptions()"
-                    [type]="planBarChartType()"></canvas>
+    <!-- 3 Small Charts Row -->
+    <div class="chart-grid-3">
+        <!-- 1. Active Policies -->
+        <div class="bg-white chart-card-medium">
+            <div class="chart-header-row" style="margin-bottom: 24px;">
+                <div>
+                    <div class="title-sm">Policy Distribution</div>
+                    <div class="text-muted">Total {{ activePoliciesCount() }} active policies</div>
+                </div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas baseChart [data]="policyDistributionChartData()" [options]="policyDistributionChartOptions()" [type]="'doughnut'"></canvas>
             </div>
         </div>
 
-        <div class="glass-panel" style="padding: 24px;">
-            <h3 style="margin-bottom: 8px;">Claims by Vehicle Type</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Volume tracking by
-                vehicle category</p>
-            <div style="height: 300px; width: 100%;">
-                <canvas baseChart [data]="vehicleTypeClaimsChartData()" [options]="planClaimsCountOptions()"
-                    [type]="planBarChartType()"></canvas>
+        <!-- 2. Processing Pipeline -->
+        <div class="bg-white chart-card-medium">
+            <div class="chart-header-row" style="margin-bottom: 24px;">
+                <div>
+                    <div class="title-sm">Claims Pipeline</div>
+                    <div class="text-muted">{{ pendingClaimsCount() }} Pending claims processing</div>
+                </div>
             </div>
+            <div class="chart-canvas-container">
+                <canvas baseChart [data]="claimsStatusChartData()" [options]="claimsStatusChartOptions()" [type]="'doughnut'"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Customer Satisfaction Output -->
+        <div class="bg-white chart-card-medium">
+            <div class="chart-header-row" style="margin-bottom: 24px;">
+                <div>
+                    <div class="title-sm">Total Customers</div>
+                    <div class="text-muted">{{ totalCustomersCount() }} Accounts mapped by class</div>
+                </div>
+            </div>
+            <div class="chart-canvas-container">
+                <canvas baseChart [data]="vehicleTypeChartData()" [options]="vehicleTypeChartOptions()" [type]="'bar'"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Table -->
+    <div class="header-section" style="margin-top: 40px;">
+        <div class="header-text">
+            <h1>Recent Policies</h1>
+            <p>Quick overview of the 10 most recent policy deployments.</p>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Policy ID</th>
+                        <th>Vehicle</th>
+                        <th>Start Date</th>
+                        <th>Expiration</th>
+                        <th>Premium</th>
+                        <th>Assignee</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let pol of (recentPolicies() || []) | slice:0:10">
+                        <td>
+                            <div class="user-info">
+                                <span class="name">{{ pol.customer.fullName || 'Anonymous User' }}</span>
+                            </div>
+                        </td>
+                        <td><span class="policy-badge">{{ pol.policyNumber || 'PLC-' + pol.policyId }}</span></td>
+                        <td>
+                            <div class="vehicle-mini" *ngIf="pol.vehicle">
+                                <span class="reg-no">{{ pol.vehicle.registrationNumber }}</span>
+                                <span class="model-info">{{ pol.vehicle.make }} {{ pol.vehicle.model }}</span>
+                            </div>
+                            <span class="muted" *ngIf="!pol.vehicle">N/A</span>
+                        </td>
+                        <td>{{ pol.startDate | date:'mediumDate' }}</td>
+                        <td>{{ pol.endDate | date:'mediumDate' }}</td>
+                        <td class="semi-bold text-success">{{ pol.premiumAmount | currency:'INR' }}</td>
+                        <td>{{ pol.agent?.fullName || 'Self' }}</td>
+                        <td>
+                            <span class="status-pill" [class]="pol.status === 'Active' || pol.status === 0 ? 'active' : 'inactive'">
+                                {{ pol.status === 'Active' || pol.status === 0 ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

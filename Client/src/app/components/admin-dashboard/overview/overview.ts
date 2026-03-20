@@ -1,7 +1,7 @@
 import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { ChartConfiguration, ChartData } from 'chart.js';
 
 @Component({
   selector: 'app-overview',
@@ -12,28 +12,35 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 })
 export class OverviewComponent {
   adminName = input.required<string>();
-  totalRevenue = input.required<number>();
-  totalPayoutAmount = input.required<number>();
-  netProfit = input.required<number>();
-  totalActivePolicies = input.required<number>();
-  totalClaimsApproved = input.required<number>();
+  
+  // Financial Metrics
+  grossPremium = input.required<number>();
+  claimsPaid = input.required<number>();
+  netReserve = input.required<number>();
+  lossRatio = input.required<number>();
+
+  // Operational Metrics
+  activePoliciesCount = input.required<number>();
+  pendingClaimsCount = input.required<number>();
+  totalClaimsCount = input.required<number>();
+  totalCustomersCount = input.required<number>();
+
+  // Data Tables
+  recentPolicies = input<any[]>([]);
 
   // Charts
-  revenueChartData = input.required<ChartData<'bar'>>();
-  revenueChartOptions = input.required<ChartConfiguration['options']>();
-  revenueChartType = input<ChartType>('bar');
+  premiumChartData = input.required<ChartData<'bar'>>();
+  premiumChartOptions = input.required<ChartConfiguration['options']>();
 
-  claimsChartData = input.required<ChartData<'doughnut'>>();
-  claimsChartOptions = input.required<ChartConfiguration['options']>();
-  claimsChartType = input<ChartType>('doughnut');
+  claimsPaidChartData = input.required<ChartData<'line'>>();
+  claimsPaidChartOptions = input.required<ChartConfiguration['options']>();
 
-  planPremiumsChartData = input.required<ChartData<'bar'>>();
-  planAnalyticsOptions = input.required<ChartConfiguration['options']>();
-  planBarChartType = input<ChartType>('bar');
+  policyDistributionChartData = input.required<ChartData<'doughnut'>>();
+  policyDistributionChartOptions = input.required<ChartConfiguration['options']>();
 
-  planClaimsChartData = input.required<ChartData<'bar'>>();
-  planClaimsCountOptions = input.required<ChartConfiguration['options']>();
+  claimsStatusChartData = input.required<ChartData<'doughnut'>>();
+  claimsStatusChartOptions = input.required<ChartConfiguration['options']>();
 
-  vehicleTypePremiumsChartData = input.required<ChartData<'bar'>>();
-  vehicleTypeClaimsChartData = input.required<ChartData<'bar'>>();
+  vehicleTypeChartData = input.required<ChartData<'bar'>>();
+  vehicleTypeChartOptions = input.required<ChartConfiguration['options']>();
 }

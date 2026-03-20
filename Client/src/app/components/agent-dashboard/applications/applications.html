@@ -1,59 +1,72 @@
 <div class="tab-content fade-in">
-    <header class="page-header">
-        <h1 class="page-title">Pending Applications</h1>
-        <p class="page-subtitle">Review vehicle insurance applications assigned to you.</p>
-    </header>
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h1 class="page-title">Pending Applications</h1>
+            <p class="page-subtitle">Review and approve incoming vehicle insurance applications.</p>
+        </div>
 
-    @if (!selectedApp()) {
-    <div class="glass-panel" style="padding: 24px;">
-        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+        @if (!selectedApp() && pendingApps().length > 0) {
+        <div class="table-header-actions" style="margin-bottom: 0; display: flex; justify-content: flex-end;">
             <div class="vims-dropdown-container">
-                <div class="vims-dropdown-trigger" (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
+                <div class="vims-dropdown-trigger"
+                    (click)="showAppsSortDropdown.set(!showAppsSortDropdown())">
                     <i class="fa-solid fa-arrow-down-wide-short"></i>
                     <span>{{ getSortLabel(appsSortOption()) }}</span>
-                    <i class="fa-solid fa-chevron-down" [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showAppsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
                 </div>
                 @if (showAppsSortDropdown()) {
                 <div class="vims-dropdown-menu fade-in" (mouseleave)="showAppsSortDropdown.set(false)">
-                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'" (click)="setAppsSortOption('dateDesc')">Newest First</div>
-                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'" (click)="setAppsSortOption('dateAsc')">Oldest First</div>
+                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateDesc'"
+                        (click)="setAppsSortOption('dateDesc')">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="appsSortOption() === 'dateAsc'"
+                        (click)="setAppsSortOption('dateAsc')">Oldest First</div>
                 </div>
                 }
             </div>
         </div>
-        @if (pendingApps().length === 0) {
-        <p style="color: var(--text-muted); padding: 16px;">No pending
-            applications at the moment. Great job!</p>
         }
+    </header>
 
-        <table class="vims-table">
-            <thead>
-                <tr>
-                    <th>Applicant</th>
-                    <th>Vehicle</th>
-                    <th>Registration</th>
-                    <th>Submitted</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (app of sortedPendingApps(); track (app.applicationId || $index)) {
-                <tr (click)="openAppReview(app)" style="cursor: pointer;">
-                    <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
-                    <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
-                    <td>{{ app.registrationNumber }}</td>
-                    <td>
-                        <div style="display: flex; flex-direction: column;">
-                            <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM yyyy':'+0530' }}</span>
-                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt | date:'shortTime':'+0530' }}</span>
-                        </div>
-                    </td>
-                    <td><span class="status-badge pending">Pending Review</span></td>
-                </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    @if (!selectedApp()) {
+        @if (pendingApps().length > 0) {
+            <div class="glass-panel" style="padding: 24px;">
+                <table class="vims-table">
+                    <thead>
+                        <tr>
+                            <th>Applicant</th>
+                            <th>Vehicle</th>
+                            <th>Registration</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (app of sortedPendingApps(); track (app.applicationId || $index)) {
+                        <tr (click)="openAppReview(app)" style="cursor: pointer;">
+                            <td>{{ app.customer?.fullName || 'Customer ' + app.customerId }}</td>
+                            <td>{{ app.make }} {{ app.model }} ({{ app.year }})</td>
+                            <td>{{ app.registrationNumber }}</td>
+                            <td>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 0.9rem; font-weight: 600;">{{ app.createdAt | date:'dd MMM
+                                        yyyy':'+0530' }}</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ app.createdAt |
+                                        date:'shortTime':'+0530' }}</span>
+                                </div>
+                            </td>
+                            <td><span class="status-badge pending">Pending Review</span></td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        } @else {
+            <div class="glass-panel empty-state-mini" style="padding: 48px; text-align: center;">
+                <i class="fas fa-check-double" style="font-size: 2.5rem; color: var(--success); margin-bottom: 16px; display: block;"></i>
+                <p style="color: var(--text-main); font-size: 1.1rem; margin: 0;">No pending applications at the moment. Great job!</p>
+            </div>
+        }
     }
 
     <!-- Detailed Application Review View -->
@@ -61,7 +74,7 @@
     <div class="glass-panel fade-in" style="padding: 32px; position: relative;">
         <button class="btn-outline"
             style="position: absolute; top: 32px; right: 32px; padding: 8px 16px; min-width: auto; height: auto;"
-            (click)="closeAppReview()">← Back to List</button>
+            (click)="closeAppReview()"><i class="fas fa-arrow-left"></i> Back to List</button>
 
         <h2 class="form-title" style="margin-bottom: 24px;">Review Application: {{
             selectedApp().registrationNumber }}</h2>
@@ -83,7 +96,8 @@
                         style="color: var(--text-muted); display: inline-block; width: 140px;">Type /
                         Fuel:</strong> {{ selectedApp().vehicleType }} / {{ selectedApp().fuelType }}</p>
                 <p style="margin-bottom: 8px;"><strong
-                        style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers Driven:</strong>
+                        style="color: var(--text-muted); display: inline-block; width: 140px;">Kilometers
+                        Driven:</strong>
                     {{ selectedApp().kilometersDriven }} km</p>
                 <p style="margin-bottom: 8px;"><strong
                         style="color: var(--text-muted); display: inline-block; width: 140px;">Submitted:</strong>
@@ -103,7 +117,7 @@
                     @for (doc of selectedApp().documents; track (doc.documentId || $index)) {
                     <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
                         style="padding: 8px 16px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 0;">
-                        <span style="font-size: 1.2rem;">📄</span> View {{ doc.documentType }}
+                        <span style="font-size: 1.2rem;"><i class="fas fa-file-alt"></i></span> View {{ doc.documentType }}
                     </a>
                     }
                 </div>
@@ -119,17 +133,13 @@
             <form class="vims-form" (ngSubmit)="submitReview()">
 
                 <div style="display: flex; gap: 24px; margin-bottom: 24px;">
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
-                        <input type="radio" [value]="true" name="approvedDecision"
-                            [(ngModel)]="reviewAction.approved"
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+                        <input type="radio" [value]="true" name="approvedDecision" [(ngModel)]="reviewAction.approved"
                             style="accent-color: var(--success); width: 18px; height: 18px;">
                         Approve Application
                     </label>
-                    <label
-                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
-                        <input type="radio" [value]="false" name="rejectDecision"
-                            [(ngModel)]="reviewAction.approved"
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+                        <input type="radio" [value]="false" name="rejectDecision" [(ngModel)]="reviewAction.approved"
                             style="accent-color: var(--error); width: 18px; height: 18px;">
                         Reject Application
                     </label>

@@ -16,38 +16,27 @@
     <div class="overview-kpi-grid">
         <div class="kpi-card kpi-warning" (click)="switchTab('applications')">
             <div class="kpi-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div>
-            <div class="kpi-body">
-                <div class="kpi-value">{{ pendingApps().length }}</div>
-                <div class="kpi-label">Pending Approval</div>
-            </div>
-            <div class="kpi-arrow">→</div>
+            <div class="kpi-value">{{ pendingApps().length }}</div>
+            <div class="kpi-label">Pending Approval</div>
         </div>
 
         <div class="kpi-card kpi-payments" (click)="switchTab('customers')">
             <div class="kpi-icon"><i class="fa-solid fa-credit-card"></i></div>
-            <div class="kpi-body">
-                <div class="kpi-value">{{ pendingPaymentCount() }}</div>
-                <div class="kpi-label">Awaiting Payment</div>
-            </div>
-            <div class="kpi-arrow">→</div>
+            <div class="kpi-value">{{ pendingPaymentCount() }}</div>
+            <div class="kpi-label">Awaiting Payment</div>
         </div>
 
         <div class="kpi-card kpi-success" (click)="switchTab('history')">
             <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
-            <div class="kpi-body">
-                <div class="kpi-value">{{ reviewedApps().length }}</div>
-                <div class="kpi-label">Reviewed Applications</div>
-            </div>
-            <div class="kpi-arrow">→</div>
+            <div class="kpi-value">{{ reviewedApps().length }}</div>
+            <div class="kpi-label">Reviewed Applications</div>
         </div>
 
         <div class="kpi-card kpi-accent" (click)="switchTab('customers')">
             <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
-            <div class="kpi-body">
-                <div class="kpi-value">{{ customers().length }}</div>
-                <div class="kpi-label">Supervised Customers</div>
-            </div>
-            <div class="kpi-arrow">→</div>
+            <div class="kpi-value">{{ customers().length }}</div>
+            <div class="kpi-label">Supervised Customers</div>
+            <div class="kpi-arrow"><i class="fas fa-arrow-right"></i></div>
         </div>
     </div>
 
@@ -56,11 +45,11 @@
         <div class="overview-section-header">
             <h2 class="overview-section-title"><i class="fa-solid fa-inbox"
                     style="color:var(--warning);margin-right:8px;"></i>Pending Applications Queue</h2>
-            <button class="btn-outline-sm" (click)="switchTab('applications')">View All →</button>
+            <button class="btn-outline-sm" (click)="switchTab('applications')">View All <i class="fas fa-arrow-right"></i></button>
         </div>
         @if (pendingApps().length === 0) {
         <div class="empty-state-mini">
-            <span>🎉</span>
+            <span><i class="fas fa-check-double"></i></span>
             <p>No pending applications. All caught up!</p>
         </div>
         }

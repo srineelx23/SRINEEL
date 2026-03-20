@@ -1,7 +1,8 @@
 <div class="full-screen gradient-bg landing-page" style="overflow-y: auto;">
     <nav class="navbar glass-panel">
         <div class="nav-container">
-            <div class="logo" style="cursor: pointer; display: flex; align-items: center; gap: 12px;" (click)="goHome()">
+            <div class="logo" style="cursor: pointer; display: flex; align-items: center; gap: 12px;"
+                (click)="goHome()">
                 <span class="logo-shield">🛡️</span>
                 <span class="logo-text">VIMS</span>
             </div>
@@ -146,7 +147,7 @@
                 <div class="plans-grid fade-in">
                     @for (plan of filteredPlans(); track (plan.planId || $index)) {
                     <div class="plan-card glass-panel">
-                        @if (plan.policyType === 'Comprehensive') {
+                        @if (plan.isPopular) {
                         <div class="plan-badge">Popular</div>
                         }
                         <div class="plan-header">
@@ -254,25 +255,38 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="form-group">
                             <input type="number" id="manufactureYear" name="manufactureYear"
-                                [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" "
-                                min="1900" [max]="currentYear" required>
+                                [(ngModel)]="quoteForm.ManufactureYear" class="form-control" placeholder=" " min="1900"
+                                [max]="currentYear" required>
                             <label for="manufactureYear" class="floating-label">Manufacture Year</label>
                             @if (quoteForm.ManufactureYear && (currentYear - quoteForm.ManufactureYear > 15)) {
-                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15 years</span>
+                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15
+                                years</span>
                             }
                         </div>
 
                         <div class="form-group">
-                            <select id="fuelType" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control" [disabled]="isEVPlan()">
-                                @if (isEVPlan()) {
-                                    <option value="EV">Electric Vehicle (EV)</option>
-                                } @else {
-                                    <option value="Petrol">Petrol Engine</option>
-                                    <option value="Diesel">Diesel Engine</option>
-                                    <option value="Hybrid">Hybrid System</option>
+                            <div class="vims-custom-select" [class.disabled]="isEVPlan()"
+                                (click)="!isEVPlan() && showFuelDropdown.set(!showFuelDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showFuelDropdown()">
+                                    <span>{{ isEVPlan() ? 'Electric Vehicle (EV)' : quoteForm.FuelType }}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showFuelDropdown() && !isEVPlan()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showFuelDropdown.set(false)">
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Petrol'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        Petrol Engine</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Diesel'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        Diesel Engine</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Hybrid'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        Hybrid System</div>
+                                </div>
                                 }
-                            </select>
-                            <label class="floating-label">Engine / Fuel Type</label>
+                            </div>
+                            <label class="floating-label active">Engine / Fuel Type</label>
                         </div>
 
                         <div class="form-group">
@@ -282,30 +296,63 @@
                         </div>
 
                         <div class="form-group">
-                            <select id="vehicleType" name="vehicleType" [(ngModel)]="quoteForm.VehicleType"
-                                class="form-control">
-                                <option value="Private">Private / Personal</option>
-                                <option value="Commercial">Commercial / Logistics</option>
-                            </select>
-                            <label class="floating-label">Vehicle Usage</label>
+                            <div class="vims-custom-select" (click)="showUsageDropdown.set(!showUsageDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showUsageDropdown()">
+                                    <span>{{ quoteForm.VehicleType == 'Private' ? 'Private / Personal' : 'Commercial /
+                                        Logistics' }}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showUsageDropdown()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showUsageDropdown.set(false)">
+                                    <div class="vims-option" [class.active]="quoteForm.VehicleType == 'Private'"
+                                        (click)="quoteForm.VehicleType = 'Private'; showUsageDropdown.set(false); $event.stopPropagation()">
+                                        Private / Personal</div>
+                                    <div class="vims-option" [class.active]="quoteForm.VehicleType == 'Commercial'"
+                                        (click)="quoteForm.VehicleType = 'Commercial'; showUsageDropdown.set(false); $event.stopPropagation()">
+                                        Commercial / Logistics</div>
+                                </div>
+                                }
+                            </div>
+                            <label class="floating-label active">Vehicle Usage</label>
                         </div>
 
                         <div class="form-group">
                             <input type="number" id="invoiceAmount" name="invoiceAmount"
-                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " min="0" required>
+                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " min="0"
+                                required>
                             <label for="invoiceAmount" class="floating-label">Current Vehicle Value (₹)</label>
                         </div>
 
                         <div class="form-group">
-                            <select id="policyYears" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
-                                class="form-control">
-                                <option value="1">1 Year Protection</option>
-                                <option value="2">2 Years Protection (5% Discount)</option>
-                                <option value="3">3 Years Protection (8% Discount)</option>
-                                <option value="4">4 Years Protection (10% Discount)</option>
-                                <option value="5">5 Years Protection (12% Discount)</option>
-                            </select>
-                            <label class="floating-label">Coverage Duration</label>
+                            <div class="vims-custom-select" (click)="showDurationDropdown.set(!showDurationDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showDurationDropdown()">
+                                    <span>{{ quoteForm.PolicyYears }} Year{{ quoteForm.PolicyYears > 1 ? 's' : '' }}
+                                        Protection</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showDurationDropdown()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showDurationDropdown.set(false)">
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 1; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        1 Year Protection</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 2; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        2 Years Protection (5% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 3; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        3 Years Protection (8% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 4; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        4 Years Protection (10% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 5; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        5 Years Protection (12% Disc)</div>
+                                </div>
+                                }
+                            </div>
+                            <label class="floating-label active">Coverage Duration</label>
                         </div>
                     </div>
                     <button type="submit" class="btn-primary full-width-btn">Generate Official Quote</button>
@@ -332,20 +379,33 @@
                                 class="form-control" placeholder=" " [max]="currentYear" required>
                             <label class="floating-label">Manufacture Year</label>
                             @if (quoteForm.ManufactureYear && (currentYear - quoteForm.ManufactureYear > 15)) {
-                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15 years</span>
+                            <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15
+                                years</span>
                             }
                         </div>
                         <div class="form-group">
-                            <select id="fuelTypeDirect" name="fuelType" [(ngModel)]="quoteForm.FuelType" class="form-control" [disabled]="isEVPlan()">
-                                @if (isEVPlan()) {
-                                    <option value="EV">Electric Vehicle (EV)</option>
-                                } @else {
-                                    <option value="Petrol">Petrol Engine</option>
-                                    <option value="Diesel">Diesel Engine</option>
-                                    <option value="Hybrid">Hybrid System</option>
+                            <div class="vims-custom-select" [class.disabled]="isEVPlan()"
+                                (click)="!isEVPlan() && showDirectFuelDropdown.set(!showDirectFuelDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showDirectFuelDropdown()">
+                                    <span>{{ isEVPlan() ? 'Electric Vehicle (EV)' : quoteForm.FuelType }}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showDirectFuelDropdown() && !isEVPlan()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showDirectFuelDropdown.set(false)">
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Petrol'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        Petrol Engine</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Diesel'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        Diesel Engine</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'Hybrid'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        Hybrid System</div>
+                                </div>
                                 }
-                            </select>
-                            <label class="floating-label">Fuel Type</label>
+                            </div>
+                            <label class="floating-label active">Fuel Type</label>
                         </div>
                         <div class="form-group">
                             <input type="number" name="kilometersDriven" [(ngModel)]="quoteForm.KilometersDriven"
@@ -353,11 +413,26 @@
                             <label class="floating-label">KMs Driven</label>
                         </div>
                         <div class="form-group">
-                            <select name="vehicleType" [(ngModel)]="quoteForm.VehicleType" class="form-control">
-                                <option value="Private">Private / Family</option>
-                                <option value="Commercial">Commercial</option>
-                            </select>
-                            <label class="floating-label">Usage Type</label>
+                            <div class="vims-custom-select"
+                                (click)="showDirectUsageDropdown.set(!showDirectUsageDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showDirectUsageDropdown()">
+                                    <span>{{ quoteForm.VehicleType == 'Private' ? 'Private / Family' : 'Commercial'
+                                        }}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showDirectUsageDropdown()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showDirectUsageDropdown.set(false)">
+                                    <div class="vims-option"
+                                        (click)="quoteForm.VehicleType = 'Private'; showDirectUsageDropdown.set(false); $event.stopPropagation()">
+                                        Private / Family</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.VehicleType = 'Commercial'; showDirectUsageDropdown.set(false); $event.stopPropagation()">
+                                        Commercial</div>
+                                </div>
+                                }
+                            </div>
+                            <label class="floating-label active">Usage Type</label>
                         </div>
                         <div class="form-group">
                             <input type="number" name="invoiceAmount" [(ngModel)]="quoteForm.InvoiceAmount"
@@ -365,15 +440,35 @@
                             <label class="floating-label">Vehicle Value (₹)</label>
                         </div>
                         <div class="form-group">
-                            <select id="policyYearsDirect" name="policyYears" [(ngModel)]="quoteForm.PolicyYears"
-                                class="form-control">
-                                <option value="1">1 Year</option>
-                                <option value="2">2 Years (5% Discount)</option>
-                                <option value="3">3 Years (8% Discount)</option>
-                                <option value="4">4 Years (10% Discount)</option>
-                                <option value="5">5 Years (12% Discount)</option>
-                            </select>
-                            <label class="floating-label">Duration</label>
+                            <div class="vims-custom-select"
+                                (click)="showDirectDurationDropdown.set(!showDirectDurationDropdown())">
+                                <div class="vims-select-trigger" [class.open]="showDirectDurationDropdown()">
+                                    <span>{{ quoteForm.PolicyYears }} Year{{ quoteForm.PolicyYears > 1 ? 's' : ''
+                                        }}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                @if (showDirectDurationDropdown()) {
+                                <div class="vims-select-options glass-panel fade-in"
+                                    (mouseleave)="showDirectDurationDropdown.set(false)">
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 1; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        1 Year</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 2; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        2 Years (5% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 3; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        3 Years (8% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 4; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        4 Years (10% Disc)</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.PolicyYears = 5; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        5 Years (12% Disc)</div>
+                                </div>
+                                }
+                            </div>
+                            <label class="floating-label active">Duration</label>
                         </div>
                     </div>
                     }

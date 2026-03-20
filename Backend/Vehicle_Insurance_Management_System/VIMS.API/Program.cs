@@ -53,6 +53,8 @@ namespace VIMS.API
             builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
             builder.Services.AddScoped<IFileStorageService, FileStorageService>();
             builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+            builder.Services.AddScoped<IGarageRepository, GarageRepository>();
+            builder.Services.AddScoped<IGarageService, GarageService>();
 
 
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

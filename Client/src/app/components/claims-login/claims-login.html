@@ -1,13 +1,13 @@
 <div class="full-screen admin-bg login-page relative overflow-hidden">
     <!-- Back Button -->
     <a href="/" class="back-btn">
-        <span>←</span> Return to Home
+        <span><i class="fas fa-arrow-left"></i></span> Return to Home
     </a>
 
     <!-- Success Toast Component -->
     @if (successMessage()) {
     <div class="success-toast">
-        ✅ {{ successMessage() }}
+        <i class="fas fa-check-circle"></i> {{ successMessage() }}
     </div>
     }
 
@@ -17,7 +17,7 @@
             <div class="login-info"
                 style="background: linear-gradient(135deg, rgba(80, 150, 113, 0.3) 0%, rgba(10, 10, 10, 0.6) 100%);">
                 <div class="brand">
-                    <span class="logo-shield">📋</span>
+                    <span class="logo-shield"><i class="fas fa-clipboard-list"></i></span>
                     <h2>VIMS CLAIMS</h2>
                 </div>
                 <h3>Officer Portal</h3>
@@ -26,7 +26,7 @@
                 @if (!isSettingSecurityQuestion()) {
                 <div class="info-footer">
                     <span>Not a claims officer?</span>
-                    <a href="/login" class="link-styled">Return to Customer Login ➔</a>
+                    <a href="/login" class="link-styled">Return to Customer Login <i class="fas fa-arrow-right"></i></a>
                 </div>
                 }
             </div>
@@ -101,7 +101,7 @@
                         <button type="button" class="btn-outline full-width-btn"
                             (click)="cancelForgotPassword()">Cancel</button>
                         <button type="submit" class="btn-primary full-width-btn"
-                            style="background: var(--success); color: var(--bg-card)">Next ➔</button>
+                            style="background: var(--success); color: var(--bg-card)">Next <i class="fas fa-arrow-right"></i></button>
                     </div>
                 </form>
                 }
@@ -203,8 +203,8 @@
 
                     <div class="form-group" style="margin-bottom: 24px;">
                         <label class="static-label">Security Question</label>
-                        <select name="firstLoginSecurityQuestion" class="form-control" [(ngModel)]="firstLoginSecurityQuestion"
-                            required>
+                        <select name="firstLoginSecurityQuestion" class="form-control"
+                            [(ngModel)]="firstLoginSecurityQuestion" required>
                             <option value="" disabled selected>Select a Security Question</option>
                             @for (q of securityQuestions; track q) {
                             <option [value]="q">{{ q }}</option>
@@ -213,8 +213,8 @@
                     </div>
 
                     <div class="form-group">
-                        <input type="text" id="fSecAnswer" name="firstLoginSecurityAnswer" [(ngModel)]="firstLoginSecurityAnswer"
-                            class="form-control" placeholder="" required>
+                        <input type="text" id="fSecAnswer" name="firstLoginSecurityAnswer"
+                            [(ngModel)]="firstLoginSecurityAnswer" class="form-control" placeholder="" required>
                         <label for="fSecAnswer" class="floating-label">Secret Answer</label>
                     </div>
 

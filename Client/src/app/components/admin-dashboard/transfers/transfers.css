@@ -2,130 +2,12 @@
     padding: 1rem;
 }
 
-.header-section {
-    margin-bottom: 2rem;
-}
-
-.header-text h1 {
-    font-size: 1.8rem;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-}
-
-.header-text p {
-    color: var(--text-muted);
-}
-
-.table-card {
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 1rem 1.5rem;
-    text-align: left;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.data-table td {
-    padding: 1.2rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.95rem;
-}
-
-.policy-badge {
-    background: var(--primary-color-transparent);
-    color: var(--primary-color);
-    padding: 0.3rem 0.6rem;
-    border-radius: 6px;
-    font-family: 'Monaco', 'Consolas', monospace;
-    font-size: 0.85rem;
-}
-
-.user-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.user-info .name {
-    font-weight: 500;
-}
-
-.vehicle-mini {
-    display: flex;
-    flex-direction: column;
-}
-
-.vehicle-mini small {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-}
-
-.status-pill {
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.status-pill.completed, .status-pill.accepted {
-    background: rgba(34, 197, 94, 0.1);
-    color: #22c55e;
-}
-
-.status-pill.pending {
-    background: rgba(251, 191, 36, 0.1);
-    color: #fbb724;
-}
-
-.status-pill.rejected {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: rgba(91, 192, 190, 0.1);
-    color: #5bc0be;
-    border: 1px solid rgba(91, 192, 190, 0.2);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 0.85rem;
-}
-
-.btn-icon:hover {
-    background: rgba(91, 192, 190, 0.2);
-    transform: translateY(-2px);
-}
-
-.text-right {
-    text-align: right;
-}
-
 .empty-state {
     padding: 4rem;
     text-align: center;
-    background: var(--bg-secondary);
+    background: var(--bg-card);
     border-radius: 16px;
-    border: 1px dashed var(--border-color);
+    border: 1px dashed var(--border-light);
 }
 
 .empty-icon {
@@ -136,3 +18,4 @@
 .muted {
     color: var(--text-muted);
 }
+

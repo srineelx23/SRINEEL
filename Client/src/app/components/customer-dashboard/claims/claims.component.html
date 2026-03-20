@@ -1,67 +1,64 @@
-<div class="tab-content fade-in">
-    <header class="page-header">
-        <h1 class="page-title">Claims Center</h1>
-        <p class="page-subtitle">File new claims and track investigations centrally.</p>
-    </header>
+    <div class="header-section">
+        <div class="header-text">
+            <h1>Claims Center</h1>
+            <p>File new claims and track investigations centrally.</p>
+        </div>
+        <div class="header-actions">
+            @if (!selectedClaim() && !isFilingClaim()) {
+            <button class="btn-primary" (click)="onStartClaim.emit()"
+                style="background: var(--error); padding: 10px 22px; font-weight: 700;">+ File New Claim</button>
+            }
+
+            @if (!selectedClaim() && claims().length > 0) {
+            <div class="vims-dropdown-container">
+                <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showClaimsSortDropdown())">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                    <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                    <i class="fa-solid fa-chevron-down"
+                        [style.transform]="showClaimsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                </div>
+                @if (showClaimsSortDropdown()) {
+                <div class="vims-dropdown-menu fade-in" (mouseleave)="onToggleSortDropdown.emit(false)">
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'"
+                        (click)="onSetSortOption.emit('dateDesc'); onToggleSortDropdown.emit(false)">Newest First</div>
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'"
+                        (click)="onSetSortOption.emit('dateAsc'); onToggleSortDropdown.emit(false)">Oldest First</div>
+                    <div class="vims-dropdown-divider"></div>
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountDesc'"
+                        (click)="onSetSortOption.emit('amountDesc'); onToggleSortDropdown.emit(false)">Amount: High to Low</div>
+                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountAsc'"
+                        (click)="onSetSortOption.emit('amountAsc'); onToggleSortDropdown.emit(false)">Amount: Low to High</div>
+                </div>
+                }
+            </div>
+            }
+        </div>
+    </div>
 
     @if (!selectedClaim()) {
     <div class="claims-grid-layout" [ngStyle]="{'grid-template-columns': isFilingClaim() ? '1.8fr 1fr' : '1fr'}">
-        <div class="glass-panel" style="padding: 24px;">
-            <div class="claims-history-header">
-                <h3>Claims History</h3>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    @if (!isFilingClaim()) {
-                    <button class="btn-primary" (click)="onStartClaim.emit()"
-                        style="background: var(--error); padding: 10px 18px; font-size: 0.85rem;">+ File
-                        New Claim</button>
-                    }
-
-                    @if (claims().length > 0) {
-                    <div class="vims-dropdown-container">
-                        <div class="vims-dropdown-trigger" (click)="onToggleSortDropdown.emit(!showClaimsSortDropdown())">
-                            <i class="fa-solid fa-arrow-down-wide-short"></i>
-                            <span>{{ getSortLabel(claimsSortOption()) }}</span>
-                            <i class="fa-solid fa-chevron-down"
-                                [style.transform]="showClaimsSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                        </div>
-                        @if (showClaimsSortDropdown()) {
-                        <div class="vims-dropdown-menu fade-in" (mouseleave)="onToggleSortDropdown.emit(false)">
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'"
-                                (click)="onSetSortOption.emit('dateDesc'); onToggleSortDropdown.emit(false)">Newest First
-                            </div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'"
-                                (click)="onSetSortOption.emit('dateAsc'); onToggleSortDropdown.emit(false)">Oldest First
-                            </div>
-                            <div class="vims-dropdown-divider"></div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountDesc'"
-                                (click)="onSetSortOption.emit('amountDesc'); onToggleSortDropdown.emit(false)">Amount:
-                                High to Low</div>
-                            <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'amountAsc'"
-                                (click)="onSetSortOption.emit('amountAsc'); onToggleSortDropdown.emit(false)">Amount: Low
-                                to High</div>
-                        </div>
-                        }
-                    </div>
-                    }
-                </div>
+        <div class="table-card" style="padding: 0;">
+            <div style="padding: 24px 24px 0 24px;">
+                <h3 style="margin-bottom: 20px;">Claims History</h3>
             </div>
 
             @if (claims().length === 0) {
-            <p style="color: var(--text-muted); padding: 16px;">No claims history found.</p>
+            <p style="color: var(--text-muted); padding: 32px; text-align: center; font-style: italic;">No claims history found.</p>
             }
 
             @if (claims().length > 0) {
-            <table class="vims-table">
-                <thead>
-                    <tr>
-                        <th>Claim No.</th>
-                        <th>Filed On</th>
-                        <th>Policy No.</th>
-                        <th>Type</th>
-                        <th>Approved Amt</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Claim No.</th>
+                            <th>Filed On</th>
+                            <th>Policy No.</th>
+                            <th>Type</th>
+                            <th>Approved Amt</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
                 <tbody>
                     @for (c of sortedClaims(); track (c.claimId || $index)) {
                     <tr (click)="onViewClaimDetails.emit(c)" style="cursor: pointer;">
@@ -83,30 +80,50 @@
                     }
                 </tbody>
             </table>
-            }
         </div>
+        }
+    </div>
 
-        @if (isFilingClaim()) {
-        <div class="glass-panel file-claim-card">
-            <h3>File Incident Claim</h3>
-            <form class="vims-form" (ngSubmit)="onSubmitClaim.emit()">
+    @if (isFilingClaim()) {
+    <div class="glass-panel file-claim-card">
+        <h3>File Incident Claim</h3>
+        <form class="vims-form" (ngSubmit)="onSubmitClaim.emit()">
                 <div class="form-group">
-                    <select id="claimPolicy" name="claimPolicy" [(ngModel)]="claimForm.PolicyId"
-                        (change)="onClaimPolicyChange.emit()" class="form-control" required>
-                        <option [ngValue]="null" disabled selected>Select Affected Policy</option>
-                        @for (p of claimablePolicies(); track (p.policyId || $index)) {
-                        <option [value]="p.policyId">{{ p.policyNumber }} ({{ p.vehicleModel }})</option>
+                    <div class="vims-custom-select" (click)="showPolicyDropdown.set(!showPolicyDropdown())">
+                        <div class="vims-select-trigger" [class.open]="showPolicyDropdown()">
+                            <span>{{ (claimablePolicies().find(p => p.policyId == claimForm.PolicyId)?.policyNumber || 'Select Affected Policy') }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        @if (showPolicyDropdown()) {
+                        <div class="vims-select-options glass-panel fade-in" (mouseleave)="showPolicyDropdown.set(false)">
+                            @for (p of claimablePolicies(); track (p.policyId || $index)) {
+                            <div class="vims-option" [class.active]="claimForm.PolicyId == p.policyId" 
+                                (click)="claimForm.PolicyId = p.policyId; onClaimPolicyChange.emit(); showPolicyDropdown.set(false); $event.stopPropagation()">
+                                {{ p.policyNumber }} ({{ p.vehicleModel }})
+                            </div>
+                            }
+                        </div>
                         }
-                    </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <select id="claimType" name="claimType" [(ngModel)]="claimForm.ClaimType" class="form-control"
-                        required>
-                        @for (type of availableClaimTypes(); track type.value) {
-                        <option [value]="type.value">{{ type.label }}</option>
+                    <div class="vims-custom-select" (click)="showTypeDropdown.set(!showTypeDropdown())">
+                        <div class="vims-select-trigger" [class.open]="showTypeDropdown()">
+                            <span>{{ (availableClaimTypes().find(t => t.value == claimForm.ClaimType)?.label || 'Select Claim Type') }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        @if (showTypeDropdown()) {
+                        <div class="vims-select-options glass-panel fade-in" (mouseleave)="showTypeDropdown.set(false)">
+                            @for (type of availableClaimTypes(); track type.value) {
+                            <div class="vims-option" [class.active]="claimForm.ClaimType == type.value" 
+                                (click)="claimForm.ClaimType = type.value; showTypeDropdown.set(false); $event.stopPropagation()">
+                                {{ type.label }}
+                            </div>
+                            }
+                        </div>
                         }
-                    </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -288,6 +305,4 @@
         </div>
         }
     </div>
-
     }
-</div>

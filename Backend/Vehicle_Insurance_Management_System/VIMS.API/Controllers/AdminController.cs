@@ -17,19 +17,22 @@ namespace VIMS.API.Controllers
         private readonly IClaimsService _claimsService;
         private readonly IAuditService _auditService;
         private readonly IInvoiceService _invoiceService;
+        private readonly IGarageService _garageService;
 
         public AdminController(
             IAdminService adminService,
             IPolicyPlanService policyPlanService,
             IClaimsService claimsService,
             IAuditService auditService,
-            IInvoiceService invoiceService)
+            IInvoiceService invoiceService,
+            IGarageService garageService)
         {
             _adminService = adminService;
             _policyPlanService = policyPlanService;
             _claimsService = claimsService;
             _auditService = auditService;
             _invoiceService = invoiceService;
+            _garageService = garageService;
         }
 
         [HttpPost("createAgent")]
@@ -123,6 +126,7 @@ namespace VIMS.API.Controllers
                 Status = p.Status.ToString(),
                 p.PremiumAmount,
                 p.InvoiceAmount,
+                p.IDV,
                 p.StartDate,
                 p.EndDate,
                 p.SelectedYears,
@@ -229,6 +233,45 @@ namespace VIMS.API.Controllers
                 return NotFound(new { message = "Transfer certificate not found or could not be generated" });
 
             return File(pdfBytes, "application/pdf", $"Transfer_Certificate_{transferId}.pdf");
+        }
+
+        // ================= GARAGE CRUD =================
+
+        [HttpGet("garages")]
+        public async Task<IActionResult> GetGarages()
+        {
+            var garages = await _garageService.GetAllGaragesAsync();
+            return Ok(garages);
+        }
+
+        [HttpGet("garage/{id}")]
+        public async Task<IActionResult> GetGarage(int id)
+        {
+            var garage = await _garageService.GetGarageByIdAsync(id);
+            if (garage == null) return NotFound();
+            return Ok(garage);
+        }
+
+        [HttpPost("garage")]
+        public async Task<IActionResult> AddGarage(Garage garage)
+        {
+            var created = await _garageService.CreateGarageAsync(garage);
+            return CreatedAtAction(nameof(GetGarage), new { id = created.GarageId }, created);
+        }
+
+        [HttpPut("garage/{id}")]
+        public async Task<IActionResult> UpdateGarage(int id, Garage garage)
+        {
+            if (id != garage.GarageId) return BadRequest();
+            await _garageService.UpdateGarageAsync(garage);
+            return NoContent();
+        }
+
+        [HttpDelete("garage/{id}")]
+        public async Task<IActionResult> DeleteGarage(int id)
+        {
+            await _garageService.DeleteGarageAsync(id);
+            return NoContent();
         }
     }
 }
