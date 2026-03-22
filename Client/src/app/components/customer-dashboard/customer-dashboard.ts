@@ -17,10 +17,13 @@ import { extractErrorMessage } from '../../utils/error-handler';
 import { InitiateTransferModalComponent } from './modals/initiate-transfer-modal.component';
 import { AcceptTransferModalComponent } from './modals/accept-transfer-modal.component';
 
+import { NotificationsComponent } from '../notifications/notifications';
+
 @Component({
   selector: 'app-customer-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, OverviewComponent, PoliciesComponent, ClaimsComponent, PaymentsComponent, TransfersComponent, SettingsComponent, ApplicationsComponent, NavbarComponent, InitiateTransferModalComponent, AcceptTransferModalComponent],
+  imports: [CommonModule, FormsModule, OverviewComponent, PoliciesComponent, ClaimsComponent, PaymentsComponent, TransfersComponent, SettingsComponent, ApplicationsComponent, NavbarComponent, InitiateTransferModalComponent, AcceptTransferModalComponent, NotificationsComponent],
+
   templateUrl: './customer-dashboard.html',
   styleUrl: './customer-dashboard.css',
 })
@@ -153,7 +156,32 @@ export class CustomerDashboard implements OnInit {
   );
 
   claimPayments = computed(() =>
-    this.sortedPayments().filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('claim'))
+    this.sortedPayments()
+      .filter((p: any) => p.transactionReference && p.transactionReference.toLowerCase().includes('claim'))
+      .map((p: any) => {
+        const ref = p.transactionReference || '';
+        // Extract claim number from something like "Claim #CLM12345"
+        const match = ref.match(/Claim #(\S+)/);
+        const claimNum = match ? match[1] : null;
+        const claim = claimNum ? this.claims().find((c: any) => (c.claimNumber === claimNum || c.claimId.toString() === claimNum)) : null;
+        
+        let displayType = 'Settlement';
+        if (claim) {
+          const type = (claim.claimType || '').toLowerCase();
+          if (type.includes('thirdparty') || type.includes('third-party')) {
+            displayType = 'Third-Party';
+          } else if (type.includes('damage') || type.includes('theft') || type.includes('accident')) {
+            displayType = 'Own Damage';
+          } else {
+            displayType = claim.claimType || 'Settlement';
+          }
+        }
+
+        return {
+          ...p,
+          claimType: displayType
+        };
+      })
   );
 
   transferPayments = computed(() =>
@@ -366,16 +394,8 @@ export class CustomerDashboard implements OnInit {
     this.customerService.downloadInvoice(paymentId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const payment = this.payments().find(p => p.paymentId === paymentId);
-        const fileName = (payment?.transactionReference === 'Transfer Fee' || payment?.transactionReference === 'Transfer Fees') 
-          ? `Transfer_Certificate_${paymentId}.pdf` 
-          : `Invoice_${paymentId}.pdf`;
-        a.download = fileName;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.successMessage.set("Invoice downloaded successfully!");
+        window.open(url, '_blank');
+        this.successMessage.set("Document opened in new tab.");
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
@@ -391,17 +411,29 @@ export class CustomerDashboard implements OnInit {
     this.customerService.downloadClaimReport(claimId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Claim_Report_${claimId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-        this.successMessage.set("Report downloaded successfully!");
+        window.open(url, '_blank');
+        this.successMessage.set("Report opened in new tab.");
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
         console.error('Download failed', err);
         this.errorMessage.set("Failed to download settlement report.");
+        this.autoHideToast();
+      }
+    });
+  }
+
+  downloadPolicyContract(policyId: number) {
+    this.customerService.downloadPolicyContract(policyId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        this.successMessage.set("Policy contract opened in new tab.");
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err: any) => {
+        console.error('Download failed', err);
+        this.errorMessage.set("Failed to download policy contract.");
         this.autoHideToast();
       }
     });

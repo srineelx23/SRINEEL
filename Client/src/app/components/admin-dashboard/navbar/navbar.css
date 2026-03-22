@@ -90,6 +90,8 @@
 .sidebar-footer {
     display: flex;
     align-items: center;
+    gap: 16px;
+    margin-left: 20px;
 }
 
 .nav-profile-container {
@@ -146,6 +148,13 @@
     font-size: 0.9rem;
     font-weight: 600;
 }
+
+.nav-item-notif {
+    margin: 0 10px;
+    display: flex;
+    align-items: center;
+}
+
 
 @keyframes fadeIn {
     from { opacity: 0; }

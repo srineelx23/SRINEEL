@@ -92,6 +92,8 @@
 .sidebar-footer {
     display: flex;
     align-items: center;
+    gap: 16px;
+    margin-left: 20px;
 }
 
 /* User Profile Dropdown */
@@ -149,3 +151,10 @@
     font-size: 0.9rem;
     font-weight: 600;
 }
+
+.nav-item-notif {
+    margin: 0 10px;
+    display: flex;
+    align-items: center;
+}
+

@@ -25,4 +25,11 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="tessdata\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>tessdata\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

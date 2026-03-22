@@ -11,6 +11,13 @@
     </div>
     }
 
+    <!-- Error Toast Component -->
+    @if (errorMessage()) {
+    <div class="error-toast">
+        <i class="fas fa-exclamation-triangle"></i> {{ errorMessage() }}
+    </div>
+    }
+
     <div class="login-wrapper container">
         <div class="login-card glass-panel">
             <!-- Left Info Side -->

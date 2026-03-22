@@ -79,7 +79,7 @@
                     <div class="filter-item">
                         <div class="custom-filter-dropdown" (click)="showVehicleDropdown.set(!showVehicleDropdown())">
                             <div class="filter-trigger">
-                                <span>{{ filterVehicleType() || 'All Vehicles' }}</span>
+                                <span>{{ (filterVehicleType() | vimsFormat) || 'All Vehicles' }}</span>
                                 <i class="fas fa-chevron-down"
                                     [style.transform]="showVehicleDropdown() ? 'rotate(180deg)' : 'none'"></i>
                             </div>
@@ -92,7 +92,7 @@
                                 @for (cat of vehicleCategories; track cat) {
                                 <div class="option-item"
                                     (click)="setFilterDirect(cat, 'vehicle'); $event.stopPropagation()">
-                                    {{ cat }}
+                                    {{ cat | vimsFormat }}
                                 </div>
                                 }
                             </div>
@@ -152,6 +152,7 @@
                         }
                         <div class="plan-header">
                             <h3>{{ plan.planName }}</h3>
+                            <span class="badge" style="background: var(--accent); color: white; border-radius: 4px; padding: 4px 8px; font-size: 0.7rem; font-weight: 700; display: inline-block; margin-bottom: 8px;">{{ plan.policyType | vimsFormat }}</span>
                             <div class="plan-price">
                                 <span class="price-val">{{ plan.basePremium | currency:'INR' }}</span>
                                 <span class="price-period">/ year</span>
@@ -225,8 +226,8 @@
         @if (selectedPlanForQuote() || calculatedQuote()) {
         <div class="quote-layout fade-in">
             <!-- Quote Calculator Form -->
-            @if (selectedPlanForQuote() && !isApplying()) {
-            <div class="glass-panel" style="padding: 32px;">
+            @if (selectedPlanForQuote() && !isApplying() && currentIntent() === 'quote' && !isUploadingDocuments()) {
+            <div class="glass-panel" style="padding: 32px; position: relative; z-index: 10;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 class="form-title" style="margin-bottom: 0;">Instant Quotation</h2>
                     <button class="btn-text" (click)="cancelQuoteProcess()">
@@ -239,7 +240,7 @@
                 <div class="form-plan-preview">
                     <div class="form-plan-info">
                         <h4>{{ plan.planName }}</h4>
-                        <p>{{ plan.policyType }} Coverage Asset Protection</p>
+                        <p>{{ plan.policyType | vimsFormat }} Coverage Asset Protection</p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Base
@@ -250,7 +251,7 @@
                 </div>
                 }
 
-                <form class="vims-form" (ngSubmit)="calculateQuote()">
+                <form class="vims-form">
                     <!-- Grid Layout for Inputs -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="form-group">
@@ -275,13 +276,13 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showFuelDropdown.set(false)">
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Petrol'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Petrol'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Petrol Engine</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Diesel'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Diesel'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Diesel Engine</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Hybrid'; showFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Hybrid'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
                                 </div>
                                 }
@@ -290,9 +291,15 @@
                         </div>
 
                         <div class="form-group">
-                            <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven"
-                                class="form-control" placeholder=" " min="0" required>
+                            <input type="number" id="kms" name="kms" [(ngModel)]="quoteForm.KilometersDriven" (ngModelChange)="onQuoteChange()"
+                                class="form-control" placeholder=" " min="0" max="999999" required>
                             <label for="kms" class="floating-label">KMs Driven (Cumulative)</label>
+                            @if (quoteForm.KilometersDriven !== null && quoteForm.KilometersDriven < 0) {
+                            <span class="validation-error">Kilometers cannot be negative</span>
+                            }
+                            @if (quoteForm.KilometersDriven !== null && quoteForm.KilometersDriven > 999999) {
+                            <span class="validation-error">Kilometers exceed maximum limit (999,999)</span>
+                            }
                         </div>
 
                         <div class="form-group">
@@ -306,10 +313,10 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showUsageDropdown.set(false)">
                                     <div class="vims-option" [class.active]="quoteForm.VehicleType == 'Private'"
-                                        (click)="quoteForm.VehicleType = 'Private'; showUsageDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.VehicleType = 'Private'; showUsageDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Private / Personal</div>
                                     <div class="vims-option" [class.active]="quoteForm.VehicleType == 'Commercial'"
-                                        (click)="quoteForm.VehicleType = 'Commercial'; showUsageDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.VehicleType = 'Commercial'; showUsageDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Commercial / Logistics</div>
                                 </div>
                                 }
@@ -319,9 +326,12 @@
 
                         <div class="form-group">
                             <input type="number" id="invoiceAmount" name="invoiceAmount"
-                                [(ngModel)]="quoteForm.InvoiceAmount" class="form-control" placeholder=" " min="0"
+                                [(ngModel)]="quoteForm.InvoiceAmount" (ngModelChange)="onQuoteChange()" class="form-control" placeholder=" " min="0"
                                 required>
-                            <label for="invoiceAmount" class="floating-label">Current Vehicle Value (₹)</label>
+                            <label for="invoiceAmount" class="floating-label">Ex-showroom price (₹)</label>
+                            @if (quoteForm.InvoiceAmount !== null && quoteForm.InvoiceAmount < 0) {
+                            <span class="validation-error">Ex-showroom price cannot be negative</span>
+                            }
                         </div>
 
                         <div class="form-group">
@@ -335,19 +345,19 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showDurationDropdown.set(false)">
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 1; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 1; showDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         1 Year Protection</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 2; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 2; showDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         2 Years Protection (5% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 3; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 3; showDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         3 Years Protection (8% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 4; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 4; showDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         4 Years Protection (10% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 5; showDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 5; showDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         5 Years Protection (12% Disc)</div>
                                 </div>
                                 }
@@ -355,14 +365,67 @@
                             <label class="floating-label active">Coverage Duration</label>
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary full-width-btn">Generate Official Quote</button>
                 </form>
+            </div>
+            }
+
+            <!-- Document Upload Step (Shows after clicking Buy Now or Continue) -->
+            @if (isUploadingDocuments()) {
+            <div class="glass-panel slide-in" style="padding: 40px; max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 class="form-title" style="margin-bottom: 8px; font-size: 1.8rem;">Upload Documents</h2>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin: 0;">Our AI automatically extracts the details from your Original Purchase Invoice and Registration Certificate (RC) to save you time.</p>
+                    </div>
+                </div>
+
+                <div class="file-upload-wrapper" style="margin-top: 8px;">
+                    <label class="file-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; display: block;">Original Purchase Invoice</label>
+                    <div class="file-input-container" style="padding: 16px 20px; border-radius: 12px; min-height: unset; display: flex; justify-content: space-between; align-items: center; border: 1px dashed var(--accent); cursor: pointer; background: rgba(91, 192, 190, 0.05); transition: all 0.2s ease;" (click)="invoiceInput.click()" [class.has-file]="invoiceFile">
+                        <input type="file" #invoiceInput (change)="onFileChange($event, 'invoice')" hidden accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="file-display" style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas" [ngClass]="invoiceFile ? 'fa-file-circle-check' : 'fa-file-upload'" style="font-size: 1.2rem; color: var(--accent);"></i>
+                            <span class="file-name-text" style="font-size: 0.95rem; color: var(--text-main);">{{ invoiceFile ? invoiceFile.name : 'Click to select Invoice PDF/Image' }}</span>
+                        </div>
+                        @if (invoiceFile) {
+                        <div class="file-status-badge" style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Selected</div>
+                        }
+                    </div>
+                </div>
+
+                <div class="file-upload-wrapper">
+                    <label class="file-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; display: block;">Registration Certificate (RC)</label>
+                    <div class="file-input-container" style="padding: 16px 20px; border-radius: 12px; min-height: unset; display: flex; justify-content: space-between; align-items: center; border: 1px dashed var(--accent); cursor: pointer; background: rgba(91, 192, 190, 0.05); transition: all 0.2s ease;" (click)="rcInput.click()" [class.has-file]="rcFile">
+                        <input type="file" #rcInput (change)="onFileChange($event, 'rc')" hidden accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="file-display" style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas" [ngClass]="rcFile ? 'fa-file-circle-check' : 'fa-file-upload'" style="font-size: 1.2rem; color: var(--accent);"></i>
+                            <span class="file-name-text" style="font-size: 0.95rem; color: var(--text-main);">{{ rcFile ? rcFile.name : 'Click to select RC copy' }}</span>
+                        </div>
+                        @if (rcFile) {
+                        <div class="file-status-badge" style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Selected</div>
+                        }
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end; align-items: center; padding-top: 16px;">
+                    <button class="btn-text" (click)="cancelQuoteProcess()" style="margin-right: auto; padding: 8px;">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn-outline" style="padding: 8px 20px; font-size: 0.9rem;" (click)="skipExtraction()">Skip Extraction</button>
+                    <button type="button" class="btn-primary" style="padding: 8px 20px; font-size: 0.9rem; background: var(--success); color: white; border: none; box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);" (click)="extractDetails()" [disabled]="isExtracting()">
+                        @if (isExtracting()) {
+                            <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Extracting...
+                        } @else {
+                            <i class="fas fa-wand-magic-sparkles" style="margin-right: 8px;"></i> Extract Details
+                        }
+                    </button>
+                </div>
             </div>
             }
 
             <!-- Application Form (Shows after quote is calculated and user clicks proceed) -->
             @if (isApplying()) {
-            <div class="glass-panel slide-in" style="padding: 32px;">
+            <div class="glass-panel slide-in" style="padding: 32px; position: relative; z-index: 10;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 class="form-title" style="margin-bottom: 0;">Policy Application</h2>
                     <button class="btn-text" (click)="cancelQuoteProcess()">
@@ -371,12 +434,9 @@
                 </div>
 
                 <form class="vims-form" (ngSubmit)="submitApplication()">
-                    <!-- Show Calculator fields if user clicked Buy Now directly -->
-                    @if (!calculatedQuote()) {
-                    <div class="direct-apply-preview">
+                    <div class="direct-apply-preview" style="margin-bottom: 24px;">
                         <div class="form-group">
-                            <input type="number" name="manufactureYear" [(ngModel)]="quoteForm.ManufactureYear"
-                                class="form-control" placeholder=" " [max]="currentYear" required>
+                            <input type="number" name="manufactureYear" [(ngModel)]="quoteForm.ManufactureYear" (ngModelChange)="onQuoteChange()" class="form-control" placeholder=" " [max]="currentYear" required>
                             <label class="floating-label">Manufacture Year</label>
                             @if (quoteForm.ManufactureYear && (currentYear - quoteForm.ManufactureYear > 15)) {
                             <span class="validation-error">Cannot buy insurance for vehicles aged greater than 15
@@ -394,13 +454,13 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showDirectFuelDropdown.set(false)">
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Petrol'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Petrol'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Petrol Engine</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Diesel'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Diesel'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Diesel Engine</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.FuelType = 'Hybrid'; showDirectFuelDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.FuelType = 'Hybrid'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
                                 </div>
                                 }
@@ -408,9 +468,15 @@
                             <label class="floating-label active">Fuel Type</label>
                         </div>
                         <div class="form-group">
-                            <input type="number" name="kilometersDriven" [(ngModel)]="quoteForm.KilometersDriven"
-                                class="form-control" placeholder=" " required>
+                            <input type="number" name="kilometersDriven" [(ngModel)]="quoteForm.KilometersDriven" (ngModelChange)="onQuoteChange()"
+                                class="form-control" placeholder=" " min="0" max="999999" required>
                             <label class="floating-label">KMs Driven</label>
+                            @if (quoteForm.KilometersDriven !== null && quoteForm.KilometersDriven < 0) {
+                            <span class="validation-error">Kilometers cannot be negative</span>
+                            }
+                            @if (quoteForm.KilometersDriven !== null && quoteForm.KilometersDriven > 999999) {
+                            <span class="validation-error">Kilometers exceed maximum limit (999,999)</span>
+                            }
                         </div>
                         <div class="form-group">
                             <div class="vims-custom-select"
@@ -424,10 +490,10 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showDirectUsageDropdown.set(false)">
                                     <div class="vims-option"
-                                        (click)="quoteForm.VehicleType = 'Private'; showDirectUsageDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.VehicleType = 'Private'; showDirectUsageDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Private / Family</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.VehicleType = 'Commercial'; showDirectUsageDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.VehicleType = 'Commercial'; showDirectUsageDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Commercial</div>
                                 </div>
                                 }
@@ -435,9 +501,12 @@
                             <label class="floating-label active">Usage Type</label>
                         </div>
                         <div class="form-group">
-                            <input type="number" name="invoiceAmount" [(ngModel)]="quoteForm.InvoiceAmount"
-                                class="form-control" placeholder=" " required>
-                            <label class="floating-label">Vehicle Value (₹)</label>
+                            <input type="number" name="invoiceAmount" [(ngModel)]="quoteForm.InvoiceAmount" (ngModelChange)="onQuoteChange()"
+                                class="form-control" placeholder=" " min="0" required>
+                            <label class="floating-label">Ex-showroom price (₹)</label>
+                            @if (quoteForm.InvoiceAmount !== null && quoteForm.InvoiceAmount < 0) {
+                            <span class="validation-error">Ex-showroom price cannot be negative</span>
+                            }
                         </div>
                         <div class="form-group">
                             <div class="vims-custom-select"
@@ -451,19 +520,19 @@
                                 <div class="vims-select-options glass-panel fade-in"
                                     (mouseleave)="showDirectDurationDropdown.set(false)">
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 1; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 1; showDirectDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         1 Year</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 2; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 2; showDirectDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         2 Years (5% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 3; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 3; showDirectDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         3 Years (8% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 4; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 4; showDirectDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         4 Years (10% Disc)</div>
                                     <div class="vims-option"
-                                        (click)="quoteForm.PolicyYears = 5; showDirectDurationDropdown.set(false); $event.stopPropagation()">
+                                        (click)="quoteForm.PolicyYears = 5; showDirectDurationDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         5 Years (12% Disc)</div>
                                 </div>
                                 }
@@ -471,7 +540,6 @@
                             <label class="floating-label active">Duration</label>
                         </div>
                     </div>
-                    }
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="form-group" style="grid-column: span 2;">
                             <input type="text" id="regNo" name="regNo" [(ngModel)]="applicationForm.RegistrationNumber"
@@ -524,7 +592,7 @@
 
                     <div style="display: flex; gap: 16px; margin-top: 12px;">
                         <button type="button" class="btn-outline" style="flex: 1;"
-                            (click)="isApplying.set(false); calculatedQuote.set(null);">Back to Quote</button>
+                            (click)="backToQuote()">Back to Quote</button>
                         <button type="submit" class="btn-primary"
                             style="flex: 2; background: var(--success); color: var(--text-on-success); border: none;">
                             Submit Final Application
@@ -537,7 +605,7 @@
             <!-- Quote Output Side Panel -->
             @if (calculatedQuote()) {
             <div class="glass-panel slide-in"
-                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); height: fit-content;">
+                style="padding: 32px; border: 1px solid var(--accent); background: rgba(91, 192, 190, 0.05); height: fit-content; position: relative; z-index: 5;">
                 <div style="text-align: center; margin-bottom: 24px;">
                     <div
                         style="width: 60px; height: 60px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--bg-dark); font-size: 1.5rem;">
@@ -589,12 +657,6 @@
                                 currency:'INR' }}</span>
                         </div>
                         }
-                        @if (calculatedQuote().taxAmount > 0) {
-                        <div class="breakdown-row">
-                            <span class="breakdown-label">GST (18%)</span>
-                            <span class="breakdown-value">{{ calculatedQuote().taxAmount | currency:'INR' }}</span>
-                        </div>
-                        }
 
                         <div class="breakdown-row total-net">
                             <span class="breakdown-label">Final Premium</span>
@@ -602,10 +664,12 @@
                         </div>
                     </div>
                 </div>
-
+                
+                @if (currentIntent() === 'quote') {
                 <button class="btn-primary full-width-btn" (click)="startApplication()">
                     Continue to Application <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
                 </button>
+                }
             </div>
             }
         </div>

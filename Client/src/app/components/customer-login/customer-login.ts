@@ -109,13 +109,20 @@ export class CustomerLogin implements OnInit {
   private routeToDashboard(role: string | null) {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
+    // Fallback: If role is empty, try to get it from the stored token
+    if (!role) {
+      role = this.authService.getRoleFromStoredToken();
+    }
+
+    console.log(`[CustomerLogin] Redirecting with role: ${role}`);
+
     if (returnUrl) {
       this.router.navigateByUrl(returnUrl);
     } else if (role === 'Admin') {
       this.router.navigate(['/admin-dashboard']);
     } else if (role === 'Agent') {
       this.router.navigate(['/agent-dashboard']);
-    } else if (role === 'ClaimsOfficer' || role === 'Claims') {
+    } else if (role === 'ClaimsOfficer' || role === 'Claims' || role === 'Claims Officer') {
       this.router.navigate(['/claims-dashboard']);
     } else {
       const hasIntent = this.route.snapshot.queryParamMap.get('quote_intent');
@@ -151,7 +158,7 @@ export class CustomerLogin implements OnInit {
         }, 1500);
       },
       error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to set security question.');
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });
@@ -205,7 +212,7 @@ export class CustomerLogin implements OnInit {
         }, 1500);
       },
       error: (err: any) => {
-        this.errorMessage.set(err.error?.message || err.error || 'Failed to complete first login.');
+        this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
     });

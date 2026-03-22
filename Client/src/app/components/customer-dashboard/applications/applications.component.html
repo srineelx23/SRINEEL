@@ -52,7 +52,7 @@
                             </div>
                         </td>
                         <td>
-                            <div class="semi-bold text-accent">{{ a.invoiceAmount | currency:'INR' }}</div>
+                            <div class="text-accent" style="font-weight: 800;">{{ a.invoiceAmount | currency:'INR' }}</div>
                         </td>
                         <td>
                             <div class="user-info">
@@ -62,7 +62,7 @@
                         </td>
                         <td>
                             <span class="status-pill" [ngClass]="(a.status?.toString().toLowerCase() === 'approved' || a.status === 1) ? 'approved' : (a.status?.toString().toLowerCase() === 'rejected' || a.status === 2) ? 'rejected' : 'underreview'">
-                                {{ a.status?.toString().toLowerCase() === 'underreview' ? 'Under Review' : (a.status === 0 ? 'Under Review' : a.status) }}
+                                {{ (a.status === 0 || a.status?.toString().toLowerCase() === 'underreview') ? 'Under Review' : (a.status | vimsFormat) }}
                             </span>
                         </td>
                         <td style="max-width: 300px;">

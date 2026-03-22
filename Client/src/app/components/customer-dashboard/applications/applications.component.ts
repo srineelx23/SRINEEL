@@ -1,10 +1,11 @@
 import { Component, Input, Output, EventEmitter, Signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-applications',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, VimsFormatPipe],
   templateUrl: './applications.component.html',
   styleUrl: './applications.component.css',
 })

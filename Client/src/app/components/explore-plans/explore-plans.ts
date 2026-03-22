@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
 import { AuthService } from '../../services/auth.service';
+import { VimsFormatPipe } from '../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-explore-plans',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VimsFormatPipe],
   templateUrl: './explore-plans.html',
   styleUrl: './explore-plans.css'
 })
@@ -40,11 +41,11 @@ export class ExplorePlans implements OnInit {
   // Quote State
   selectedPlanForQuote = signal<number | null>(null);
   quoteForm = {
-    InvoiceAmount: null,
+    InvoiceAmount: null as number | null,
     ManufactureYear: new Date().getFullYear(),
     FuelType: 'Petrol',
     VehicleType: 'Private',
-    KilometersDriven: null,
+    KilometersDriven: null as number | null,
     PolicyYears: 1,
     PlanId: null as number | null
   };
@@ -65,7 +66,10 @@ export class ExplorePlans implements OnInit {
   showDirectDurationDropdown = signal(false);
 
   // Application State
+  currentIntent = signal<'quote' | 'apply' | null>(null);
   isApplying = signal(false);
+  isUploadingDocuments = signal(false);
+  isExtracting = signal(false);
   applicationForm = {
     RegistrationNumber: '',
     Make: '',
@@ -207,6 +211,8 @@ export class ExplorePlans implements OnInit {
   onGetQuote(planId: number) {
     if (!this.checkAuth(planId)) return;
     this.setupPlanForm(planId);
+    this.currentIntent.set('quote');
+    this.isUploadingDocuments.set(true);
     this.isApplying.set(false);
     this.calculatedQuote.set(null);
   }
@@ -214,7 +220,9 @@ export class ExplorePlans implements OnInit {
   onBuyNow(planId: number) {
     if (!this.checkAuth(planId)) return;
     this.setupPlanForm(planId);
-    this.isApplying.set(true);
+    this.currentIntent.set('apply');
+    this.isUploadingDocuments.set(true);
+    this.isApplying.set(false);
     this.calculatedQuote.set(null);
   }
 
@@ -256,11 +264,64 @@ export class ExplorePlans implements OnInit {
 
   cancelQuoteProcess() {
     this.selectedPlanForQuote.set(null);
+    this.currentIntent.set(null);
     this.calculatedQuote.set(null);
     this.isApplying.set(false);
+    this.isUploadingDocuments.set(false);
+    this.isExtracting.set(false);
     this.isEVPlan.set(false);
     this.invoiceFile = null;
     this.rcFile = null;
+
+    this.quoteForm = {
+      InvoiceAmount: null as number | null,
+      ManufactureYear: new Date().getFullYear(),
+      FuelType: 'Petrol',
+      VehicleType: 'Private',
+      KilometersDriven: null as number | null,
+      PolicyYears: 1,
+      PlanId: null as number | null
+    };
+
+    this.applicationForm = {
+      RegistrationNumber: '',
+      Make: '',
+      Model: ''
+    };
+  }
+
+  onQuoteChange() {
+    if (this.currentIntent() === 'quote' || this.currentIntent() === 'apply') {
+        const p = this.quoteForm;
+        if (!p.InvoiceAmount || !p.PlanId || p.KilometersDriven === null || p.KilometersDriven === undefined || p.KilometersDriven < 0 || p.KilometersDriven > 999999) {
+            this.calculatedQuote.set(null);
+            return;
+        }
+        const currentYear = new Date().getFullYear();
+        if (currentYear - Number(p.ManufactureYear) > 15 || Number(p.ManufactureYear) < 0 || Number(p.ManufactureYear) > currentYear) {
+            this.calculatedQuote.set(null);
+            return;
+        }
+
+        const payload = {
+          InvoiceAmount: Number(p.InvoiceAmount),
+          ManufactureYear: Number(p.ManufactureYear),
+          FuelType: p.FuelType,
+          VehicleType: p.VehicleType,
+          KilometersDriven: Number(p.KilometersDriven),
+          PolicyYears: Number(p.PolicyYears),
+          PlanId: Number(p.PlanId)
+        };
+
+        this.customerService.calculateQuote(payload).subscribe({
+          next: (res) => {
+            this.calculatedQuote.set(res);
+          },
+          error: (err: any) => {
+             this.calculatedQuote.set(null);
+          }
+        });
+    }
   }
 
   calculateQuote() {
@@ -290,7 +351,7 @@ export class ExplorePlans implements OnInit {
       return;
     }
 
-    if (payload.InvoiceAmount < 0 || payload.KilometersDriven < 0 || payload.ManufactureYear < 0 || payload.ManufactureYear > currentYear) {
+    if (payload.InvoiceAmount < 0 || payload.KilometersDriven < 0 || payload.KilometersDriven > 999999 || payload.ManufactureYear < 0 || payload.ManufactureYear > currentYear) {
       this.router.navigate(['/error'], {
         state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
       });
@@ -302,7 +363,6 @@ export class ExplorePlans implements OnInit {
         this.calculatedQuote.set(res);
       },
       error: (err: any) => {
-        // Interceptor will handle the redirect, but we can set a specific title here if we want
         this.router.navigate(['/error'], {
           state: { status: err.status, message: err.error?.message || "Failed to calculate quote.", title: 'Calculation Error' }
         });
@@ -311,7 +371,139 @@ export class ExplorePlans implements OnInit {
   }
 
   startApplication() {
+    this.currentIntent.set('apply');
+    this.isUploadingDocuments.set(false);
     this.isApplying.set(true);
+  }
+
+  backToQuote() {
+    this.currentIntent.set('quote');
+    this.isApplying.set(false);
+    this.onQuoteChange();
+  }
+
+  skipExtraction() {
+    this.isUploadingDocuments.set(false);
+    if (this.currentIntent() === 'apply') {
+        this.isApplying.set(true);
+    } else {
+        this.isApplying.set(false); // quote form will show
+    }
+  }
+
+  extractDetails() {
+    if (!this.rcFile || !this.invoiceFile) {
+      this.errorMessage.set('Please select both RC and Invoice documents prior to extraction.');
+      this.autoHideToast();
+      return;
+    }
+
+    this.isExtracting.set(true);
+    this.errorMessage.set('');
+
+    this.customerService.extractDocuments(this.rcFile, this.invoiceFile).subscribe({
+      next: (res: any) => {
+        this.isExtracting.set(false);
+        
+        let extractedYear = res.year || this.currentYear;
+        let invoiceAmount = res.invoiceAmount || 0;
+
+        if (extractedYear > this.currentYear) {
+            this.errorMessage.set('Extracted Manufacture Year cannot be greater than the current year. Please try a clearer image or fill manually.');
+            this.autoHideToast();
+            return;
+        }
+
+        if (this.currentYear - extractedYear > 15) {
+            this.errorMessage.set('Cannot buy insurance for vehicles aged greater than 15 years.');
+            this.autoHideToast();
+            return;
+        }
+
+        if (invoiceAmount <= 0) {
+            this.errorMessage.set('Could not extract a valid invoice amount. Please try a clearer invoice image or fill manually.');
+            this.autoHideToast();
+            return;
+        }
+
+        
+        this.applicationForm.RegistrationNumber = res.registrationNumber || '';
+        this.applicationForm.Make = res.make || '';
+        this.applicationForm.Model = res.model || '';
+        
+        this.quoteForm.InvoiceAmount = invoiceAmount;
+        this.quoteForm.ManufactureYear = extractedYear;
+        
+        if (res.fuelType) {
+            const ft = res.fuelType.toString().toLowerCase();
+            const documentIndicatesEV = ft.includes('ev') || ft.includes('electric');
+            
+            if (this.isEVPlan() && !documentIndicatesEV) {
+                this.errorMessage.set('Plan mismatch: You selected an EV Plan, but your document indicates a non-EV vehicle.');
+                this.autoHideToast();
+                return;
+            } else if (!this.isEVPlan() && documentIndicatesEV) {
+                this.errorMessage.set('Plan mismatch: You selected a traditional Plan, but your document indicates an EV.');
+                this.autoHideToast();
+                return;
+            }
+
+            if (ft.includes('petrol')) this.quoteForm.FuelType = 'Petrol';
+            else if (ft.includes('diesel')) this.quoteForm.FuelType = 'Diesel';
+            else if (ft.includes('hybrid')) this.quoteForm.FuelType = 'Hybrid';
+            else if (documentIndicatesEV || ft.includes('cng')) this.quoteForm.FuelType = ft.includes('cng') ? 'CNG' : 'EV';
+        }
+
+        if (res.vehicleType) {
+            const vt = res.vehicleType.toString().toLowerCase();
+            if (vt.includes('commercial')) this.quoteForm.VehicleType = 'Commercial';
+            else this.quoteForm.VehicleType = 'Private';
+        }
+
+        // ── Vehicle Class vs Plan Type validation ──────────────────────────
+        // The plan's ApplicableVehicleType must match the RC's extracted class.
+        // e.g., a TwoWheeler RC cannot be applied to a Car plan.
+        if (res.vehicleClass && this.selectedPlanDetails()) {
+            const planVehicleType: string = (this.selectedPlanDetails()?.applicableVehicleType || '').toLowerCase();
+            const rcClass: string = (res.vehicleClass || '').toLowerCase();
+
+            // Map aliases so comparisons work:
+            // Plan types:  car, twowheeler, threewheeler, evcar, evtwowheeler, evthreewheeler, heavyvehicle
+            // RC classes:  car, twowheeler, threewheeler, evcar, evtwowheeler, evthreewheeler, heavyvehicle
+            const planGroup = this.getVehicleGroup(planVehicleType);
+            const rcGroup   = this.getVehicleGroup(rcClass);
+
+            if (planGroup !== rcGroup) {
+                this.errorMessage.set(
+                  `Vehicle mismatch: Your RC is for a ${this.friendlyVehicleLabel(rcClass)} ` +
+                  `but the selected plan is for ${this.friendlyVehicleLabel(planVehicleType)}s. ` +
+                  `Please upload the correct documents or choose a matching plan.`
+                );
+                this.autoHideToast();
+                this.isUploadingDocuments.set(true);  // go back to upload page
+                this.isApplying.set(false);
+                return;
+            }
+        }
+
+        this.isUploadingDocuments.set(false);
+        if (this.currentIntent() === 'apply') {
+            this.isApplying.set(true);
+            this.successMessage.set('Details extracted. Please enter the kilometers driven.');
+        } else {
+            this.isApplying.set(false);
+            this.onQuoteChange(); // Auto-calculate premium if inputs filled
+            this.successMessage.set('Details extracted. Please enter the kilometers driven to see your quote.');
+        }
+        
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: (err: any) => {
+        this.isExtracting.set(false);
+        this.errorMessage.set('Extraction failed. Please ensure images are clear.');
+        this.autoHideToast();
+      }
+    });
   }
 
   onFileChange(event: any, field: 'invoice' | 'rc') {
@@ -404,4 +596,32 @@ export class ExplorePlans implements OnInit {
     this.isLoggedIn.set(false);
     this.userName.set(null);
   }
+
+  /** Normalizes vehicle type strings to a group key used for plan/RC matching. */
+  getVehicleGroup(type: string): string {
+    const t = (type || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (t === 'evcar')          return 'evcar';
+    if (t === 'evtwowheeler')   return 'evtwowheeler';
+    if (t === 'evthreewheeler') return 'evthreewheeler';
+    if (t === 'twowheeler')     return 'twowheeler';
+    if (t === 'threewheeler')   return 'threewheeler';
+    if (t === 'heavyvehicle')   return 'heavyvehicle';
+    return 'car'; // default — Car, LMV, etc.
+  }
+
+  /** Returns a user-friendly label for a vehicle type string. */
+  friendlyVehicleLabel(type: string): string {
+    const map: Record<string, string> = {
+      car:            'Car',
+      evcar:          'Electric Car (EV)',
+      twowheeler:     'Two-Wheeler',
+      evtwowheeler:   'Electric Two-Wheeler (EV)',
+      threewheeler:   'Three-Wheeler',
+      evthreewheeler: 'Electric Three-Wheeler (EV)',
+      heavyvehicle:   'Heavy Vehicle',
+    };
+    const key = (type || '').toLowerCase().replace(/[^a-z]/g, '');
+    return map[key] || type;
+  }
 }
+

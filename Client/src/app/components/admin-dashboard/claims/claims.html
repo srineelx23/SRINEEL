@@ -39,7 +39,7 @@
                 <thead>
                     <tr>
                         <th>Claim No.</th>
-                        <th>Policy ID</th>
+                        <th>Policy Number</th>
                         <th>Vehicle</th>
                         <th>Type</th>
                         <th>Filed Date</th>
@@ -52,7 +52,7 @@
                     @for (c of sortedClaims(); track (c.claimId || $index)) {
                     <tr>
                         <td class="id-field">#{{ c.claimNumber || c.claimId }}</td>
-                        <td><span class="policy-badge">{{ c.policyNumber || c.policyId }}</span></td>
+                        <td><span class="policy-badge">{{ c.policyNumber || c.policy?.policyNumber || ('PLC-' + c.policyId) }}</span></td>
                         <td>
                             @if (c.vehicle) {
                             <div class="vehicle-mini">
@@ -60,7 +60,7 @@
                                 <span class="model-info">{{ c.vehicle.make }} {{ c.vehicle.model }}</span>
                             </div>
                             } @else {
-                            <span class="muted">N/A</span>
+                            <span class="na-bold">N/A</span>
                             }
                         </td>
                         <td>{{ c.claimType }}</td>
@@ -74,7 +74,7 @@
                             @if (c.status === 'Approved' || c.status === 1) {
                                 <span style="color: var(--error); font-weight: 800;">-{{ c.approvedAmount | currency:'INR' }}</span>
                             } @else if (c.status === 'Rejected' || c.status === 2) {
-                                <span class="muted">N/A</span>
+                                <span class="na-bold">N/A</span>
                             } @else {
                                 <span class="text-warning">Pending...</span>
                             }

@@ -1,0 +1,71 @@
+<div class="notifications-page fade-in">
+    <!-- Top Level Header -->
+    <div class="header-toplevel">
+        <div class="header-left">
+            <h2>Notifications Center</h2>
+            <p>Manage and view your recent system updates and notifications.</p>
+        </div>
+        <div class="header-actions">
+            <div class="filter-pills">
+                <button (click)="setFilter('all')" [class.active]="filter() === 'all'">All</button>
+                <button (click)="setFilter('unread')" [class.active]="filter() === 'unread'">Unread</button>
+            </div>
+            @if (notifications().length > 0) {
+            <button (click)="markAllAsRead()" class="btn-mark-all">Mark All as Read</button>
+            }
+        </div>
+    </div>
+
+    <!-- Wide Div for Notifications -->
+    <div class="notifications-wide-container">
+        @if (loading()) {
+        <div class="loader-container">
+            <div class="loader"></div>
+            <p>Gathering your notifications...</p>
+        </div>
+        } @else {
+        <div class="notifications-list custom-scrollbar">
+            @if (notifications().length === 0) {
+            <div class="empty-state">
+                <div class="empty-icon-wrapper">
+                    <i class="fa-solid fa-bell-slash"></i>
+                </div>
+                <h3>No notifications found</h3>
+                <p>When you have new updates, they'll appear here.</p>
+            </div>
+            } @else {
+            @for (notif of notifications(); track notif.notificationId) {
+            <div class="notification-card" [class.unread]="!notif.isRead"
+                (click)="markAsRead(notif.notificationId)">
+                <div class="card-icon">
+                    <i class="fa-solid" [ngClass]="getNotificationIcon(notif.type)"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <h4 class="notif-title">{{ notif.title }}</h4>
+                        <span class="notif-date">{{ notif.createdAt | date: 'medium' }}</span>
+                    </div>
+                    <p class="notif-msg">{{ notif.message }}</p>
+                    @if (notif.entityName) {
+                    <div class="entity-tag">
+                        <i class="fa-solid fa-tag"></i>
+                        <span>{{ notif.entityName }} #{{ notif.entityId }}</span>
+                    </div>
+                    }
+                </div>
+                <div class="card-actions">
+                    <button class="delete-btn" (click)="delete(notif.notificationId, $event)"
+                        title="Delete Notification">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                @if (!notif.isRead) {
+                <div class="unread-dot"></div>
+                }
+            </div>
+            }
+            }
+        </div>
+        }
+    </div>
+</div>

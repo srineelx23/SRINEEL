@@ -72,6 +72,13 @@ export class CustomerService {
         return this.http.post(`${this.backendUrl}/vehicle-application`, formData, { responseType: 'text' });
     }
 
+    extractDocuments(rcDocument: File, invoiceDocument: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('rcDocument', rcDocument);
+        formData.append('invoiceDocument', invoiceDocument);
+        return this.http.post(`${this.backendUrl}/extract-documents`, formData);
+    }
+
     getMyApplications(): Observable<any> {
         return this.http.get(`${this.backendUrl}/my-applications`);
     }
@@ -123,6 +130,10 @@ export class CustomerService {
 
     rejectTransfer(transferId: number): Observable<any> {
         return this.http.post(`${this.backendUrl}/transfer/${transferId}/reject`, {});
+    }
+
+    downloadPolicyContract(policyId: number): Observable<Blob> {
+        return this.http.get(`${this.backendUrl}/policy/download/${policyId}`, { responseType: 'blob' });
     }
 
     requestRoadsideAssistance(data: any): Observable<any> {

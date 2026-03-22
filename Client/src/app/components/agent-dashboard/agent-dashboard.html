@@ -67,7 +67,11 @@
                 (onChangePassword)="changePasswordWithData($event)">
             </app-settings>
         }
+        @if (activeTab() === 'notifications') {
+            <app-notifications></app-notifications>
+        }
     </main>
+
 
     <!-- Global Toasts -->
     @if (errorMessage()) {

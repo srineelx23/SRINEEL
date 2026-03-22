@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+
 
 @Injectable({
     providedIn: 'root'
@@ -12,11 +15,23 @@ export class AuthService {
     private router = inject(Router);
     private backendUrl = 'https://localhost:7257/api/Auth';
 
+    private currentUserSubject = new BehaviorSubject<any>(this.getUserFromToken());
+    public currentUser$ = this.currentUserSubject.asObservable();
+
+
     constructor() { }
 
     login(credentials: any): Observable<any> {
-        return this.http.post(`${this.backendUrl}/login`, credentials);
+        return this.http.post(`${this.backendUrl}/login`, credentials).pipe(
+            tap((res: any) => {
+                if (res && res.token) {
+                    sessionStorage.setItem('token', res.token);
+                    this.currentUserSubject.next(this.getUserFromToken());
+                }
+            })
+        );
     }
+
 
     registerCustomer(data: any): Observable<any> {
         // The backend returns a plain string: "Customer Registered Successfully"
@@ -86,8 +101,27 @@ export class AuthService {
     }
 
     logout(): void {
-
         sessionStorage.removeItem('token');
+        this.currentUserSubject.next(null);
         this.router.navigate(['/login']);
     }
+
+    private getUserFromToken() {
+        const token = sessionStorage.getItem('token');
+        if (!token) return null;
+        try {
+            return jwtDecode(token);
+        } catch {
+            return null;
+        }
+    }
+
+    getToken(): string | null {
+        return sessionStorage.getItem('token');
+    }
+
+    getUserRole(): string | null {
+        return this.getRoleFromStoredToken();
+    }
 }
+

@@ -1,11 +1,12 @@
 import { Component, input, output, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-plans',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VimsFormatPipe],
   templateUrl: './plans.html',
   styleUrl: './plans.css',
 })

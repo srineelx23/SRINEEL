@@ -44,20 +44,20 @@
                     <td>{{ c.claimNumber }}</td>
                     <td>{{ c.customer?.fullName || 'Customer' }}</td>
                     <td>{{ c.vehicle?.registrationNumber }}</td>
-                    <td>{{ c.claimType }}</td>
+                    <td>{{ c.claimType | vimsFormat }}</td>
                     <td>
                         <div style="font-size: 0.85rem; font-weight: 500;">{{ c.createdAt | date:'MMM d, y' }}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">{{ c.createdAt | date:'h:mm a' }}</div>
                     </td>
                     <td>
                         @if (c.status === 'Approved') {
-                            <span style="font-weight: 700; color: var(--success);">{{ c.approvedAmount | currency:'INR':'symbol':'1.0-0' }}</span>
+                            <span style="font-weight: 800; color: var(--error);">-{{ c.approvedAmount | currency:'INR':'symbol':'1.0-0' }}</span>
                         } @else {
                             <span style="color: var(--text-muted);">--</span>
                         }
                     </td>
                     <td>
-                        <span class="status-badge" [ngClass]="c.status?.toLowerCase()">{{ c.status }}</span>
+                        <span class="status-badge" [ngClass]="c.status?.toLowerCase()">{{ c.status | vimsFormat }}</span>
                     </td>
                 </tr>
                 }
@@ -102,7 +102,7 @@
             </div>
             <div class="claim-info-card">
                 <label>Incident Details</label>
-                <p class="value">{{ selectedClaim().claimType }}</p>
+                <p class="value">{{ selectedClaim().claimType | vimsFormat }}</p>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">Policy #{{ selectedClaim().policy?.policyNumber }}</p>
             </div>
             <div class="claim-info-card" style="grid-column: span 2;">
@@ -116,8 +116,8 @@
         <div class="claim-settlement-banner" [ngStyle]="{'background': selectedClaim().status === 'Approved' ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)'}" style="margin: 0 28px 24px; border: 1px solid var(--glass-border);">
             <div>
                 <label>Final Resolution</label>
-                <p class="claim-amount" [ngStyle]="{'color': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'}">
-                    {{ selectedClaim().status === 'Approved' ? (selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0') : 'Claim Rejected' }}
+                <p class="claim-amount" style="color: var(--error); font-weight: 800;">
+                    {{ selectedClaim().status === 'Approved' ? '-' + (selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0') : 'Claim Rejected' }}
                 </p>
             </div>
             @if (selectedClaim().rejectionReason) {
@@ -126,6 +126,27 @@
                 <p style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6; margin: 0; font-style: italic;">"{{ selectedClaim().rejectionReason }}"</p>
             </div>
             }
+        </div>
+
+        <!-- Documentation Access -->
+        <div class="supporting-docs-section" style="border-top: 1px solid var(--glass-border); padding: 28px;">
+            <header style="font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-folder-tree" style="color: var(--accent);"></i>
+                <span>Document Repository</span>
+            </header>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button (click)="onDownloadPolicyContract.emit(selectedClaim().policyId)" class="btn-outline"
+                    style="padding: 10px 20px; font-size: 0.9rem; border: 1px solid var(--accent); cursor: pointer; background: transparent; border-radius: 4px; display: flex; align-items: center; gap: 8px; color: var(--accent);">
+                    <i class="fa-solid fa-file-contract"></i> View Policy Contract
+                </button>
+                
+                @if (selectedClaim().status === 'Approved') {
+                <button (click)="onDownloadSettlementReport.emit(selectedClaim().claimId)" class="btn-outline"
+                    style="padding: 10px 20px; font-size: 0.9rem; border: 1px solid var(--success); cursor: pointer; background: transparent; border-radius: 4px; display: flex; align-items: center; gap: 8px; color: var(--success);">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Settlement Report
+                </button>
+                }
+            </div>
         </div>
     </div>
     }

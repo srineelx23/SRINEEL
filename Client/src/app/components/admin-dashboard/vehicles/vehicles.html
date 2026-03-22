@@ -18,7 +18,7 @@
                         <span>{{
                             vehicleStatusFilter() === 'All' ? 'All Vehicles' :
                             vehicleStatusFilter() === 'PendingPayment' ? 'Awaiting Payment' :
-                            vehicleStatusFilter()
+                            (vehicleStatusFilter() | vimsFormat)
                             }}</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -90,7 +90,7 @@
                         <td class="semi-bold">{{ (v.premiumAmount || 0) | currency:'INR' }}</td>
                         <td>
                             <span class="status-pill" [class]="v.policyStatus?.toString().toLowerCase() || 'neutral'">
-                                {{ v.policyStatus || 'N/A' }}
+                                {{ v.policyStatus | vimsFormat }}
                             </span>
                         </td>
                         <td style="color: var(--success); font-weight: 800;">
@@ -113,8 +113,9 @@
         <button class="btn-outline" style="margin-bottom: 24px;" (click)="backToVehicles()"><i class="fas fa-arrow-left"></i> Back to
             Registry</button>
 
-        <h2 style="margin-bottom: 16px; color: var(--text-main);">Vehicle Dossier: {{
-            selectedVehicle().registrationNumber }}</h2>
+        <h2 style="margin-bottom: 16px; color: var(--text-main); font-weight: 700;">
+            Vehicle Registration No.: <span style="color: var(--accent);">{{ selectedVehicle().registrationNumber || selectedVehicle().RegistrationNumber }}</span>
+        </h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px;">
             <div class="stat-card" style="padding: 16px; border-left: 3px solid var(--accent);">
                 <h3>Owner Profile</h3>
@@ -158,6 +159,7 @@
                             <th>Plan</th>
                             <th>Premium</th>
                             <th>Status</th>
+                            <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -170,6 +172,12 @@
                             <td><span class="status-pill"
                                     [class]="(p.status === 'Active' || p.status === 0) ? 'active' : 'inactive'">{{
                                     (p.status === 'Active' || p.status === 0) ? 'Active' : p.status }}</span></td>
+                            <td class="text-center">
+                                <button class="btn-icon" (click)="onDownloadPolicy.emit(p.policyId)" title="View Policy Contract">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                    <span>View Policy Contract</span>
+                                </button>
+                            </td>
                         </tr>
                         }
                     </tbody>
@@ -196,8 +204,7 @@
                     <tbody>
                         @for (pmt of vehicleTransactions(); track (pmt.id || $index)) {
                         <tr>
-                            <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ pmt.id
-                                || 'N/A' }}</td>
+                             <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">#{{ pmt.id || '' }} @if (!pmt.id) { <span class="na-bold">N/A</span> }</td>
                             <td>
                                 <div class="user-info">
                                     <span class="name" style="font-size: 0.9rem;">{{ pmt.date | date:'dd MMM yyyy'
@@ -214,9 +221,9 @@
                                     'Claim Payout' }}
                                 </span>
                             </td>
-                            <td class="semi-bold" [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
-                                {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
-                            </td>
+                             <td style="font-weight: 800;" [style.color]="pmt.isCredit ? 'var(--success)' : 'var(--error)'">
+                                 {{ pmt.isCredit ? '+' : '-' }}{{ pmt.amount | currency:'INR' }}
+                             </td>
                             <td><span class="status-pill"
                                     [class]="(pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ? 'approved' : 'pending'">
                                     {{ (pmt.status === 'Paid' || pmt.status === 1 || pmt.status === 'Approved') ?
@@ -226,10 +233,10 @@
                                 @if (pmt.isCredit && (pmt.status === 'Paid' || pmt.status === 1 || pmt.status ===
                                 'Approved')) {
                                 <button class="btn-icon" (click)="onDownloadInvoice.emit(pmt.id)"
-                                    [title]="pmt.type === 'Transfer Fee' ? 'Download Transfer Certificate' : 'Download Premium Invoice'">
+                                    [title]="pmt.type === 'Transfer Fee' ? 'View Transfer Certificate' : 'View Premium Invoice'">
                                     <i class="fa-solid"
                                         [ngClass]="pmt.type === 'Transfer Fee' ? 'fa-file-shield' : 'fa-file-invoice'"></i>
-                                    <span>Invoice</span>
+                                    <span>{{ pmt.type === 'Transfer Fee' ? 'View Certificate' : 'View Premium' }}</span>
                                 </button>
                                 } @else {
                                 <span class="muted">--</span>
@@ -270,11 +277,11 @@
                                 </div>
                             </td>
                             <td>{{ c.claimType }}</td>
-                            <td class="text-danger semi-bold">
+                            <td style="font-weight: 800; color: var(--error);">
                                 @if (c.status === 1 || c.status === 'Approved') {
                                 -{{ c.approvedAmount | currency:'INR' }}
                                 } @else if (c.status === 2 || c.status === 'Rejected') {
-                                <span class="muted">N/A</span>
+                                 <span class="na-bold">N/A</span>
                                 } @else {
                                 <span class="text-warning">Pending</span>
                                 }
@@ -286,9 +293,9 @@
                             <td class="text-center">
                                 @if (c.status === 1 || c.status === 'Approved') {
                                 <button class="btn-icon" (click)="onDownloadReport.emit(c.claimId)"
-                                    title="Download Settlement Report">
+                                    title="View Settlement Report">
                                     <i class="fa-solid fa-file-pdf"></i>
-                                    <span>Report</span>
+                                    <span>View Claim Report</span>
                                 </button>
                                 } @else {
                                 <span class="muted">--</span>
@@ -301,18 +308,21 @@
             </div>
         </div>
 
-        <h3 style="margin: 24px 0 16px; border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+        <h3 style="margin: 24px 0 16px; border-bottom: 2px solid var(--accent); display: inline-block; padding-bottom: 4px;">
             Linked Documents</h3>
-        <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-            @for (doc of vehicleDocuments(); track doc.name) {
-            <a [href]="doc.url" target="_blank"
-                style="color: var(--accent); margin-right: 16px; text-decoration: underline; display: inline-block; margin-bottom: 8px;"><i class="fas fa-file-alt"></i>
-                {{ doc.name }}</a>
-            }
-            @if (vehicleDocuments().length === 0) {
-            <p style="color: var(--text-muted); font-size: 0.9rem;">
-                No documents attached to this vehicle or its claims.</p>
-            }
+        <div class="glass-panel" style="padding: 24px; margin-top: 8px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                @for (doc of vehicleDocuments(); track doc.name) {
+                <a [href]="doc.url" target="_blank" class="doc-link">
+                    <i class="fas fa-file-alt"></i>
+                    {{ doc.name }}
+                </a>
+                }
+                @if (vehicleDocuments().length === 0) {
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    No documents attached to this vehicle or its claims.</p>
+                }
+            </div>
         </div>
     </div>
     }

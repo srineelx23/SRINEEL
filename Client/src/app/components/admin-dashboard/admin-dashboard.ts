@@ -18,6 +18,7 @@ import { AuditLogsComponent } from './audit-logs/audit-logs';
 import { SettingsComponent } from './settings/settings';
 import { TransfersComponent } from './transfers/transfers';
 import { GaragesComponent } from './garages/garages';
+import { NotificationsComponent } from '../notifications/notifications';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -35,8 +36,10 @@ import { GaragesComponent } from './garages/garages';
     AuditLogsComponent,
     SettingsComponent,
     TransfersComponent,
-    GaragesComponent
+    GaragesComponent,
+    NotificationsComponent
   ],
+
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
 })
@@ -192,7 +195,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
       const policy = policies.find(p => p.policyId === c.policyId);
       return {
         ...c,
-        vehicle: policy?.vehicle || null
+        vehicle: policy?.vehicle || null,
+        policyNumber: policy?.policyNumber || null
       };
     });
 
@@ -266,10 +270,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
     // Filter for only RC and Invoice documents
     if (v.documents && Array.isArray(v.documents)) {
       v.documents.forEach((d: any) => {
-        const type = (d.documentType || '').toLowerCase();
-        if (d.filePath && (type.includes('rc') || type.includes('invoice'))) {
+        const typeStr = (d.documentType || '').toLowerCase();
+        if (d.filePath && (typeStr.includes('rc') || typeStr.includes('invoice'))) {
           docs.push({
-            name: d.documentType || 'Vehicle Document',
+            name: 'View ' + (d.documentType || 'Vehicle Document'),
             url: 'https://localhost:7257/' + d.filePath
           });
         }
@@ -1335,11 +1339,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.adminService.downloadClaimReport(claimId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Claim_Report_${claimId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        window.open(url, '_blank');
+        this.successMessage.set("Report opened in new tab.");
+        setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
         // Handle Blob errors (400, 404, 500)
@@ -1361,14 +1363,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.adminService.downloadInvoice(paymentId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const payment = this.payments().find(p => p.paymentId === paymentId);
-        const isTransfer = payment?.transactionReference === 'Transfer Fee' || payment?.transactionReference === 'Transfer Fees';
-        const fileName = isTransfer ? `Transfer_Certificate_${paymentId}.pdf` : `Invoice_Payment_${paymentId}.pdf`;
-        a.download = fileName;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        window.open(url, '_blank');
+        this.successMessage.set("Document opened in new tab.");
+        setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
         if (err.error instanceof Blob) {
@@ -1389,11 +1386,32 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.adminService.downloadTransferReport(transferId).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Transfer_Certificate_${transferId}.pdf`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        window.open(url, '_blank');
+        this.successMessage.set("Certificate opened in new tab.");
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err: any) => {
+        if (err.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            this.errorMessage.set(extractErrorMessage({ ...err, error: e.target.result }));
+          };
+          reader.readAsText(err.error);
+        } else {
+          this.errorMessage.set(extractErrorMessage(err));
+        }
+        setTimeout(() => this.errorMessage.set(''), 5000);
+      }
+    });
+  }
+
+  downloadPolicy(policyId: number) {
+    this.adminService.downloadPolicy(policyId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        this.successMessage.set("Policy document opened in new tab.");
+        setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
         if (err.error instanceof Blob) {

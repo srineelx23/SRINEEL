@@ -6,12 +6,14 @@ import { AuthService } from '../../services/auth.service';
 import { AgentService } from '../../services/agent.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
-import { Navbar } from './navbar/navbar';
-import { Overview } from './overview/overview';
-import { Applications } from './applications/applications';
+import { NavbarComponent } from './navbar/navbar';
+import { OverviewComponent } from './overview/overview';
+import { ApplicationsComponent } from './applications/applications';
 import { HistoryComponent } from './history/history';
-import { Customers } from './customers/customers';
-import { Settings } from './settings/settings';
+import { CustomersComponent } from './customers/customers';
+import { SettingsComponent } from './settings/settings';
+import { NotificationsComponent } from '../notifications/notifications';
+
 
 @Component({
   selector: 'app-agent-dashboard',
@@ -19,13 +21,15 @@ import { Settings } from './settings/settings';
   imports: [
     CommonModule, 
     FormsModule, 
-    Navbar, 
-    Overview, 
-    Applications, 
+    NavbarComponent, 
+    OverviewComponent, 
+    ApplicationsComponent, 
     HistoryComponent, 
-    Customers, 
-    Settings
+    CustomersComponent, 
+    SettingsComponent,
+    NotificationsComponent
   ],
+
   templateUrl: './agent-dashboard.html',
   styleUrl: './agent-dashboard.css',
 })
@@ -270,6 +274,21 @@ export class AgentDashboard implements OnInit {
       this.errorMessage.set('Please provide a reason for rejection.');
       this.autoHideToast();
       return;
+    }
+
+    // ── Invoice Amount Mismatch Check ─────────────────────────────────────
+    // Compare the agent's entered amount against the customer's OCR-extracted amount.
+    if (this.reviewAction.approved) {
+      const submittedByCustomer: number = Number(this.selectedApp()?.invoiceAmount ?? 0);
+      const enteredByAgent: number = Number(this.reviewAction.invoiceAmount ?? 0);
+
+      if (submittedByCustomer > 0 && enteredByAgent !== submittedByCustomer) {
+        this.errorMessage.set(
+          `The invoice amount differs from the invoice document (document shows ₹${submittedByCustomer.toLocaleString('en-IN')}). Please verify before approving.`
+        );
+        this.autoHideToast();
+        return;
+      }
     }
 
     const payload = {

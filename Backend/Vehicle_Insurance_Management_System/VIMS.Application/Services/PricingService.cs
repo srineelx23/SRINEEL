@@ -74,10 +74,10 @@ namespace VIMS.Application.Services
                 annualPremium -= loyaltyDiscount;
             }
 
-            // GST / Tax (Assume 18% standard for insurance in India)
-            decimal taxRate = 0.18m;
-            decimal taxAmount = annualPremium * taxRate;
-            decimal finalPremium = annualPremium + taxAmount;
+            // GST / Tax (Insurance is free of GST)
+            decimal taxRate = 0m;
+            decimal taxAmount = 0m;
+            decimal finalPremium = annualPremium;
 
             return new PricingResultDTO
             {

@@ -125,13 +125,21 @@ export class AgentLogin implements OnInit {
 
   private routeToDashboard(role: string | null) {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    
+    // Fallback: If role is empty, try to get it from the stored token
+    if (!role) {
+      role = this.authService.getRoleFromStoredToken();
+    }
+    
+    console.log(`[AgentLogin] Redirecting with role: ${role}`);
+
     if (returnUrl) {
       this.router.navigateByUrl(returnUrl);
     } else if (role === 'Admin') {
       this.router.navigate(['/admin-dashboard']);
     } else if (role === 'Agent') {
       this.router.navigate(['/agent-dashboard']);
-    } else if (role === 'ClaimsOfficer' || role === 'Claims') {
+    } else if (role === 'ClaimsOfficer' || role === 'Claims' || role === 'Claims Officer') {
       this.router.navigate(['/claims-dashboard']);
     } else {
       this.router.navigate(['/customer-dashboard']);
@@ -157,6 +165,7 @@ export class AgentLogin implements OnInit {
         this.successMessage.set('Security capability enabled successfully.');
         setTimeout(() => {
           this.successMessage.set('');
+          this.isSettingSecurityQuestion.set(false);
           this.routeToDashboard(this.pendingRole);
         }, 1500);
       },
@@ -203,6 +212,7 @@ export class AgentLogin implements OnInit {
         this.successMessage.set('Account secured successfully! Welcome.');
         setTimeout(() => {
           this.successMessage.set('');
+          this.isFirstLoginMode.set(false);
           this.routeToDashboard(this.pendingRole);
         }, 1500);
       },

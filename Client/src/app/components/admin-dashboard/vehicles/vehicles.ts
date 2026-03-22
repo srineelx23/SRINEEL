@@ -1,11 +1,12 @@
 import { Component, input, output, signal, model } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-vehicles',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VimsFormatPipe],
   templateUrl: './vehicles.html',
   styleUrl: './vehicles.css',
 })
@@ -28,6 +29,7 @@ export class VehiclesComponent {
   onBackToVehicles = output<void>();
   onDownloadReport = output<number>();
   onDownloadInvoice = output<number>();
+  onDownloadPolicy = output<number>();
 
   viewVehicleDetails(v: any) {
     this.onViewVehicleDetails.emit(v);

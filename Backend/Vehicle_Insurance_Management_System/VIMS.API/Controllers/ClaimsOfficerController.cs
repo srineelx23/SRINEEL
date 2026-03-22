@@ -16,11 +16,33 @@ namespace VIMS.API.Controllers
     {
         private readonly IClaimsService _claimsService;
         private readonly IPolicyTransferRepository _transferRepository;
+        private readonly IInvoiceService _invoiceService;
 
-        public ClaimsOfficerController(IClaimsService claimsService, IPolicyTransferRepository transferRepository)
+        public ClaimsOfficerController(IClaimsService claimsService, IPolicyTransferRepository transferRepository, IInvoiceService invoiceService)
         {
             _claimsService = claimsService;
             _transferRepository = transferRepository;
+            _invoiceService = invoiceService;
+        }
+
+        [HttpGet("policy/download/{policyId}")]
+        public IActionResult DownloadPolicyContract(int policyId)
+        {
+            var pdfBytes = _invoiceService.GeneratePolicyContractPdf(policyId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Policy contract not available" });
+
+            return File(pdfBytes, "application/pdf", $"Policy_Contract_{policyId}.pdf");
+        }
+
+        [HttpGet("claim/download-settlement/{claimId}")]
+        public IActionResult DownloadSettlementReport(int claimId)
+        {
+            var pdfBytes = _invoiceService.GenerateClaimSettlementPdf(claimId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Settlement report not available for this claim" });
+
+            return File(pdfBytes, "application/pdf", $"Claim_Settlement_{claimId}.pdf");
         }
 
         [HttpGet("claim/{id}")]

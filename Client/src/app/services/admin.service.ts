@@ -72,6 +72,10 @@ export class AdminService {
     downloadTransferReport(transferId: number): Observable<Blob> {
         return this.http.get(`${this.apiUrl}/transfer/download/${transferId}`, { responseType: 'blob' });
     }
+    
+    downloadPolicy(policyId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/policy/download/${policyId}`, { responseType: 'blob' });
+    }
 
     getAllGarages(): Observable<any[]> {
         return this.http.get<any[]>(`${this.apiUrl}/garages`);

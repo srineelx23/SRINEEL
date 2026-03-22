@@ -55,6 +55,15 @@ namespace VIMS.API
             builder.Services.AddScoped<IInvoiceService, InvoiceService>();
             builder.Services.AddScoped<IGarageRepository, GarageRepository>();
             builder.Services.AddScoped<IGarageService, GarageService>();
+            builder.Services.AddScoped<IOcrService, OcrService>();
+
+            builder.Services.AddSignalR();
+            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+            builder.Services.AddScoped<IPushNotificationService, VIMS.API.Hubs.PushNotificationService>();
+            builder.Services.AddHostedService<VIMS.API.Services.PolicyExpirationWorker>();
+
+
 
 
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -116,7 +125,12 @@ namespace VIMS.API
     });
             });
             var app = builder.Build();
-            app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            app.UseCors(policy => 
+                policy.WithOrigins("http://localhost:4200")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials());
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -150,6 +164,8 @@ namespace VIMS.API
             //.WithName("GetWeatherForecast")
             //.WithOpenApi();
             app.MapControllers();
+            app.MapHub<VIMS.API.Hubs.NotificationHub>("/notificationHub");
+
             app.Run();
         }
     }

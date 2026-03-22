@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-policies',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VimsFormatPipe],
   templateUrl: './policies.component.html',
   styleUrl: './policies.component.css',
 })
@@ -34,6 +35,7 @@ export class PoliciesComponent {
   @Output() onCancelPolicy = new EventEmitter<number>();
   @Output() onSubmitRenew = new EventEmitter<void>();
   @Output() onCancelRenew = new EventEmitter<void>();
+  @Output() onDownloadPolicyContract = new EventEmitter<number>();
 
   selectPlan(planId: number) {
     this.renewForm.NewPlanId = planId;

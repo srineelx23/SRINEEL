@@ -1,0 +1,53 @@
+<div class="notification-container">
+    <button class="notification-trigger" (click)="toggleDropdown()" [attr.aria-label]="'You have ' + unreadCount() + ' notifications'">
+        <i class="fa-solid fa-bell"></i>
+        @if (unreadCount() > 0) {
+            <span class="badge">{{ unreadCount() > 5 ? '5+' : unreadCount() }}</span>
+        }
+    </button>
+
+    @if (showDropdown()) {
+        <div class="notification-dropdown fade-in">
+            <div class="dropdown-header">
+                <h3>Notifications</h3>
+                <button (click)="markAllAsRead()" class="btn-text">Mark all as read</button>
+            </div>
+
+            <div class="dropdown-content custom-scrollbar">
+                @if (notifications().length === 0) {
+                    <div class="empty-state">
+                        <i class="fa-solid fa-envelope-open"></i>
+                        <p>No unread notifications</p>
+                    </div>
+                } @else {
+                    @for (notif of notifications(); track notif.notificationId) {
+                        <div class="notification-item" [class.unread]="!notif.isRead" (click)="onNotificationClick(notif)">
+                            <div class="notif-icon-wrapper">
+                                <i class="fa-solid" [ngClass]="getNotificationIcon(notif.type)"></i>
+                            </div>
+                            <div class="notif-body">
+                                <p class="notif-title">{{ notif.title }}</p>
+                                <p class="notif-message">{{ notif.message }}</p>
+                                <span class="notif-time">{{ notif.createdAt | date: 'MMM d, h:mm a' }}</span>
+                            </div>
+                            @if (!notif.isRead) {
+                                <button class="mark-btn" (click)="markAsRead(notif.notificationId, $event)" title="Mark as read">
+                                    <span class="dot"></span>
+                                </button>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="dropdown-footer">
+                <button (click)="viewAll()" class="btn-all">View All Notifications</button>
+            </div>
+        </div>
+    }
+
+    <!-- Backdrop to close dropdown -->
+    @if (showDropdown()) {
+        <div class="backdrop" (click)="showDropdown.set(false)"></div>
+    }
+</div>

@@ -28,8 +28,9 @@ namespace VIMS.Application.Services
         private readonly IAuditService _auditService;
         private readonly IFileStorageService _fileStorageService;
         private readonly IClaimsRepository _claimsRepository;
+        private readonly INotificationService _notificationService;
  
-        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, IClaimsRepository claimsRepository)
+        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, IClaimsRepository claimsRepository, INotificationService notificationService)
         {
             _customerRepository = customerRepository;
             _vehicleApplicationRepository = vehicleApplicationRepository;
@@ -43,7 +44,9 @@ namespace VIMS.Application.Services
             _auditService = auditService;
             _fileStorageService = fileStorageService;
             _claimsRepository = claimsRepository;
+            _notificationService = notificationService;
         }
+
         public async Task<IEnumerable<object>> ViewAllPoliciesAsync()
         {
             var plans = await _customerRepository.ViewAllPolicyPlansAsync();
@@ -172,7 +175,17 @@ namespace VIMS.Application.Services
             await _vehicleApplicationRepository.UpdateAsync(application);
 
             await _auditService.LogActionAsync("PolicyApplicationCreated", "Policy", $"Customer created a policy application for {application.Make} {application.Model}", "VehicleApplication", application.VehicleApplicationId.ToString());
+            
+            // Notify Customer
+            await _notificationService.CreateNotificationAsync(userId, "Policy Request Submitted", $"Your policy request for {application.Make} {application.Model} ({application.RegistrationNumber}) has been submitted successfully.", NotificationType.PolicyRequestSubmitted, "VehicleApplication", application.VehicleApplicationId.ToString());
+            
+            // Notify Agent
+            if (application.AssignedAgentId.HasValue)
+            {
+                await _notificationService.CreateNotificationAsync(application.AssignedAgentId.Value, "New Policy Request Assigned", $"A new policy request for {application.RegistrationNumber} has been assigned to you.", NotificationType.NewPolicyRequestAssigned, "VehicleApplication", application.VehicleApplicationId.ToString());
+            }
         }
+
 
         public async Task<List<CustomerApplicationDTO>> GetMyApplicationsAsync(int customerId)
         {
@@ -214,7 +227,9 @@ namespace VIMS.Application.Services
                             {
                                 pol.Status = PolicyStatus.PendingPayment;
                                 await _policyRepository.UpdateAsync(pol);
+                                await _notificationService.CreateNotificationAsync(pol.CustomerId, "Premium Payment Due", $"The premium payment for policy {pol.PolicyNumber} is now due. Please pay within the 30-day grace period.", NotificationType.PremiumPaymentDue, "Policy", pol.PolicyId.ToString());
                             }
+
                         }
                     }
                 }
@@ -487,10 +502,10 @@ namespace VIMS.Application.Services
             if (policy.Status != PolicyStatus.Active)
                 throw new BadRequestException("Only active policies can be transferred.");
 
-            // Check if there are any claims associated with the policy
-            var hasActiveClaims = await _claimsRepository.HasAnyClaimsAsync(dto.PolicyId);
+            // Check if there are any active (unresolved) claims associated with the policy
+            var hasActiveClaims = await _claimsRepository.ExistsActiveClaimForPolicyAsync(dto.PolicyId);
             if (hasActiveClaims)
-                throw new BadRequestException("Cannot transfer a policy with unresolved claims.");
+                throw new BadRequestException("Cannot transfer a policy with unresolved (active) claims.");
 
             // Check there is no existing pending transfer for this policy
             var existingTransfers = await _policyTransferRepository.GetBySenderIdAsync(senderCustomerId);
@@ -519,8 +534,12 @@ namespace VIMS.Application.Services
             await _policyTransferRepository.AddAsync(transfer);
             await _policyTransferRepository.SaveChangesAsync();
             await _auditService.LogActionAsync("PolicyTransferInitiated", "Policy", $"Transfer initiated for policy {policy.PolicyNumber} to {dto.RecipientEmail}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
- 
+            
+            // Notify Recipient
+            await _notificationService.CreateNotificationAsync(recipient.UserId, "Policy Transfer Request", $"You have received a policy transfer request for {policy.Vehicle?.RegistrationNumber} from {policy.Customer?.FullName}.", NotificationType.PolicyTransferStatusChanged, "PolicyTransfer", transfer.PolicyTransferId.ToString());
+            
             return "TRANSFER_INITIATED";
+
         }
 
         public async Task<List<object>> GetMyIncomingTransfersAsync(int recipientCustomerId)
@@ -637,8 +656,18 @@ namespace VIMS.Application.Services
             transfer.UpdatedAt = DateTime.UtcNow;
             await _policyTransferRepository.SaveChangesAsync();
             await _auditService.LogActionAsync("PolicyTransferAccepted", "Policy", $"Recipient accepted transfer for policy {policy.PolicyNumber}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
- 
+            
+            // Notify Sender
+            await _notificationService.CreateNotificationAsync(transfer.SenderCustomerId, "Transfer Request Accepted", $"Your transfer request for policy {policy.PolicyNumber} has been accepted by the recipient and is now pending agent approval.", NotificationType.PolicyTransferStatusChanged, "PolicyTransfer", transfer.PolicyTransferId.ToString());
+            
+            // Notify Agent
+            if (newApp.AssignedAgentId.HasValue)
+            {
+                await _notificationService.CreateNotificationAsync(newApp.AssignedAgentId.Value, "New Policy Transfer Assigned", $"A new policy transfer request for {newApp.RegistrationNumber} has been assigned to you for review.", NotificationType.NewPolicyRequestAssigned, "VehicleApplication", newApp.VehicleApplicationId.ToString());
+            }
+
             return "TRANSFER_ACCEPTED";
+
         }
 
         public async Task<string> RejectTransferAsync(int transferId, int recipientCustomerId)
@@ -653,8 +682,12 @@ namespace VIMS.Application.Services
             transfer.UpdatedAt = DateTime.UtcNow;
             await _policyTransferRepository.SaveChangesAsync();
             await _auditService.LogActionAsync("PolicyTransferRejected", "Policy", $"Recipient rejected transfer for policy {transfer.PolicyId}", "PolicyTransfer", transfer.PolicyTransferId.ToString());
- 
+            
+            // Notify Sender
+            await _notificationService.CreateNotificationAsync(transfer.SenderCustomerId, "Transfer Request Rejected", $"Your transfer request for policy {transfer.PolicyId} has been rejected by the recipient.", NotificationType.PolicyTransferStatusChanged, "PolicyTransfer", transfer.PolicyTransferId.ToString());
+
             return "TRANSFER_REJECTED";
+
         }
     }
 }

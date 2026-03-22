@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './overview.html',
   styleUrl: './overview.css'
 })
-export class Overview {
+export class OverviewComponent {
   officerName = input.required<string>();
   pendingClaims = input.required<any[]>();
   reviewedClaims = input.required<any[]>();

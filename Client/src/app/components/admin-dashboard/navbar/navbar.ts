@@ -1,10 +1,12 @@
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NotificationBellComponent } from '../../notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationBellComponent],
+
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })

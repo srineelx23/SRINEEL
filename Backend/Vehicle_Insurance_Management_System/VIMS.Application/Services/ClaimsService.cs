@@ -22,8 +22,9 @@ namespace VIMS.Application.Services
         private readonly IPaymentRepository _paymentRepository;
         private readonly IAuditService _auditService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly INotificationService _notificationService;
 
-        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository, IAuditService auditService, IFileStorageService fileStorageService)
+        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository, IAuditService auditService, IFileStorageService fileStorageService, INotificationService notificationService)
         {
             _claimsRepository = claimsRepository;
             _userRepository = userRepository;
@@ -32,7 +33,9 @@ namespace VIMS.Application.Services
             _paymentRepository = paymentRepository;
             _auditService = auditService;
             _fileStorageService = fileStorageService;
+            _notificationService = notificationService;
         }
+
 
         public async Task<List<Claims>> GetAllClaimsAsync()
         {
@@ -165,8 +168,18 @@ namespace VIMS.Application.Services
 
             await _claimsRepository.AddDocumentAsync(claimDoc);
             await _auditService.LogActionAsync("ClaimSubmitted", "Claim", $"User submitted claim: {created.ClaimNumber}", "Claim", created.ClaimId.ToString());
+            
+            // Notify customer
+            await _notificationService.CreateNotificationAsync(customerId, "Claim Submitted", $"Your claim {created.ClaimNumber} has been successfully submitted and is under review.", NotificationType.ClaimSubmitted, "Claim", created.ClaimId.ToString());
+            
+            // Notify officer
+            if (officer != null)
+            {
+                await _notificationService.CreateNotificationAsync(officer.UserId, "New Claim Assigned", $"A new claim {created.ClaimNumber} has been assigned to you for review.", NotificationType.NewClaimAssigned, "Claim", created.ClaimId.ToString());
+            }
 
             return "Claim submitted";
+
         }
 
         public async Task<string> DecideClaimAsync(int claimId, ApproveClaimDTO dto, int officerId, bool approve)
@@ -187,7 +200,9 @@ namespace VIMS.Application.Services
                 claim.RejectionReason = dto.RejectionReason;
                 await _claimsRepository.UpdateAsync(claim);
                 await _auditService.LogActionAsync("ClaimRejected", "Claim", $"Officer rejected claim: {claim.ClaimNumber}. Reason: {dto.RejectionReason}", "Claim", claim.ClaimId.ToString());
+                await _notificationService.CreateNotificationAsync(claim.CustomerId, "Claim Rejected", $"Your claim {claim.ClaimNumber} has been rejected. Reason: {dto.RejectionReason}", NotificationType.ClaimRejected, "Claim", claim.ClaimId.ToString());
                 return "Claim rejected";
+
             }
 
             // Approval flow: add the reason if provided even on approval
@@ -234,6 +249,8 @@ namespace VIMS.Application.Services
 
             await _claimsRepository.UpdateAsync(claim);
             await _auditService.LogActionAsync("ClaimApproved", "Claim", $"Officer approved claim: {claim.ClaimNumber} with amount {claim.ApprovedAmount}", "Claim", claim.ClaimId.ToString());
+            await _notificationService.CreateNotificationAsync(claim.CustomerId, "Claim Approved", $"Great news! Your claim {claim.ClaimNumber} has been approved for an amount of {claim.ApprovedAmount:C}.", NotificationType.ClaimApproved, "Claim", claim.ClaimId.ToString());
+
 
             // increment policy claim count and decide if policy should be Claimed (constructive total loss)
             try
@@ -263,7 +280,7 @@ namespace VIMS.Application.Services
                 Amount = claim.ApprovedAmount ?? 0m,
                 PaymentDate = DateTime.UtcNow,
                 Status = PaymentStatus.Paid,
-                TransactionReference = "Claim"
+                TransactionReference = $"Claim #{claim.ClaimNumber}"
             };
 
             // create payment via injected repository

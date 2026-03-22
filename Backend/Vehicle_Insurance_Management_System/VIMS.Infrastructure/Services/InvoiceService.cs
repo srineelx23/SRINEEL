@@ -17,6 +17,7 @@ namespace VIMS.Infrastructure.Services
         private readonly IPricingService _pricingService;
         private readonly IClaimsRepository _claimsRepository;
         private readonly IPolicyTransferRepository _transferRepository;
+        private readonly IPolicyRepository _policyRepository;
 
         // Modern UI Colors
         private const string PrimaryColor = "#1A237E"; // Deep Indigo
@@ -30,12 +31,14 @@ namespace VIMS.Infrastructure.Services
             IPaymentRepository paymentRepository, 
             IPricingService pricingService, 
             IClaimsRepository claimsRepository,
-            IPolicyTransferRepository transferRepository)
+            IPolicyTransferRepository transferRepository,
+            IPolicyRepository policyRepository)
         {
             _paymentRepository = paymentRepository;
             _pricingService = pricingService;
             _claimsRepository = claimsRepository;
             _transferRepository = transferRepository;
+            _policyRepository = policyRepository;
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
@@ -153,7 +156,7 @@ namespace VIMS.Infrastructure.Services
                     page.Margin(1.5f, Unit.Centimetre);
                     page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Verdana));
 
-                    page.Header().Element(c => ComposeHeader(c, "TAX INVOICE", plan.PlanName, $"#INV-{payment.PaymentId}"));
+                    page.Header().Element(c => ComposeHeader(c, "INVOICE", plan.PlanName, $"#INV-{payment.PaymentId}"));
 
                     page.Content().PaddingVertical(1, Unit.Centimetre).Column(col =>
                     {
@@ -203,7 +206,7 @@ namespace VIMS.Infrastructure.Services
                             if (breakdown.ODComponent > 0) AddRow("Own Damage Coverage", breakdown.ODComponent);
                             if (breakdown.RiskLoadingAmount > 0) AddRow("Risk & Add-on Loadings", breakdown.RiskLoadingAmount);
                             if (breakdown.DiscountAmount > 0) AddRow("Promotional / Loyalty Discount", breakdown.DiscountAmount, true);
-                            if (breakdown.TaxAmount > 0) AddRow("GST (18%)", breakdown.TaxAmount);
+                            if (breakdown.TaxAmount > 0) AddRow("GST", breakdown.TaxAmount);
                         });
 
                         col.Item().PaddingTop(20).AlignRight().Background(Colors.Grey.Lighten4).Padding(10).Row(row =>
@@ -424,6 +427,120 @@ namespace VIMS.Infrastructure.Services
                         {
                             t.Span("Note: ").SemiBold().FontColor(PrimaryColor);
                             t.Span("This certificate confirms the legal transfer of policy rights and vehicle insurance obligations from the sender to the recipient. The accumulated premium and coverage benefits remain active under the new ownership.").FontSize(9);
+                        });
+                    });
+
+                    page.Footer().Element(ComposeFooter);
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
+        public byte[] GeneratePolicyContractPdf(int policyId)
+        {
+            var policy = _policyRepository.GetByIdAsync(policyId).GetAwaiter().GetResult();
+            if (policy == null) return Array.Empty<byte>();
+
+            var customer = policy.Customer;
+            var vehicle = policy.Vehicle;
+            var plan = policy.Plan;
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(1.5f, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Verdana));
+
+                    page.Header().Element(c => ComposeHeader(c, "POLICY CONTRACT", plan.PlanName, $"#POL-{policy.PolicyNumber}"));
+
+                    page.Content().PaddingVertical(1, Unit.Centimetre).Column(col =>
+                    {
+                        // Main Certificate Box
+                        col.Item().Border(1).BorderColor(PrimaryColor).Background(Colors.Indigo.Lighten5).Padding(15).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("POLICY STATUS").FontSize(9).SemiBold().FontColor(PrimaryColor);
+                                c.Item().Text(policy.Status.ToString().ToUpper()).FontSize(14).SemiBold().FontColor(SuccessColor);
+                            });
+                            row.RelativeItem().AlignRight().Column(c =>
+                            {
+                                c.Item().Text("VALID UNTIL").FontSize(9).SemiBold().FontColor(PrimaryColor);
+                                c.Item().Text(policy.EndDate.ToString("dd MMM yyyy")).FontSize(14).SemiBold().FontColor(PrimaryColor);
+                            });
+                        });
+
+                        // Participants
+                        col.Item().PaddingTop(30).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("INSURED PERSON DETAILS").FontSize(9).SemiBold().FontColor(MutedColor);
+                                c.Item().PaddingTop(5).Text(customer.FullName).FontSize(11).SemiBold();
+                                c.Item().Text(customer.Email).FontSize(9).FontColor(MutedColor);
+                                c.Item().PaddingTop(10).Text("COVERAGE PERIOD").FontSize(9).SemiBold().FontColor(MutedColor);
+                                c.Item().Text($"{policy.StartDate:dd MMM yyyy} to {policy.EndDate:dd MMM yyyy}").FontSize(10).SemiBold();
+                            });
+
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("INSURED VEHICLE").FontSize(9).SemiBold().FontColor(MutedColor);
+                                c.Item().PaddingTop(5).Text($"{vehicle.Make} {vehicle.Model}").FontSize(11).SemiBold();
+                                c.Item().Text($"Reg: {vehicle.RegistrationNumber}").FontSize(10).SemiBold();
+                                c.Item().Text($"Year: {vehicle.Year}").FontSize(9).FontColor(MutedColor);
+                                c.Item().Text($"Fuel: {vehicle.FuelType}").FontSize(9).FontColor(MutedColor);
+                            });
+                        });
+
+                        // Coverage Table
+                        col.Item().PaddingTop(40).Column(c =>
+                        {
+                            c.Item().Text("COVERAGE & BENEFITS").FontSize(11).SemiBold().FontColor(PrimaryColor);
+                            c.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Lighten3);
+                            
+                            c.Item().PaddingTop(15).Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn();
+                                    columns.RelativeColumn();
+                                });
+
+                                void AddDetail(string label, string value, bool isActive = true)
+                                {
+                                    table.Cell().PaddingBottom(10).Column(inner =>
+                                    {
+                                        inner.Item().Text(label).FontSize(8).SemiBold().FontColor(MutedColor);
+                                        inner.Item().Row(r => {
+                                            r.RelativeItem().Text(value).FontSize(10).SemiBold().FontColor(isActive ? Colors.Black : Colors.Grey.Medium);
+                                            if (isActive) r.ConstantColumn(15).PaddingTop(2).Text("✔").FontSize(8).FontColor(SuccessColor);
+                                        });
+                                    });
+                                }
+
+                                AddDetail("Plan Name", plan.PlanName);
+                                AddDetail("Plan Type", plan.PolicyType);
+                                AddDetail("Insured Declared Value (IDV)", $"INR {policy.IDV:N2}");
+                                AddDetail("Policy Duration", $"{policy.SelectedYears} Year(s)");
+                                
+                                // Specific features
+                                AddDetail("Third Party Liability", plan.CoversThirdParty ? "Included" : "Not Covered", plan.CoversThirdParty);
+                                AddDetail("Own Damage Coverage", plan.CoversOwnDamage ? "Included" : "Not Covered", plan.CoversOwnDamage);
+                                AddDetail("Theft Protection", plan.CoversTheft ? "Included" : "Not Covered", plan.CoversTheft);
+                                AddDetail("Zero Depreciation", plan.ZeroDepreciationAvailable ? "Available" : "Not Included", plan.ZeroDepreciationAvailable);
+                                AddDetail("Roadside Assistance", plan.RoadsideAssistanceAvailable ? "Available" : "Not Included", plan.RoadsideAssistanceAvailable);
+                                AddDetail("Deductible Amount", $"INR {plan.DeductibleAmount:N2}");
+                            });
+                        });
+
+                        // Legal Note
+                        col.Item().PaddingTop(30).Background(Colors.Grey.Lighten4).Padding(10).Column(inner =>
+                        {
+                            inner.Item().Text("TERMS AND CONDITIONS SUMMARY").FontSize(9).SemiBold().FontColor(PrimaryColor);
+                            inner.Item().PaddingTop(5).Text("This policy contract signifies a legal agreement between the insurer and the insured. The coverage is subject to the conditions mentioned in the full policy handbook. Maintenance of accurate vehicle records and timely premium payments are required to keep the policy active. (Note: This document is free of GST charges as per current insurance regulations).").FontSize(8).FontColor(MutedColor).LineHeight(1.4f);
                         });
                     });
 

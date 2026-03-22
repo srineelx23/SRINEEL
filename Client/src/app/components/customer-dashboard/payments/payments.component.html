@@ -65,7 +65,7 @@
                     <tr>
                         <td class="id-field">#{{ p.paymentId }}</td>
                         <td class="semi-bold">{{ p.transactionReference || 'Policy Premium' }}</td>
-                        <td class="semi-bold" style="color: var(--error);">-{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</td>
+                        <td style="color: var(--error); font-weight: 800; font-size: 1.05rem;">-{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</td>
                         <td>
                             <div class="user-info">
                                 <span class="name" style="font-size: 0.9rem;">{{ p.paymentDate | date:'MMM d, y' }}</span>
@@ -105,7 +105,7 @@
                 <thead>
                     <tr>
                         <th>TXN ID</th>
-                        <th>Claim Reference</th>
+                        <th>Coverage Type</th>
                         <th>Payout Amount</th>
                         <th>Date</th>
                         <th>Status</th>
@@ -115,8 +115,10 @@
                     @for (p of claimPayments(); track (p.paymentId || $index)) {
                     <tr>
                         <td class="id-field">#{{ p.paymentId }}</td>
-                        <td class="semi-bold">{{ p.transactionReference }}</td>
-                        <td class="semi-bold" style="color: var(--success);">+{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</td>
+                        <td>
+                            <span class="status-badge" style="background: rgba(91,192,190,0.1); border: 1px solid rgba(91,192,190,0.2); font-size: 0.75rem; color: var(--accent); font-weight: 600;">{{ p.claimType }}</span>
+                        </td>
+                        <td style="color: var(--success); font-weight: 800; font-size: 1.05rem;">+{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}</td>
                         <td>
                             <div class="user-info">
                                 <span class="name" style="font-size: 0.9rem;">{{ p.paymentDate | date:'MMM d, y' }}</span>
@@ -162,7 +164,7 @@
                     <tr>
                         <td class="id-field">#{{ p.paymentId }}</td>
                         <td class="semi-bold">{{ p.transactionReference }}</td>
-                        <td class="semi-bold" [style.color]="(p.transactionReference || '').toLowerCase().includes('fee') ? 'var(--error)' : 'var(--text-main)'">
+                        <td [style.color]="(p.transactionReference || '').toLowerCase().includes('fee') ? 'var(--error)' : 'var(--text-main)'" style="font-weight: 800; font-size: 1.05rem;">
                             {{ (p.transactionReference || '').toLowerCase().includes('fee') ? '-' : '' }}{{ (p.amount < 0 ? -p.amount : p.amount) | currency:'INR' }}
                         </td>
                         <td>

@@ -25,10 +25,18 @@ namespace VIMS.Infrastructure.Persistence
         public DbSet<PolicyTransfer> PolicyTransfers => Set<PolicyTransfer>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<Garage> Garages => Set<Garage>();
+        public DbSet<Notification> Notifications => Set<Notification>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // ================= NOTIFICATION =================
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // ================= UNIQUE CONSTRAINTS =================
             modelBuilder.Entity<User>()

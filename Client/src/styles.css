@@ -49,6 +49,9 @@
     --input-bg: rgba(255, 255, 255, 0.05);
     --input-border: rgba(255, 255, 255, 0.1);
 
+    /* Table Hover */
+    --table-hover-bg: rgba(255, 255, 255, 0.02);
+
     /* Animation */
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -95,6 +98,9 @@
     /* Form Elements */
     --input-bg: #FFFFFF;
     --input-border: #CBD5E1;
+
+    /* Table Hover */
+    --table-hover-bg: rgba(0, 0, 0, 0.025);
 }
 
 /* Base Reset */
@@ -1431,6 +1437,11 @@ select.form-control~.floating-label {
 }
 
 /* Shared Dashboard UI Components */
+.na-bold {
+    color: var(--text-main) !important;
+    font-weight: 800;
+}
+
 .page-header {
     margin-bottom: 40px;
 }
@@ -1508,7 +1519,7 @@ select.form-control~.floating-label {
 }
 
 .vims-table tbody tr:hover {
-    background: var(--accent-glow);
+    background: var(--table-hover-bg);
 }
 
 .category-filters {
@@ -1901,7 +1912,7 @@ select.form-control~.floating-label {
 }
 
 .data-table tr:hover, .vims-table tr:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--table-hover-bg);
 }
 
 .data-table tr:last-child td, .vims-table tr:last-child td {

@@ -62,6 +62,7 @@
             (onViewVehicleDetails)="viewVehicleDetails($event)"
             (onDownloadReport)="downloadClaimReport($event)"
             (onDownloadInvoice)="downloadInvoice($event)"
+            (onDownloadPolicy)="downloadPolicy($event)"
             (onBackToVehicles)="backToVehicles()">
         </app-vehicles>
         }
@@ -156,5 +157,9 @@
         </app-audit-logs>
         }
 
+        @if (activeTab() === 'notifications') {
+            <app-notifications></app-notifications>
+        }
     </main>
+
 </div>

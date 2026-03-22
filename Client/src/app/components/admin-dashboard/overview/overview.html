@@ -163,11 +163,11 @@
                                 <span class="reg-no">{{ pol.vehicle.registrationNumber }}</span>
                                 <span class="model-info">{{ pol.vehicle.make }} {{ pol.vehicle.model }}</span>
                             </div>
-                            <span class="muted" *ngIf="!pol.vehicle">N/A</span>
+                            <span class="na-bold" *ngIf="!pol.vehicle">N/A</span>
                         </td>
                         <td>{{ pol.startDate | date:'mediumDate' }}</td>
                         <td>{{ pol.endDate | date:'mediumDate' }}</td>
-                        <td class="semi-bold text-success">{{ pol.premiumAmount | currency:'INR' }}</td>
+                        <td class="text-success" style="font-weight: 800;">+{{ pol.premiumAmount | currency:'INR' }}</td>
                         <td>{{ pol.agent?.fullName || 'Self' }}</td>
                         <td>
                             <span class="status-pill" [class]="pol.status === 'Active' || pol.status === 0 ? 'active' : 'inactive'">

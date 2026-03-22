@@ -235,6 +235,16 @@ namespace VIMS.API.Controllers
             return File(pdfBytes, "application/pdf", $"Transfer_Certificate_{transferId}.pdf");
         }
 
+        [HttpGet("policy/download/{policyId}")]
+        public IActionResult DownloadPolicyContract(int policyId)
+        {
+            var pdfBytes = _invoiceService.GeneratePolicyContractPdf(policyId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Policy contract not available" });
+
+            return File(pdfBytes, "application/pdf", $"Policy_Contract_{policyId}.pdf");
+        }
+
         // ================= GARAGE CRUD =================
 
         [HttpGet("garages")]

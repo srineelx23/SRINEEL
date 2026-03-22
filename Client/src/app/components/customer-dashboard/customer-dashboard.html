@@ -63,7 +63,8 @@
                 (onCancelPolicy)="cancelPolicy($event)"
                 (onOpenTransferModal)="openTransferModal($event)"
                 (onSubmitRenew)="submitRenew()"
-                (onCancelRenew)="renewingPolicyId.set(null)">
+                (onCancelRenew)="renewingPolicyId.set(null)"
+                (onDownloadPolicyContract)="downloadPolicyContract($event)">
             </app-policies>
         }
 
@@ -136,7 +137,6 @@
         }
 
 
-        <!-- Settings Tab -->
         @if (activeTab() === 'settings') {
         <app-settings
             [customerName]="customerName"
@@ -145,7 +145,14 @@
             (onChangePassword)="changePassword()">
         </app-settings>
         }
+
+        <!-- Notifications Tab -->
+        @if (activeTab() === 'notifications') {
+        <app-notifications></app-notifications>
+        }
     </main>
+
+
 </div>
 
 <!-- ===================== POLICY TRANSFER MODALS ===================== -->

@@ -9,7 +9,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './settings.html',
   styleUrl: './settings.css'
 })
-export class Settings {
+export class SettingsComponent {
   agentName = input.required<string>();
   userRole = input.required<string>();
   changePwdLoading = input.required<boolean>();

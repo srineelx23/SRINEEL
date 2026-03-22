@@ -1,15 +1,16 @@
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-claims',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VimsFormatPipe],
   templateUrl: './claims.html',
   styleUrl: './claims.css'
 })
-export class Claims {
+export class ClaimsComponent {
   @Input({ required: true }) pendingClaims!: any[];
   @Input({ required: true }) sortedPendingClaims!: any[];
   @Input({ required: true }) selectedClaim!: any;
@@ -24,6 +25,8 @@ export class Claims {
   @Output() onClaimsSortOptionChange = new EventEmitter<string>();
   @Output() onUpdateBreakdown = new EventEmitter<void>();
   @Output() onSubmitDecision = new EventEmitter<void>();
+  @Output() onDownloadPolicyContract = new EventEmitter<number>();
+  @Output() onDownloadSettlementReport = new EventEmitter<number>();
 
   showSortDropdown = signal(false);
   currentYear = new Date().getFullYear();

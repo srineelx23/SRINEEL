@@ -52,7 +52,9 @@
             (onCloseClaimReview)="closeClaimReview()"
             (onClaimsSortOptionChange)="claimsSortOption.set($event)"
             (onUpdateBreakdown)="updateBreakdown()"
-            (onSubmitDecision)="submitDecision()">
+            (onSubmitDecision)="submitDecision()"
+            (onDownloadPolicyContract)="downloadPolicyContract($event)"
+            (onDownloadSettlementReport)="downloadSettlementReport($event)">
         </app-claims>
         }
 
@@ -65,7 +67,9 @@
             [claimsSortOption]="claimsSortOption()"
             (onOpenClaimReview)="openClaimReview($event)"
             (onCloseClaimReview)="closeClaimReview()"
-            (onClaimsSortOptionChange)="claimsSortOption.set($event)">
+            (onClaimsSortOptionChange)="claimsSortOption.set($event)"
+            (onDownloadPolicyContract)="downloadPolicyContract($event)"
+            (onDownloadSettlementReport)="downloadSettlementReport($event)">
         </app-history>
         }
 
@@ -78,5 +82,9 @@
             (onChangePassword)="changePasswordWithData($event)">
         </app-settings>
         }
+        @if (activeTab() === 'notifications') {
+            <app-notifications></app-notifications>
+        }
     </main>
+
 </div>

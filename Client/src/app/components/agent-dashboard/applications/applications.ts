@@ -9,7 +9,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './applications.html',
   styleUrl: './applications.css'
 })
-export class Applications {
+export class ApplicationsComponent {
   pendingApps = input.required<any[]>();
   sortedPendingApps = input.required<any[]>();
   selectedApp = input.required<any>();

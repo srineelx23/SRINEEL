@@ -1,14 +1,17 @@
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NotificationBellComponent } from '../../notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationBellComponent],
+
+
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
-export class Navbar {
+export class NavbarComponent {
   activeTab = input.required<string>();
   agentName = input.required<string>();
   userRole = input.required<string>();

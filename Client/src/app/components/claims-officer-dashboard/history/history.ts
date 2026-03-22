@@ -1,14 +1,15 @@
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { VimsFormatPipe } from '../../../utils/vims-format.pipe';
 
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, VimsFormatPipe],
   templateUrl: './history.html',
   styleUrl: './history.css'
 })
-export class History {
+export class HistoryComponent {
   reviewedClaims = input.required<any[]>();
   sortedReviewedClaims = input.required<any[]>();
   selectedClaim = input.required<any>();
@@ -18,6 +19,8 @@ export class History {
   onOpenClaimReview = output<any>();
   onCloseClaimReview = output<void>();
   onClaimsSortOptionChange = output<string>();
+  onDownloadPolicyContract = output<number>();
+  onDownloadSettlementReport = output<number>();
 
   openClaimReview(claim: any) {
     this.onOpenClaimReview.emit(claim);

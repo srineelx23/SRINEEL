@@ -69,13 +69,15 @@
                             </div>
                         </td>
                         <td>{{ c.policy?.policyNumber }}</td>
-                        <td>{{ c.claimType }}</td>
-                        <td>{{ (getStatusString(c.status) === 'Rejected') ? '-' :
-                            (c.approvedAmount ? (c.approvedAmount | currency:'INR') : 'Pending Assessment') }}
+                        <td>{{ c.claimType | vimsFormat }}</td>
+                        <td [style.color]="getStatusString(c.status) === 'Approved' ? 'var(--success)' : 'inherit'"
+                            [style.font-weight]="getStatusString(c.status) === 'Approved' ? '800' : 'normal'">
+                            {{ (getStatusString(c.status) === 'Rejected') ? '-' :
+                            (c.approvedAmount ? '+' + (c.approvedAmount | currency:'INR') : 'Pending Assessment') }}
                         </td>
                         <td><span class="status-badge"
                                 [ngClass]="getStatusString(c.status).toLowerCase().replace(' ', '')">{{
-                                getStatusString(c.status) }}</span></td>
+                                getStatusString(c.status) | vimsFormat }}</span></td>
                     </tr>
                     }
                 </tbody>
@@ -230,7 +232,7 @@
                     </div>
                     <div class="payout-text">
                         <label>Claim Payout</label>
-                        <div class="amount">{{ (selectedClaim().approvedAmount || breakdown.finalPayout) | currency:'INR':'symbol':'1.0-0' }}</div>
+                        <div class="amount" style="color: var(--success); font-weight: 800;">+{{ (selectedClaim().approvedAmount || breakdown.finalPayout) | currency:'INR':'symbol':'1.0-0' }}</div>
                     </div>
                 </div>
 
@@ -255,7 +257,7 @@
                     @if (getStatusString(selectedClaim().status) === 'Rejected') {
                     <p class="claim-amount" style="color: var(--error);">Claim Rejected</p>
                     } @else if (selectedClaim().approvedAmount) {
-                        <p class="claim-amount" style="color: var(--success);">{{
+                        <p class="claim-amount" style="color: var(--success); font-weight: 800;">+{{
                             selectedClaim().approvedAmount | currency:'INR':'symbol':'1.0-0' }}</p>
                     } @else {
                         <p style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; margin: 0;">

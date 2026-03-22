@@ -67,6 +67,7 @@ namespace VIMS.Infrastructure.Repositories
                     .ThenInclude(a => a!.Documents)
                 .Include(p => p.Plan)
                 .Include(p => p.Agent)
+                .Include(p => p.Customer)
                 .FirstOrDefaultAsync(p => p.PolicyId == policyId);
         }
 
@@ -83,5 +84,13 @@ namespace VIMS.Infrastructure.Repositories
                 .Select(g => new { PlanId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.PlanId, x => x.Count);
         }
+
+        public async Task<List<Policy>> GetExpiringPoliciesAsync(DateTime date)
+        {
+            return await _vehicleInsuranceContext.Policies
+                .Where(p => p.EndDate.Date == date.Date && p.Status == VIMS.Domain.Enums.PolicyStatus.Active)
+                .ToListAsync();
+        }
     }
 }
+

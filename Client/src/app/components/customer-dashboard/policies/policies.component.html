@@ -81,7 +81,7 @@
                 <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
                     <div class="policy-card-header">
                         <span class="policy-num">{{ p.policyNumber }}</span>
-                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status | vimsFormat }}</span>
                     </div>
                     <div class="policy-card-body">
                         <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
@@ -138,7 +138,7 @@
                             </div>
                             <div class="meta-item">
                                 <span class="meta-label">Type</span>
-                                <span class="meta-value">{{ p.isFeePending ? 'Fee' : 'Premium' }}</span>
+                                <span class="meta-value">{{ p.isFeePending ? 'Fee' : 'Premium' | vimsFormat }}</span>
                             </div>
                         </div>
                     </div>
@@ -170,7 +170,7 @@
                 <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
                     <div class="policy-card-header">
                         <span class="policy-num">{{ p.policyNumber }}</span>
-                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status | vimsFormat }}</span>
                     </div>
                     <div class="policy-card-body">
                         <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
@@ -213,7 +213,7 @@
                 <div class="policy-card glass-panel" style="border-color: rgba(34, 197, 94, 0.3);">
                     <div class="policy-card-header">
                         <span class="policy-num">{{ p.policyNumber }}</span>
-                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status }}</span>
+                        <span class="status-badge" [ngClass]="p.status.toLowerCase()">{{ p.status | vimsFormat }}</span>
                     </div>
                     <div class="policy-card-body" (click)="onViewPolicyDetails.emit(p.policyId)">
                         <div class="policy-plan">{{ p.vehicleRegistrationNumber }} <span style="font-size: 0.9rem; opacity: 0.7; font-weight: 500;">({{ p.vehicleModel }})</span></div>
@@ -253,7 +253,7 @@
                     <h3 style="color: var(--accent); margin-bottom: 16px;">Coverage Information</h3>
                     <p class="policy-data-row"><strong class="policy-data-label">Status:</strong>
                         <span class="status-badge" [ngClass]="selectedPolicy().status.toLowerCase()"
-                            style="display: inline-block;">{{ selectedPolicy().status }}</span>
+                            style="display: inline-block;">{{ selectedPolicy().status | vimsFormat }}</span>
                     </p>
                     <p class="policy-data-row"><strong class="policy-data-label">Plan Name:</strong> {{ selectedPolicy().plan?.planName }}</p>
                     <p class="policy-data-row"><strong class="policy-data-label">Start Date:</strong> {{ selectedPolicy().startDate | date:'medium':'+0530' }}</p>
@@ -265,6 +265,14 @@
                     <p class="policy-data-row"><strong class="policy-data-label">Insured IDV:</strong> 
                         <span class="policy-data-value">{{ selectedPolicy().idv | currency:'INR' }}</span>
                     </p>
+                    @if (selectedPolicy().status === 'Active') {
+                    <div style="margin-top: 24px;">
+                        <button (click)="onDownloadPolicyContract.emit(selectedPolicy().policyId)" class="btn-primary"
+                            style="padding: 10px 20px; font-size: 0.9rem; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; width: fit-content; text-decoration: none; background: var(--accent); color: white; border-radius: 6px;">
+                            <i class="fa-solid fa-file-contract"></i> View Policy Contract
+                        </button>
+                    </div>
+                    }
                 </div>
 
                 <!-- Vehicle Info -->
@@ -279,7 +287,7 @@
                         <li>
                             <a [href]="'https://localhost:7257/' + doc.filePath" target="_blank" class="btn-outline"
                                 style="padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; width: fit-content; text-decoration: none; margin-bottom: 0;">
-                                <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType }}
+                                <i class="fa-solid fa-file-contract"></i> View {{ doc.documentType | vimsFormat }}
                             </a>
                         </li>
                         }

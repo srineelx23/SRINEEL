@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './customers.html',
   styleUrl: './customers.css'
 })
-export class Customers {
+export class CustomersComponent {
   customers = input.required<any[]>();
   sortedCustomers = input.required<any[]>();
   selectedCustomerRecord = input.required<any>();

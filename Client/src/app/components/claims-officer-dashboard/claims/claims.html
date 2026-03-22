@@ -52,7 +52,7 @@
                         <td class="id-field">#{{ c.claimNumber }}</td>
                         <td class="semi-bold">{{ c.customer?.fullName || 'Customer ' + c.customerId }}</td>
                         <td>{{ c.vehicle?.registrationNumber }}</td>
-                        <td>{{ c.claimType }}</td>
+                        <td>{{ c.claimType | vimsFormat }}</td>
                         <td>
                             <div class="user-info">
                                 <span class="name" style="font-size: 0.9rem;">{{ c.createdAt | date:'MMM d, y' }}</span>
@@ -156,7 +156,7 @@
             </div>
             <div class="claim-info-card">
                 <label>Incident Details</label>
-                <p class="value">{{ selectedClaim.claimType }}</p>
+                <p class="value">{{ selectedClaim.claimType | vimsFormat }}</p>
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Policy #{{
                     selectedClaim.policy?.policyNumber }}</p>
             </div>
@@ -192,6 +192,10 @@
                         <span style="font-size: 0.9rem; font-weight: 600;">Submitted Evidence</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
+                        <button (click)="onDownloadPolicyContract.emit(selectedClaim.policyId)" class="btn-outline"
+                            style="padding: 6px 14px; font-size: 0.8rem; border: 1px solid var(--accent); cursor: pointer; background: transparent; border-radius: 4px; display: flex; align-items: center; gap: 6px; color: var(--accent);">
+                            <i class="fa-solid fa-file-contract"></i> View Policy Contract
+                        </button>
                         @if (docPair.document1) {
                         <a [href]="'https://localhost:7257/' + docPair.document1" target="_blank" class="btn-outline"
                             style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
@@ -205,6 +209,12 @@
                             style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
                             <i class="fa-solid fa-eye"></i> Invoice
                         </a>
+                        }
+                        @if (selectedClaim.status === 'Approved') {
+                        <button (click)="onDownloadSettlementReport.emit(selectedClaim.claimId)" class="btn-outline"
+                            style="padding: 6px 14px; font-size: 0.8rem; border: 1px solid var(--success); cursor: pointer; background: transparent; border-radius: 4px; display: flex; align-items: center; gap: 6px; color: var(--success);">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Settlement
+                        </button>
                         }
                     </div>
                 </div>

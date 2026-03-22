@@ -60,6 +60,16 @@ namespace VIMS.API.Controllers
             return File(pdfBytes, "application/pdf", $"Invoice_{paymentId}.pdf");
         }
 
+        [HttpGet("policy/download/{policyId}")]
+        public IActionResult DownloadPolicyContract(int policyId)
+        {
+            var pdfBytes = _invoiceService.GeneratePolicyContractPdf(policyId);
+            if (pdfBytes == null || pdfBytes.Length == 0)
+                return NotFound(new { message = "Policy contract not available" });
+
+            return File(pdfBytes, "application/pdf", $"Policy_Contract_{policyId}.pdf");
+        }
+
         [HttpGet("claim/download/{claimId}")]
         public IActionResult DownloadClaimReport(int claimId)
         {
@@ -228,6 +238,19 @@ namespace VIMS.API.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             await _customerService.CreateApplicationAsync(dto,userId);
             return Ok("Application submitted.");
+        }
+
+        [HttpPost("extract-documents")]
+        public async Task<IActionResult> ExtractDocuments(IFormFile rcDocument, IFormFile invoiceDocument)
+        {
+            var ocrService = HttpContext.RequestServices.GetService(typeof(VIMS.Application.Interfaces.Services.IOcrService)) as VIMS.Application.Interfaces.Services.IOcrService;
+            if (ocrService == null) return StatusCode(500, "OCR Service not available");
+
+            if (rcDocument == null || invoiceDocument == null)
+                return BadRequest("Both RC and Invoice documents are required for extraction.");
+
+            var result = await ocrService.ExtractVehicleDetailsAsync(rcDocument, invoiceDocument);
+            return Ok(result);
         }
         [HttpGet("my-applications")]
         public async Task<IActionResult> GetMyApplications()

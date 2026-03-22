@@ -20,8 +20,13 @@
         </a>
     </div>
 
+    <div class="nav-item-notif">
+        <app-notification-bell (onViewAll)="switchTab('notifications')"></app-notification-bell>
+    </div>
+
     <div class="sidebar-footer">
         <div class="nav-profile-container">
+
             <div class="nav-profile-trigger" (click)="onToggleUserDropdown.emit(!showUserDropdown())">
                 <div class="profile-avatar">{{ customerName().charAt(0) }}</div>
                 <div class="profile-info">

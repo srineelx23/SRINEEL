@@ -17,5 +17,7 @@ namespace VIMS.Application.Interfaces.Repositories
         Task UpdateAsync(Policy policy);
         Task<List<Policy>> GetAllAsync();
         Task<Dictionary<int, int>> GetPlanPurchaseCountsAsync();
+        Task<List<Policy>> GetExpiringPoliciesAsync(DateTime date);
     }
 }
+

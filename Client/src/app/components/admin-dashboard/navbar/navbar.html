@@ -17,8 +17,13 @@
         <a (click)="switchTab('audit')" [class.active]="activeTab() === 'audit'" class="nav-item">Audit Logs</a>
     </div>
 
+    <div class="nav-item-notif">
+        <app-notification-bell (onViewAll)="switchTab('notifications')"></app-notification-bell>
+    </div>
+
     <div class="sidebar-footer">
         <div class="nav-profile-container">
+
             <div class="nav-profile-trigger" (click)="showUserDropdown.set(!showUserDropdown())">
                 <div class="profile-avatar">{{ adminName().charAt(0) }}</div>
                 <div class="profile-info">

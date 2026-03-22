@@ -26,7 +26,7 @@
                     <label>Policy Category / Type <span style="color: var(--error);">*</span></label>
                     <div class="vims-custom-select" (click)="showFormPolicyTypeDropdown.set(!showFormPolicyTypeDropdown())">
                         <div class="vims-select-trigger" [class.open]="showFormPolicyTypeDropdown()">
-                            <span>{{ planForm().policyType || 'Select Policy Type' }}</span>
+                            <span>{{ (planForm().policyType || 'Select Category') | vimsFormat }}</span>
                             <i class="fas fa-chevron-down"></i>
                         </div>
                         @if (showFormPolicyTypeDropdown()) {
@@ -34,7 +34,7 @@
                             @for (cat of policyCategories(); track cat) {
                             <div class="vims-option" [class.active]="planForm().policyType === cat" 
                                 (click)="planForm().policyType = cat; showFormPolicyTypeDropdown.set(false); $event.stopPropagation()">
-                                {{ cat }}
+                                {{ cat | vimsFormat }}
                             </div>
                             }
                         </div>
@@ -55,7 +55,7 @@
                     <label>Applicable Vehicle Classification <span style="color: var(--error);">*</span></label>
                     <div class="vims-custom-select" (click)="showFormVehicleTypeDropdown.set(!showFormVehicleTypeDropdown())">
                         <div class="vims-select-trigger" [class.open]="showFormVehicleTypeDropdown()">
-                            <span>{{ planForm().applicableVehicleType || 'Select Vehicle Class' }}</span>
+                            <span>{{ (planForm().applicableVehicleType || 'Select Category') | vimsFormat }}</span>
                             <i class="fas fa-chevron-down"></i>
                         </div>
                         @if (showFormVehicleTypeDropdown()) {
@@ -63,7 +63,7 @@
                             @for (vCat of vehicleCategories(); track vCat) {
                             <div class="vims-option" [class.active]="planForm().applicableVehicleType === vCat" 
                                 (click)="planForm().applicableVehicleType = vCat; showFormVehicleTypeDropdown.set(false); $event.stopPropagation()">
-                                {{ vCat }}
+                                {{ vCat | vimsFormat }}
                             </div>
                             }
                         </div>
@@ -140,7 +140,7 @@
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="showVehicleTypeDropdown.set(!showVehicleTypeDropdown())">
                     <i class="fa-solid fa-car"></i>
-                    <span>{{ planVehicleTypeFilter() === 'All' ? 'All Vehicles' : planVehicleTypeFilter() }}</span>
+                    <span>{{ planVehicleTypeFilter() === 'All' ? 'All Vehicles' : (planVehicleTypeFilter() | vimsFormat) }}</span>
                     <i class="fa-solid fa-chevron-down" [style.transform]="showVehicleTypeDropdown() ? 'rotate(180deg)' : 'none'"></i>
                 </div>
                 @if (showVehicleTypeDropdown()) {
@@ -150,7 +150,7 @@
                     <div class="vims-dropdown-divider"></div>
                     @for (v of vehicleCategories(); track v) {
                     <div class="vims-dropdown-item" [class.active]="planVehicleTypeFilter() === v" 
-                        (click)="planVehicleTypeFilter.set(v); showVehicleTypeDropdown.set(false)">{{ v }}</div>
+                        (click)="planVehicleTypeFilter.set(v); showVehicleTypeDropdown.set(false)">{{ v | vimsFormat }}</div>
                     }
                 </div>
                 }
@@ -160,7 +160,7 @@
             <div class="vims-dropdown-container">
                 <div class="vims-dropdown-trigger" (click)="showPlanTypeDropdown.set(!showPlanTypeDropdown())">
                     <i class="fa-solid fa-shield-halved"></i>
-                    <span>{{ planTypeFilter() === 'All' ? 'All Tiers' : planTypeFilter() }}</span>
+                    <span>{{ planTypeFilter() === 'All' ? 'All Tiers' : (planTypeFilter() | vimsFormat) }}</span>
                     <i class="fa-solid fa-chevron-down" [style.transform]="showPlanTypeDropdown() ? 'rotate(180deg)' : 'none'"></i>
                 </div>
                 @if (showPlanTypeDropdown()) {
@@ -170,7 +170,7 @@
                     <div class="vims-dropdown-divider"></div>
                     @for (t of policyCategories(); track t) {
                     <div class="vims-dropdown-item" [class.active]="planTypeFilter() === t" 
-                        (click)="planTypeFilter.set(t); showPlanTypeDropdown.set(false)">{{ t }}</div>
+                        (click)="planTypeFilter.set(t); showPlanTypeDropdown.set(false)">{{ t | vimsFormat }}</div>
                     }
                 </div>
                 }
@@ -215,11 +215,11 @@
             @for (p of orderedPlans(); track (p.planId || $index)) {
             <div class="plan-card fade-in">
                 <div class="plan-header">
-                    <span class="plan-type-badge">{{ p.policyType }}</span>
+                    <span class="plan-type-badge">{{ p.policyType | vimsFormat }}</span>
                     <h3 class="plan-name">{{ p.planName }}</h3>
                     <div class="plan-vehicle">
                         <i class="fa-solid fa-car-side" style="margin-right: 6px; font-size: 0.8rem;"></i>
-                        {{ p.applicableVehicleType }}
+                        {{ p.applicableVehicleType | vimsFormat }}
                     </div>
                 </div>
 

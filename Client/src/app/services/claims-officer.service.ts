@@ -24,4 +24,12 @@ export class ClaimsOfficerService {
     getPayoutBreakdown(claimId: number, dto: any): Observable<any> {
         return this.http.post(`${this.apiUrl}/payout-breakdown/${claimId}`, dto);
     }
+
+    downloadPolicyContract(policyId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/policy/download/${policyId}`, { responseType: 'blob' });
+    }
+
+    downloadSettlementReport(claimId: number): Observable<Blob> {
+        return this.http.get(`${this.apiUrl}/claim/download-settlement/${claimId}`, { responseType: 'blob' });
+    }
 }

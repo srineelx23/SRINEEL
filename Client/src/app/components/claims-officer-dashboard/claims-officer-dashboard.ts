@@ -7,16 +7,18 @@ import { ClaimsOfficerService } from '../../services/claims-officer.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { jwtDecode } from 'jwt-decode';
 
-import { Navbar } from './navbar/navbar';
-import { Overview } from './overview/overview';
-import { Claims } from './claims/claims';
-import { History } from './history/history';
-import { Settings } from './settings/settings';
+import { NavbarComponent } from './navbar/navbar';
+import { OverviewComponent } from './overview/overview';
+import { ClaimsComponent } from './claims/claims';
+import { HistoryComponent } from './history/history';
+import { SettingsComponent } from './settings/settings';
+import { NotificationsComponent } from '../notifications/notifications';
 
 @Component({
     selector: 'app-claims-officer-dashboard',
     standalone: true,
-    imports: [CommonModule, FormsModule, Navbar, Overview, Claims, History, Settings],
+    imports: [CommonModule, FormsModule, NavbarComponent, OverviewComponent, ClaimsComponent, HistoryComponent, SettingsComponent, NotificationsComponent],
+
     templateUrl: './claims-officer-dashboard.html',
     styleUrl: './claims-officer-dashboard.css',
 })
@@ -176,6 +178,38 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     logout() {
         this.authService.logout();
+    }
+
+    downloadPolicyContract(policyId: number) {
+        this.claimsService.downloadPolicyContract(policyId).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                this.successMessage.set("Policy contract opened in new tab.");
+                setTimeout(() => this.successMessage.set(''), 3000);
+            },
+            error: (err) => {
+                console.error("Download failed:", err);
+                this.errorMessage.set("Failed to download policy contract.");
+                this.autoHideToast();
+            }
+        });
+    }
+
+    downloadSettlementReport(claimId: number) {
+        this.claimsService.downloadSettlementReport(claimId).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                this.successMessage.set("Settlement report opened in new tab.");
+                setTimeout(() => this.successMessage.set(''), 3000);
+            },
+            error: (err) => {
+                console.error("Download failed:", err);
+                this.errorMessage.set("Failed to download settlement report.");
+                this.autoHideToast();
+            }
+        });
     }
 
     // Claim Review

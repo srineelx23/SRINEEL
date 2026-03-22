@@ -22,8 +22,9 @@ namespace VIMS.Application.Services
         private readonly IPolicyTransferRepository _policyTransferRepository;
         private readonly IAuditService _auditService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly INotificationService _notificationService;
 
-        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService)
+        public AgentService(IVehicleApplicationRepository appRepo, IVehicleRepository vehicleRepo, IPolicyPlanRepository policyPlanRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, INotificationService notificationService)
         {
             _vehicleApplicationRepository = appRepo;
             _vehicleRepository = vehicleRepo;
@@ -33,7 +34,9 @@ namespace VIMS.Application.Services
             _policyTransferRepository = policyTransferRepository;
             _auditService = auditService;
             _fileStorageService = fileStorageService;
+            _notificationService = notificationService;
         }
+
 
         public async Task<List<VehicleApplication>> GetMyPendingApplicationsAsync(int agentId)
         {
@@ -78,6 +81,8 @@ namespace VIMS.Application.Services
 
                 await _vehicleApplicationRepository.SaveChangesAsync();
                 await _auditService.LogActionAsync("PolicyApplicationRejected", "Policy", $"Agent rejected application: {app.RegistrationNumber}. Reason: {app.RejectionReason}", "VehicleApplication", app.VehicleApplicationId.ToString());
+                await _notificationService.CreateNotificationAsync(app.CustomerId, "Policy Request Rejected", $"Your policy application for {app.RegistrationNumber} has been rejected by the agent. Reason: {app.RejectionReason}", NotificationType.PolicyRejected, "VehicleApplication", app.VehicleApplicationId.ToString());
+
 
                 // If this was a transfer application, mark transfer as cancelled
                 if (app.IsTransfer)
@@ -189,7 +194,9 @@ namespace VIMS.Application.Services
                     app.Status = VehicleApplicationStatus.Approved;
                     await _vehicleApplicationRepository.SaveChangesAsync();
                     await _auditService.LogActionAsync("PolicyApplicationApproved", "Policy", $"Agent approved transfer application: {app.RegistrationNumber}", "VehicleApplication", app.VehicleApplicationId.ToString());
+                    await _notificationService.CreateNotificationAsync(app.CustomerId, "Policy Transfer Approved", $"Your policy transfer request for {app.RegistrationNumber} has been approved. You can now proceed to payment.", NotificationType.PolicyTransferStatusChanged, "VehicleApplication", app.VehicleApplicationId.ToString());
                     return; // EXIT EARLY IF IT WAS A TRANSFER
+
                 //} 
                 //catch (Exception ex) 
                 //{
@@ -272,7 +279,9 @@ namespace VIMS.Application.Services
             app.Status = VehicleApplicationStatus.Approved;
             await _vehicleApplicationRepository.SaveChangesAsync();
             await _auditService.LogActionAsync("PolicyApplicationApproved", "Policy", $"Agent approved application: {app.RegistrationNumber}", "VehicleApplication", app.VehicleApplicationId.ToString());
+            await _notificationService.CreateNotificationAsync(app.CustomerId, "Policy Request Approved", $"Great news! Your policy application for {app.RegistrationNumber} has been approved. Please complete the premium payment.", NotificationType.PolicyApproved, "Policy", policy.PolicyId.ToString());
         }
+
 
 
         public async Task<List<AgentCustomerDetailsDTO>> GetMyApprovedCustomersAsync(int agentId)
