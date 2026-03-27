@@ -269,13 +269,6 @@ namespace VIMS.API.Controllers
             if (plan == null)
                 return BadRequest("Invalid plan");
 
-            // Validate EV Conflict
-            bool isEVPlan = plan.ApplicableVehicleType != null && plan.ApplicableVehicleType.Contains("EV");
-            if (isEVPlan && dto.FuelType != "EV")
-                return BadRequest("Incorrect fuel type for EV plan.");
-            if (!isEVPlan && dto.FuelType == "EV")
-                return BadRequest("'EV' fuel type is restricted for specialized plans.");
-
             int vehicleAge = DateTime.UtcNow.Year - dto.ManufactureYear;
             if (vehicleAge > 15)
                 return BadRequest("Cannot buy insurance for vehicles aged greater than 15 years");

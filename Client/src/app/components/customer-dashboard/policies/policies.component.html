@@ -36,7 +36,7 @@
             @if (activePolicies().length > 0) {
             <div class="policy-cards-grid">
                 @for (p of activePolicies(); track (p.policyId || $index)) {
-                <div class="policy-card glass-panel" (click)="onViewPolicyDetails.emit(p.policyId)">
+                <div class="policy-card glass-panel">
                     <div class="policy-card-header">
                         <span class="policy-num">{{ p.policyNumber }}</span>
                         <span class="status-badge active">Active</span>
@@ -59,7 +59,7 @@
                         </div>
                     </div>
                     <div class="policy-card-footer">
-                        <span class="view-details">View Details &rarr;</span>
+                        <button type="button" class="btn-outline" (click)="onViewPolicyDetails.emit(p.policyId)">View Details</button>
                     </div>
                 </div>
                 }
@@ -304,7 +304,7 @@
                 selectedPolicy().status !== 'Expired' && selectedPolicy().status !== 'Claimed') {
                 <button class="btn-primary" style="padding: 10px 24px;"
                     (click)="onPayPremium.emit(selectedPolicy().policyId)">
-                    {{ selectedPolicy().isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Outstanding Premium' }}
+                    {{ selectedPolicy().isFeePending ? 'Pay Transfer Fees (₹500)' : 'Pay Premium' }}
                 </button>
                 }
                 @if (selectedPolicy().status !== 'Cancelled' && selectedPolicy().status !== 'Claimed' &&

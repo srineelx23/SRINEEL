@@ -1,0 +1,14 @@
+How Our Claims Work
+
+Filing a Claim
+- You can process one claim at a time. Please wait for an existing claim to be completed before submitting another.
+- Make sure to upload the correct documents: an FIR is mandatory for Theft claims. Alternatively, a Repair Bill and a Vehicle Invoice are both required for Own Damage and Third-Party claims.
+- We will only process claims for events covered by your specific plan (e.g., Theft is only covered if your plan includes Theft Cover).
+
+Settlements & Deductions
+- Unless you have a Zero Depreciation plan, your repair claim will deduct an age-based depreciation rate from the final settlement. Standard depreciation ranges from 5% (for brand new cars) and caps at 60% (for cars older than 5 years).
+- A mandatory deductable amount (defined by your plan) will be deducted before you receive your final payout.
+- Regardless of repair costs, the final payout of any claim will never exceed your plan's Maximum Coverage Amount.
+
+Total Loss Scenarios
+- If your vehicle is stolen, or if a damage claim's calculated subtotal hits 75% or more of your vehicle's value, it is declared a "Total Loss" or "Constructive Total Loss". In these events, the base settlement amount defaults to your vehicle's current Insured Declared Value (IDV). Once this payout is settled, your policy status will be marked as claimed.

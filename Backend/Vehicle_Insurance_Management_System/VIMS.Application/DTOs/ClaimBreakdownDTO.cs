@@ -10,6 +10,7 @@ namespace VIMS.Application.DTOs
         public decimal MaxCoverage { get; set; }
         public bool IsTotalLoss { get; set; }
         public bool IsCapped { get; set; }
+        public string? WarningMessage { get; set; }
         public List<BreakdownItemDTO> Items { get; set; } = new List<BreakdownItemDTO>();
     }
 

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CaptchaService } from '../../services/captcha.service';
+import { ThemeService } from '../../services/theme.service';
 import { extractErrorMessage } from '../../utils/error-handler';
 
 @Component({
@@ -14,6 +15,7 @@ import { extractErrorMessage } from '../../utils/error-handler';
   styleUrl: './customer-login.css',
 })
 export class CustomerLogin implements OnInit {
+  protected readonly themeService = inject(ThemeService);
   email = '';
   password = '';
   errorMessage = signal('');

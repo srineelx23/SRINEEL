@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using VIMS.Application.DTOs;
 using VIMS.Application.Exceptions;
 using VIMS.Application.Interfaces.Repositories;
@@ -23,8 +24,11 @@ namespace VIMS.Application.Services
         private readonly IAuditService _auditService;
         private readonly IFileStorageService _fileStorageService;
         private readonly INotificationService _notificationService;
+        private readonly IOcrService _ocrService;
+        private readonly IGroqService _groqService;
+        private readonly IPolicyTransferRepository _transferRepository;
 
-        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository, IAuditService auditService, IFileStorageService fileStorageService, INotificationService notificationService)
+        public ClaimsService(IClaimsRepository claimsRepository, IUserRepository userRepository, IPolicyRepository policyRepository, IPricingService pricingService, IPaymentRepository paymentRepository, IAuditService auditService, IFileStorageService fileStorageService, INotificationService notificationService, IOcrService ocrService, IGroqService groqService, IPolicyTransferRepository transferRepository)
         {
             _claimsRepository = claimsRepository;
             _userRepository = userRepository;
@@ -34,6 +38,9 @@ namespace VIMS.Application.Services
             _auditService = auditService;
             _fileStorageService = fileStorageService;
             _notificationService = notificationService;
+            _ocrService = ocrService;
+            _groqService = groqService;
+            _transferRepository = transferRepository;
         }
 
 
@@ -359,6 +366,7 @@ namespace VIMS.Application.Services
                 if (breakdown.MaxCoverage > 0 && final > breakdown.MaxCoverage)
                 {
                     breakdown.IsCapped = true;
+                    breakdown.WarningMessage = $"Payout capped at Maximum Coverage limit (₹{breakdown.MaxCoverage:N0}) as per current plan.";
                     breakdown.Items.Add(new BreakdownItemDTO { Label = "Max Coverage Cap", Value = -(final - breakdown.MaxCoverage), Status = "error", Note = "Plan Limit" });
                     final = breakdown.MaxCoverage;
                 }
@@ -373,19 +381,12 @@ namespace VIMS.Application.Services
                 int tpAge = currentYear - dto.ManufactureYear.Value;
                 decimal depP = _pricingService.GetDepreciationRate(tpAge);
                 
-                bool isZeroDep = plan.ZeroDepreciationAvailable;
-                decimal effectiveDep = isZeroDep ? 0m : depP;
-
-                decimal depAmt = repair * effectiveDep;
+                decimal depAmt = repair * depP;
                 breakdown.Items.Add(new BreakdownItemDTO { Label = "3rd Party Repair Bill", Value = repair });
 
-                if (effectiveDep > 0)
+                if (depP > 0)
                 {
-                    breakdown.Items.Add(new BreakdownItemDTO { Label = $"Age Depreciation ({(effectiveDep * 100):0}%)", Value = -depAmt, Status = "error" });
-                }
-                else if (isZeroDep && repair > 0)
-                {
-                    breakdown.Items.Add(new BreakdownItemDTO { Label = "Zero Depreciation Bonus", Value = 0, Status = "success", Note = "Saved by plan" });
+                    breakdown.Items.Add(new BreakdownItemDTO { Label = $"Age Depreciation ({(depP * 100):0}%)", Value = -depAmt, Status = "error" });
                 }
                 breakdown.Items.Add(new BreakdownItemDTO { Label = "Compulsory Deductible", Value = -breakdown.Deductible, Status = "error" });
 
@@ -393,6 +394,7 @@ namespace VIMS.Application.Services
                 if (breakdown.MaxCoverage > 0 && final > breakdown.MaxCoverage)
                 {
                     breakdown.IsCapped = true;
+                    breakdown.WarningMessage = $"Payout capped at Maximum Coverage limit (₹{breakdown.MaxCoverage:N0}) as per current plan.";
                     breakdown.Items.Add(new BreakdownItemDTO { Label = "Max Coverage Cap", Value = -(final - breakdown.MaxCoverage), Status = "error" });
                     final = breakdown.MaxCoverage;
                 }
@@ -400,6 +402,406 @@ namespace VIMS.Application.Services
             }
 
             return breakdown;
+        }
+
+        public async Task<ClaimsAnalysisResultDTO> AnalyzeClaimAsync(int claimId)
+        {
+            var claim = await _claimsRepository.GetByIdAsync(claimId);
+            if (claim == null) throw new NotFoundException("Claim not found");
+
+            // If we have cached results, return them (optional, but requested implicitly)
+            // if (!string.IsNullOrEmpty(claim.FraudRiskAnalysisJson)) ...
+
+            int score = 0;
+            var reasons = new List<string>();
+            string summary = claim.Summary ?? string.Empty;
+            string extractedReg = string.Empty;
+            bool mismatch = false;
+            string combinedText = string.Empty;
+            string document1Text = string.Empty;
+            string document2Text = string.Empty;
+
+            // 1. Existing checks (Controller logic moved here)
+            var payments = claim.Policy?.Payments?.ToList() ?? new List<Payment>();
+            var lastPayment = payments
+                .Where(p => p.Status == PaymentStatus.Paid)
+                .OrderByDescending(p => p.PaymentDate)
+                .FirstOrDefault();
+
+            if (lastPayment != null && Math.Abs((claim.CreatedAt - lastPayment.PaymentDate).TotalHours) < 48)
+            {
+                score += 40;
+                reasons.Add("Claim filed within 48 hours of a premium payment.");
+            }
+
+            var transfers = await _transferRepository.GetTransfersByPolicyIdAsync(claim.PolicyId);
+            var lastTransfer = transfers?
+                .Where(t => t.Status == PolicyTransferStatus.Completed)
+                .OrderByDescending(t => t.UpdatedAt ?? t.CreatedAt)
+                .FirstOrDefault();
+
+            if (lastTransfer != null && Math.Abs((claim.CreatedAt - (lastTransfer.UpdatedAt ?? lastTransfer.CreatedAt)).TotalDays) < 30)
+            {
+                score += 25;
+                reasons.Add("Claim filed within 30 days of a policy transfer completion.");
+            }
+
+            if (claim.Policy != null && (claim.Policy.CurrentYearEndDate - claim.CreatedAt).TotalDays < 10 && (claim.Policy.CurrentYearEndDate - claim.CreatedAt).TotalDays >= 0)
+            {
+                score += 20;
+                reasons.Add("Claim filed within the last 10 days of the policy term.");
+            }
+
+            var otherClaims = await _claimsRepository.GetByCustomerIdAsync(claim.CustomerId);
+            var recentTotalCount = otherClaims.Count(c => c.ClaimId != claim.ClaimId && Math.Abs((claim.CreatedAt - c.CreatedAt).TotalDays) < 180);
+            var recentRejectedCount = otherClaims.Count(c => c.ClaimId != claim.ClaimId && c.Status == ClaimStatus.Rejected && Math.Abs((claim.CreatedAt - c.CreatedAt).TotalDays) < 365);
+
+            if (recentTotalCount > 0)
+            {
+                score += Math.Min(recentTotalCount * 10, 30);
+                reasons.Add($"High Frequency: Customer has filed {recentTotalCount} other claim(s) in last 6 months.");
+            }
+            if (recentRejectedCount >= 2)
+            {
+                score += 20;
+                reasons.Add($"Suspicious History: {recentRejectedCount} previous claims from this customer were REJECTED in the last year.");
+            }
+
+            // 2. NEW OCR and Groq Workflow
+            var doc = claim.Documents?.FirstOrDefault();
+            if (doc != null)
+            {
+                // Extract from Doc1 (Repair Bill / FIR) and Doc2 (Invoice)
+                if (!string.IsNullOrEmpty(doc.Document1))
+                {
+                    document1Text = await _ocrService.ExtractTextAsync(doc.Document1);
+                    combinedText += document1Text + " ";
+                }
+                if (!string.IsNullOrEmpty(doc.Document2))
+                {
+                    document2Text = await _ocrService.ExtractTextAsync(doc.Document2);
+                    combinedText += document2Text + " ";
+                }
+
+                if (!string.IsNullOrEmpty(combinedText))
+                {
+                    // A. Summary
+                    if (string.IsNullOrEmpty(claim.Summary))
+                    {
+                        summary = await _groqService.SummarizeTextAsync(combinedText);
+                        claim.Summary = summary.Trim();
+                    }
+
+                    // B. Vehicle Number Mismatch
+                    var policyReg = claim.Policy?.Vehicle?.RegistrationNumber?.Replace(" ", "").ToUpper();
+                    if (!string.IsNullOrEmpty(policyReg))
+                    {
+                        // Search for the registration number in the text (basic check)
+                        if (!combinedText.Replace(" ", "").ToUpper().Contains(policyReg))
+                        {
+                            if (claim.claimType == ClaimType.Damage)
+                            {
+                                score += 50;
+                                mismatch = true;
+                                reasons.Add($"CRITICAL: Vehicle number mismatch. The document text does not contain the policy vehicle number ({policyReg}).");
+                            }
+                        }
+                    }
+
+                    // C. Date Validation (Premium paid post-incident)
+                    // Regular search for dates in text (Very naive, usually Groq is better for this)
+                    // We'll let Groq analyze the risk context too
+                    var groqAnalysis = await _groqService.AnalyzeRiskAsync(combinedText, $"Claim for {claim.claimType} on {claim.CreatedAt:d}. Vehicle: {policyReg}. Last Payment: {lastPayment?.PaymentDate:d}");
+                    if (groqAnalysis.Contains("MISMATCH") || groqAnalysis.Contains("SUSPICIOUS"))
+                    {
+                        // score += 10; // Extra AI risk
+                    }
+                }
+            }
+
+            // 3. Explicit document validation rules requested for risk scoring.
+            var expectedVehicleReg = claim.Policy?.Vehicle?.RegistrationNumber ?? string.Empty;
+            var expectedOwnerName = claim.Customer?.FullName ?? string.Empty;
+
+            if (claim.claimType == ClaimType.ThirdParty)
+            {
+                if (string.IsNullOrWhiteSpace(document1Text) || string.IsNullOrWhiteSpace(document2Text))
+                {
+                    score += 40;
+                    var missing = string.IsNullOrWhiteSpace(document1Text) && string.IsNullOrWhiteSpace(document2Text)
+                        ? "repair bill and invoice"
+                        : string.IsNullOrWhiteSpace(document1Text) ? "repair bill" : "invoice";
+                    reasons.Add($"Third Party validation failed: Missing {missing} document text for cross verification.");
+                }
+                else
+                {
+                    var billRegs = ExtractVehicleNumbers(document1Text);
+                    var invoiceRegs = ExtractVehicleNumbers(document2Text);
+
+                    if (billRegs.Count == 0)
+                    {
+                        score += 15;
+                        reasons.Add("Third Party validation failed: Could not extract a vehicle number from the repair bill.");
+                    }
+
+                    if (invoiceRegs.Count == 0)
+                    {
+                        score += 15;
+                        reasons.Add("Third Party validation failed: Could not extract a vehicle number from the invoice.");
+                    }
+
+                    if (billRegs.Count > 0 && invoiceRegs.Count > 0)
+                    {
+                        extractedReg = billRegs.FirstOrDefault() ?? string.Empty;
+                        var sameVehicleInBoth = billRegs.Intersect(invoiceRegs, StringComparer.OrdinalIgnoreCase).Any();
+                        if (!sameVehicleInBoth)
+                        {
+                            score += 45;
+                            mismatch = true;
+                            reasons.Add($"Third Party vehicle mismatch: Repair bill vehicle ({billRegs[0]}) does not match invoice vehicle ({invoiceRegs[0]}).");
+                        }
+
+                        var expectedNormalized = NormalizeVehicleNumber(expectedVehicleReg);
+                        if (!string.IsNullOrEmpty(expectedNormalized))
+                        {
+                            var billMatchesPolicy = billRegs.Any(r => r.Equals(expectedNormalized, StringComparison.OrdinalIgnoreCase));
+                            var invoiceMatchesPolicy = invoiceRegs.Any(r => r.Equals(expectedNormalized, StringComparison.OrdinalIgnoreCase));
+
+                            if (!billMatchesPolicy || !invoiceMatchesPolicy)
+                            {
+                                score += 30;
+                                mismatch = true;
+                                reasons.Add($"Third Party policy mismatch: Expected policy vehicle number {expectedNormalized} was not found in both documents.");
+                            }
+                        }
+                    }
+
+                    var billOwner = TryExtractOwnerName(document1Text);
+                    var invoiceOwner = TryExtractOwnerName(document2Text);
+
+                    if (string.IsNullOrWhiteSpace(billOwner))
+                    {
+                        score += 10;
+                        reasons.Add("Third Party owner validation failed: Owner details not detected in repair bill.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(invoiceOwner))
+                    {
+                        score += 10;
+                        reasons.Add("Third Party owner validation failed: Owner details not detected in invoice.");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(billOwner) && !string.IsNullOrWhiteSpace(invoiceOwner) &&
+                        !IsOwnerLikelyMatch(billOwner, invoiceOwner))
+                    {
+                        score += 35;
+                        reasons.Add($"Third Party owner mismatch: Repair bill owner ({billOwner}) does not match invoice owner ({invoiceOwner}).");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(expectedOwnerName))
+                    {
+                        if (!string.IsNullOrWhiteSpace(billOwner) && !IsOwnerLikelyMatch(billOwner, expectedOwnerName))
+                        {
+                            score += 25;
+                            reasons.Add($"Third Party owner-policy mismatch: Repair bill owner ({billOwner}) does not match policy owner ({expectedOwnerName}).");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(invoiceOwner) && !IsOwnerLikelyMatch(invoiceOwner, expectedOwnerName))
+                        {
+                            score += 25;
+                            reasons.Add($"Third Party owner-policy mismatch: Invoice owner ({invoiceOwner}) does not match policy owner ({expectedOwnerName}).");
+                        }
+                    }
+                }
+            }
+
+            if (claim.claimType == ClaimType.Theft)
+            {
+                if (string.IsNullOrWhiteSpace(document1Text))
+                {
+                    score += 40;
+                    reasons.Add("Theft validation failed: FIR document text is missing for vehicle-owner verification.");
+                }
+                else
+                {
+                    var firRegs = ExtractVehicleNumbers(document1Text);
+                    extractedReg = firRegs.FirstOrDefault() ?? extractedReg;
+                    var expectedNormalized = NormalizeVehicleNumber(expectedVehicleReg);
+                    var firContainsExpectedReg = !string.IsNullOrEmpty(expectedNormalized)
+                        && ContainsVehicleNumberNormalized(document1Text, expectedNormalized);
+
+                    if (firRegs.Count == 0 && !firContainsExpectedReg)
+                    {
+                        score += 20;
+                        mismatch = true;
+                        reasons.Add("Theft validation failed: Vehicle number could not be extracted from FIR.");
+                    }
+                    else if (!string.IsNullOrEmpty(expectedNormalized)
+                             && !firContainsExpectedReg
+                             && !firRegs.Any(r => r.Equals(expectedNormalized, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        score += 50;
+                        mismatch = true;
+                        reasons.Add($"Theft vehicle mismatch: FIR vehicle number ({firRegs[0]}) does not match policy vehicle number ({expectedNormalized}).");
+                    }
+                    else if (string.IsNullOrEmpty(extractedReg) && firContainsExpectedReg)
+                    {
+                        extractedReg = expectedNormalized;
+                    }
+
+                    var firOwner = TryExtractOwnerName(document1Text);
+                    if (string.IsNullOrWhiteSpace(firOwner))
+                    {
+                        score += 10;
+                        reasons.Add("Theft owner validation failed: Owner details not detected in FIR.");
+                    }
+                    else if (!string.IsNullOrWhiteSpace(expectedOwnerName) && !IsOwnerLikelyMatch(firOwner, expectedOwnerName))
+                    {
+                        score += 30;
+                        reasons.Add($"Theft owner mismatch: FIR owner ({firOwner}) does not match policy owner ({expectedOwnerName}).");
+                    }
+                }
+            }
+
+            // 5. Build Result
+            var resultDto = new ClaimsAnalysisResultDTO
+            {
+                FraudRiskScore = Math.Min(score, 100),
+                RiskReasons = reasons,
+                Summary = summary.Trim(),
+                VehicleMismatchDetected = mismatch,
+                ExtractedVehicleNumber = extractedReg
+            };
+
+            // 6. Prefill Suggested Information (Strictly using raw text from PdfPig, no AI extraction)
+            try
+            {
+                // A. Extract Repair Cost (Regex to find amounts like INR 25,749, Rs 5000, ₹ 100,000 etc.)
+                var amountRegex = new System.Text.RegularExpressions.Regex(@"(?i)(?:INR|Rs|₹|Cost|Total|Amount|Estimated|Settlement)[:\s]*([\d,]+(?:\.\d+)?)\b");
+                var amountMatch = amountRegex.Match(combinedText);
+
+                if (amountMatch.Success)
+                {
+                    var cleanVal = amountMatch.Groups[1].Value.Replace(",", "");
+                    if (decimal.TryParse(cleanVal, out decimal val))
+                    {
+                        resultDto.SuggestedRepairCost = val;
+                    }
+                }
+
+                // B. Extract Manufacture Year (Strictly targeting MFY label as requested)
+                var yearRegex = new System.Text.RegularExpressions.Regex(@"(?i)MFY[:\s]*\b(19\d{2}|20[0-2]\d)\b");
+                var yearMatch = yearRegex.Match(combinedText);
+                
+                if (yearMatch.Success)
+                {
+                    if (int.TryParse(yearMatch.Groups[1].Value, out int year))
+                    {
+                        resultDto.SuggestedManufactureYear = year;
+                    }
+                }
+            }
+            catch { /* Ignore extraction errors to prevent workflow failure */ }
+
+            // Save to database
+            claim.FraudRiskAnalysisJson = JsonSerializer.Serialize(resultDto);
+            await _claimsRepository.UpdateAsync(claim);
+
+            return resultDto;
+        }
+
+        private static List<string> ExtractVehicleNumbers(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return new List<string>();
+            }
+
+            var regex = new Regex(@"\b[A-Z]{2}[\s-]?\d{1,2}[\s-]?[A-Z]{1,3}[\s-]?\d{4}\b", RegexOptions.IgnoreCase);
+            var matches = regex.Matches(text);
+
+            return matches
+                .Select(m => NormalizeVehicleNumber(m.Value))
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string NormalizeVehicleNumber(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return Regex.Replace(value.ToUpperInvariant(), @"[^A-Z0-9]", string.Empty);
+        }
+
+        private static string TryExtractOwnerName(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var ownerRegex = new Regex(@"(?im)(?:owner(?:'s)?\s*name|name\s*of\s*owner|insured\s*name|policy\s*holder|complainant\s*name|name\s*of\s*complainant|complainant)\s*[:\-]\s*([A-Za-z][A-Za-z .]{2,80})");
+            var match = ownerRegex.Match(text);
+            if (match.Success)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+
+            // FIR layouts often have a plain "Name" row under a complainant section.
+            var genericNameRegex = new Regex(@"(?im)^\s*name\s*[:\-]?\s*([A-Za-z][A-Za-z .]{2,80})\s*$");
+            var genericNameMatch = genericNameRegex.Match(text);
+            if (genericNameMatch.Success)
+            {
+                return genericNameMatch.Groups[1].Value.Trim();
+            }
+
+            return string.Empty;
+        }
+
+        private static bool ContainsVehicleNumberNormalized(string text, string normalizedVehicleNumber)
+        {
+            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(normalizedVehicleNumber))
+            {
+                return false;
+            }
+
+            var normalizedText = Regex.Replace(text.ToUpperInvariant(), @"[^A-Z0-9]", string.Empty);
+            return normalizedText.Contains(normalizedVehicleNumber, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsOwnerLikelyMatch(string left, string right)
+        {
+            var normalizedLeft = NormalizePersonName(left);
+            var normalizedRight = NormalizePersonName(right);
+
+            if (string.IsNullOrWhiteSpace(normalizedLeft) || string.IsNullOrWhiteSpace(normalizedRight))
+            {
+                return false;
+            }
+
+            if (string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return normalizedLeft.Contains(normalizedRight, StringComparison.OrdinalIgnoreCase)
+                || normalizedRight.Contains(normalizedLeft, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizePersonName(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var cleaned = Regex.Replace(value.ToUpperInvariant(), @"[^A-Z ]", " ");
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+            return cleaned;
         }
 
     }

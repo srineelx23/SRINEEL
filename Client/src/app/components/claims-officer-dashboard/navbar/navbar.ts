@@ -1,6 +1,7 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationBellComponent } from '../../notification-bell/notification-bell.component';
+import { ThemeService } from '../../../services/theme.service';
 
 @Component({
   selector: 'app-navbar',
@@ -11,6 +12,7 @@ import { NotificationBellComponent } from '../../notification-bell/notification-
   styleUrl: './navbar.css'
 })
 export class NavbarComponent {
+  protected readonly themeService = inject(ThemeService);
   activeTab = input.required<string>();
   officerName = input.required<string>();
   userRole = input.required<string>();

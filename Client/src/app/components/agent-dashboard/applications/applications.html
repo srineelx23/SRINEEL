@@ -79,8 +79,8 @@
         <h2 class="form-title" style="margin-bottom: 24px;">Review Application: {{
             selectedApp().registrationNumber }}</h2>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
-            <div class="glass-panel"
+        <div class="review-panels-grid" [class.has-validation-issues]="validationErrors().length > 0" style="margin-bottom: 32px;">
+            <div class="glass-panel application-details-panel"
                 style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
                 <h3 style="color: var(--accent); margin-bottom: 16px;">Application Details</h3>
                 <p style="margin-bottom: 8px;"><strong
@@ -105,7 +105,7 @@
             </div>
 
             <!-- Documents -->
-            <div class="glass-panel"
+            <div class="glass-panel application-documents-panel"
                 style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
                 <h3 style="color: var(--accent); margin-bottom: 16px;">Application Documents</h3>
                 @if (!selectedApp().documents || selectedApp().documents.length === 0) {
@@ -121,6 +121,47 @@
                     </a>
                     }
                 </div>
+                }
+            </div>
+
+            <div class="glass-panel validation-panel"
+                style="background: var(--card-inner-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--card-inner-border); box-shadow: none;">
+                <div class="validation-header">
+                    <h3 class="validation-title">Document Validation</h3>
+                    <span class="validation-pill" [ngClass]="'tone-' + getRiskTone()">{{ getValidationSummary() }}</span>
+                </div>
+
+                @if (validationLoading()) {
+                <div class="validation-loading">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+                } @else {
+                    <div class="risk-score-strip" [ngClass]="'tone-' + getRiskTone()">
+                        <div>
+                            <div class="risk-score-label">Risk Score</div>
+                            <div class="risk-score-caption">Based on extracted document consistency checks</div>
+                        </div>
+                        <span class="risk-score-value">{{ validationRiskScore() }}%</span>
+                    </div>
+
+                    @if (validationErrors().length === 0) {
+                    <div class="validation-success">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>No validation mismatches found.</span>
+                    </div>
+                    } @else {
+                    <div class="validation-errors-list">
+                        @for (issue of validationErrors(); track issue; let i = $index) {
+                        <div class="validation-error-item">
+                            <span class="error-index">{{ i + 1 }}</span>
+                            <span class="error-text">{{ issue }}</span>
+                        </div>
+                        }
+                    </div>
+                    }
                 }
             </div>
         </div>

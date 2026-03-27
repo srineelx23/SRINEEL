@@ -9,6 +9,11 @@
             <div class="nav-links">
             </div>
             <div class="nav-actions">
+                <button (click)="themeService.toggleTheme()" class="nav-theme-toggle"
+                    [attr.aria-label]="themeService.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    [title]="themeService.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                    {{ themeService.isDarkMode() ? '☀️' : '🌙' }}
+                </button>
                 @if (userName()) {
                 <!-- Premium profile dropdown same as dashboard -->
                 <div class="nav-profile-container">
@@ -57,6 +62,7 @@
 
             <div class="hero-cta">
                 <a href="#" (click)="explorePlans($event)" class="btn-primary hero-btn">Explore Plans</a>
+                <a routerLink="/our-rules" class="btn-outline hero-btn" style="margin-left: 15px; border-color: rgba(64, 224, 208, 0.5);">Our Rules &rarr;</a>
             </div>
 
             <div class="stats">

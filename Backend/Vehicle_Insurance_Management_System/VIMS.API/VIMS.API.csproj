@@ -25,10 +25,17 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);wwwroot\uploads\**</DefaultItemExcludes>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="tessdata\**">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>tessdata\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
+    <Content Update="rules.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

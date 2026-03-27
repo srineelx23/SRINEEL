@@ -8,6 +8,11 @@ export interface ReviewVehicleApplicationDTO {
     InvoiceAmount: number;
 }
 
+export interface AgentApplicationValidationResultDTO {
+    riskScore: number;
+    errors: string[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -31,5 +36,9 @@ export class AgentService {
 
     getApplications(): Observable<any> {
         return this.http.get(`${this.backendUrl}/applications`);
+    }
+
+    validateApplicationDocuments(applicationId: number): Observable<AgentApplicationValidationResultDTO> {
+        return this.http.get<AgentApplicationValidationResultDTO>(`${this.backendUrl}/vehicle-application/${applicationId}/validation`);
     }
 }

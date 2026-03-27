@@ -1,0 +1,263 @@
+<div class="rules-container fade-in">
+    <!-- Header -->
+    <header class="rules-header glass-panel">
+        <div class="header-logo">
+            <span class="logo-shield">🛡️</span>
+            <span class="logo-text">VIMS OFFICIAL</span>
+        </div>
+        <div class="header-meta">
+            <span class="doc-id">RULEBOOK VER: 2026.04.18</span>
+            <span class="doc-date">Updated: March 2026</span>
+        </div>
+        <button class="btn-back" (click)="goBack()">
+            <i class="fa-solid fa-arrow-left"></i>
+            Back
+        </button>
+    </header>
+
+    <main class="rules-page-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="rules-sidebar glass-panel">
+            <nav class="sidebar-nav">
+                @for (cat of categories; track cat.id) {
+                    <button class="sidebar-btn" 
+                            [class.active]="activeCategory() === cat.id"
+                            (click)="setCategory(cat.id)">
+                        <i class="fa-solid" [class]="cat.icon"></i>
+                        <span>{{ cat.label }}</span>
+                    </button>
+                }
+            </nav>
+            
+            <div class="legal-disclaimer">
+                <i class="fa-solid fa-info-circle"></i>
+                <p>Private documentation for VIMS registered users only.</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="rules-main-content glass-panel fade-in">
+            
+            <!-- Category: Policy & Coverage -->
+            @if (activeCategory() === 'policy') {
+                <section class="legal-section">
+                    <div class="section-title-wrap">
+                        <span class="section-num">01</span>
+                        <h2 class="section-title">Policy & Coverage Protocols</h2>
+                    </div>
+
+                    <!-- 1. Policy & Coverage Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Policy Coverage & Exclusions</h3>
+                        <p>VIMS provides financial protection against physical damage or bodily injury resulting from traffic collisions and other mechanical incidents.</p>
+                        <ul class="legal-list">
+                            <li><strong>Inclusions:</strong> Own damage, third-party liability, fire, theft, explosion, and natural calamities.</li>
+                            <li><strong>Exclusions:</strong> Wear and tear, electrical breakdown (without add-on), aging of parts, driving under influence, and unauthorized vehicle modification.</li>
+                            <li><strong>Supported Claim Types:</strong> Damage Claims (OD), Third Party Liability (TPL), Theft Recovery, and Constructive Total Loss (CTL).</li>
+                        </ul>
+                    </div>
+
+                    <!-- 2. Premium Calculation Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Premium Computation Model</h3>
+                        <p>The base premium is derived using an actuarial formula based on vehicle risk and category.</p>
+                        <div class="rule-grid-2">
+                            <div class="rule-mini-card">
+                                <strong>Vehicle Category:</strong> Rates vary for Car, Two-Wheeler, and Heavy Commercial vehicles.
+                            </div>
+                            <div class="rule-mini-card">
+                                <strong>Age Factor (MFY):</strong> Older vehicles attract higher premiums due to maintenance risk.
+                            </div>
+                            <div class="rule-mini-card">
+                                <strong>IDV Basis:</strong> Value of premium is proportional to the Insured Declared Value.
+                            </div>
+                            <div class="rule-mini-card">
+                                <strong>Loading:</strong> Includes taxes, administrative fees, and roadside assistance charges.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. IDV Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Insured Declared Value (IDV) Calculation</h3>
+                        <p>IDV represents the maximum sum insured, which is fixed at the commencement of each policy term.</p>
+                        <div class="formula-box">IDV = (Manufacturer's selling price - Depreciation as per age) + Add-ons</div>
+                        <p class="card-desc">IDV directly correlates to the premium amount and is the cap for all claim payouts.</p>
+                        <table class="legal-table-sm">
+                            <thead><tr><th>Brand New Vehicle</th><th>1-Year Old</th><th>5-Year Old</th></tr></thead>
+                            <tbody><tr><td>95% of Invoice</td><td>80-85% of Invoice</td><td>50% of Invoice</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <!-- 12. Special Policy Conditions -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Special Clauses & Regulatory Conditions</h3>
+                        <ul class="legal-list">
+                            <li><strong>Third-Party Liability:</strong> Settlement is strictly governed by statutory limits. Mandatory depreciation applies to all TP payouts (Zero-Dep add-on is NOT applicable).</li>
+                            <li><strong>Regulatory Constraint:</strong> Policies must be renewed within 30 days of expiry to avoid a new physical vehicle inspection.</li>
+                        </ul>
+                    </div>
+                </section>
+            }
+
+            <!-- Category: Claims & Settlement -->
+            @if (activeCategory() === 'claims') {
+                <section class="legal-section">
+                    <div class="section-title-wrap">
+                        <span class="section-num">02</span>
+                        <h2 class="section-title">Claim Lifecycle & Settlement</h2>
+                    </div>
+
+                    <!-- 4. Claim Eligibility Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Eligibility Criteria</h3>
+                        <ul class="legal-list">
+                            <li>Claims must be filed while the policy is in <strong>Active</strong> status.</li>
+                            <li>Evidence of damage (Images/Video) and a valid Repair Invoice (PDF) are mandatory.</li>
+                            <li>Incident reporting must occur within 48 hours to avoid high-risk scrutiny.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 5. Depreciation Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Parts-Wise Depreciation Matrix</h3>
+                        <table class="legal-table">
+                            <thead><tr><th>Material Category</th><th>Depreciation %</th></tr></thead>
+                            <tbody>
+                                <tr><td>Rubber/Nylon/Plastic/Batteries</td><td>50%</td></tr>
+                                <tr><td>Fiber Glass components</td><td>30%</td></tr>
+                                <tr><td>Glass components</td><td>0% (Exclude labor)</td></tr>
+                                <tr><td>Metal/Body Parts</td><td>Age-based (5% to 50%)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 6. Deductible Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Compulsory & Voluntary Deductibles</h3>
+                        <p>The deductible is the amount the policyholder pays out-of-pocket before the claim coverage begins.</p>
+                        <ul class="legal-list">
+                            <li><strong>Standard Deductible:</strong> Mandatory fixed amount (e.g. ₹500 or ₹1,000) per claim.</li>
+                            <li><strong>Payout Reduction:</strong> The deductible is subtracted from the "Repair Cost minus Depreciation" to compute the net payout.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 7. Payout Formula -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Settlement Formula</h3>
+                        <div class="formula-box">Final Payout = (Approved Repair Cost - Depreciated Amount) - Mandatory Deductibles</div>
+                    </div>
+
+                    <!-- 8. Total Loss Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Schedule 8: Total Loss Protocol (CTL)</h3>
+                        <div class="rule-item">
+                            <span class="rule-point">The 75% Rule</span>
+                            <p>A vehicle is deemed a <strong>Total Loss</strong> if the approved estimate of repair exceeds 75% of the vehicle's current IDV.</p>
+                        </div>
+                        <p><strong>Payout:</strong> In Total Loss cases, the full IDV is paid out minus the deductible, and the vehicle title is transferred to VIMS.</p>
+                    </div>
+
+                    <!-- 13. Workplace Workflow -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Workflow Stages</h3>
+                        <div class="workflow-steps">
+                            <div class="step"><span>Submitted:</span> Claim data uploaded.</div>
+                            <div class="step"><span>AI Analysis:</span> OCR & Fraud scoring active.</div>
+                            <div class="step"><span>Under Review:</span> Assigned to Claims Officer.</div>
+                            <div class="step"><span>Approved:</span> Settlement finalized.</div>
+                            <div class="step"><span>Settled:</span> Funds transferred.</div>
+                        </div>
+                    </div>
+                </section>
+            }
+
+            <!-- Category: AI & Fraud -->
+            @if (activeCategory() === 'fraud') {
+                <section class="legal-section">
+                    <div class="section-title-wrap">
+                        <span class="section-num">03</span>
+                        <h2 class="section-title">Governance & Intelligent Systems</h2>
+                    </div>
+
+                    <!-- 9. Fraud Detection Rules -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Anti-Fraud Monitoring (AFM)</h3>
+                        <div class="legal-card-accent glass-panel" style="padding: 20px;">
+                            <ul class="legal-list">
+                                <li><strong>Temporal Flag:</strong> Claims on policies less than 48 hours old.</li>
+                                <li><strong>Asset Mismatch:</strong> PDF Registration Number must match Database ID.</li>
+                                <li><strong>Timing Risk:</strong> Multiple claims for similar incidents in 90-day cycles.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 10. AI Document Analysis -->
+                    <div class="legal-block">
+                        <h3 class="block-title">AI & OCR Analysis (VIMS-Bot)</h3>
+                        <p>We use PdfPig for text extraction and Groq for forensic summarization.</p>
+                        <ul class="legal-list">
+                            <li><strong>Extraction:</strong> Automatic identification of MFY, Invoice Amounts, and Incidents.</li>
+                            <li><strong>Limitations:</strong> Hand-written notes or blurred receipts may fail. Manual override is always available to the Officer.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 11. Claim Review & Approval -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Officer Decision Framework</h3>
+                        <p>All AI-processed claims are cross-reviewed by a certified Claims Officer.</p>
+                        <ul class="legal-list">
+                            <li><strong>Auto-Rejection:</strong> Triggers if Risk Score > 80% or vehicle class mismatch.</li>
+                            <li><strong>Manual Approval:</strong> Necessary for any payout exceeding ₹50,000.</li>
+                        </ul>
+                    </div>
+
+                    <!-- 18. Limitations -->
+                    <div class="legal-block">
+                        <h3 class="block-title">System Limitations & Disclaimer</h3>
+                        <p>VIMS provides AI-assisted estimates. The final decision remains with the legal authority of the company. AI accuracy is estimated at 94% on clear digital documents.</p>
+                    </div>
+                </section>
+            }
+
+            <!-- Category: Compliance -->
+            @if (activeCategory() === 'process') {
+                <section class="legal-section">
+                    <div class="section-title-wrap">
+                        <span class="section-num">04</span>
+                        <h2 class="section-title">Process & Compliance</h2>
+                    </div>
+
+                    <!-- 14. Document Requirements -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Documentation Standards</h3>
+                        <div class="rule-grid-2">
+                            <div class="rule-mini-card"><strong>Accepted:</strong> Clear PDF, High-res JPG/PNG.</div>
+                            <div class="rule-mini-card"><strong>Invalid:</strong> Blurred photos, watermarked scans, cropped edges.</div>
+                        </div>
+                    </div>
+
+                    <!-- 16. Dispute Resolution -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Dispute & Re-evaluation</h3>
+                        <p>Policyholders may dispute a rejection within 15 days by submitting additional photographic evidence or a secondary repair estimate from an authorized brand garage.</p>
+                    </div>
+
+                    <!-- 17. Edge Cases -->
+                    <div class="legal-block">
+                        <h3 class="block-title">Anomalous Scenarios</h3>
+                        <ul class="legal-list">
+                            <li><strong>Incomplete Docs:</strong> Claim is moved to "Under Review" for 7 days pending updates.</li>
+                            <li><strong>Partial Approvals:</strong> Approved for parts but not labor (e.g., if unauthorized labor).</li>
+                        </ul>
+                    </div>
+                </section>
+            }
+
+        </div>
+    </main>
+
+    <footer class="rules-footer">
+        <p>&copy; 2026 VIMS Insurance Global. All business logic is proprietary and confidential.</p>
+    </footer>
+</div>

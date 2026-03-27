@@ -157,6 +157,49 @@ namespace VIMS.Infrastructure.Repositories
 
             return apps;
         }
+
+        public async Task<List<VehicleApplication>> GetAllAsync()
+        {
+            var apps = await _context.VehicleApplications
+                .OrderByDescending(a => a.CreatedAt)
+                .Select(a => new VehicleApplication
+                {
+                    VehicleApplicationId = a.VehicleApplicationId,
+                    AssignedAgentId = a.AssignedAgentId,
+                    CreatedAt = a.CreatedAt,
+                    CustomerId = a.CustomerId,
+                    FuelType = a.FuelType,
+                    InvoiceAmount = a.InvoiceAmount,
+                    KilometersDriven = a.KilometersDriven,
+                    Make = a.Make,
+                    Model = a.Model,
+                    PlanId = a.PlanId,
+                    PolicyYears = a.PolicyYears,
+                    RegistrationNumber = a.RegistrationNumber,
+                    RejectionReason = a.RejectionReason,
+                    Status = a.Status,
+                    VehicleType = a.VehicleType,
+                    Year = a.Year,
+                    IsTransfer = a.IsTransfer
+                })
+                .ToListAsync();
+
+            var appIds = apps.Select(a => a.VehicleApplicationId).ToList();
+            var docs = await _context.VehicleDocuments.Where(d => appIds.Contains(d.VehicleApplicationId)).ToListAsync();
+            foreach (var a in apps)
+            {
+                a.Documents = docs.Where(d => d.VehicleApplicationId == a.VehicleApplicationId).ToList();
+            }
+
+            var customerIds = apps.Select(a => a.CustomerId).Distinct().ToList();
+            var customers = await _context.Users.Where(u => customerIds.Contains(u.UserId)).ToListAsync();
+            foreach (var a in apps)
+            {
+                a.Customer = customers.FirstOrDefault(c => c.UserId == a.CustomerId);
+            }
+
+            return apps;
+        }
         public async Task UpdateAsync(VehicleApplication application)
         {
             _context.VehicleApplications.Update(application);

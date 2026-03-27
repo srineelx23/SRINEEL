@@ -26,6 +26,7 @@ namespace VIMS.Application.Tests
         private readonly Mock<IAuditService> _auditMock;
         private readonly Mock<IFileStorageService> _fileStorageMock;
         private readonly Mock<IClaimsRepository> _claimsRepoMock;
+        private readonly Mock<INotificationService> _notifServiceMock;
         private readonly CustomerService _customerService;
 
         public CustomerServiceTests()
@@ -42,12 +43,13 @@ namespace VIMS.Application.Tests
             _auditMock = new Mock<IAuditService>();
             _fileStorageMock = new Mock<IFileStorageService>();
             _claimsRepoMock = new Mock<IClaimsRepository>();
+            _notifServiceMock = new Mock<INotificationService>();
 
             _customerService = new CustomerService(
                 _custRepoMock.Object, _appRepoMock.Object, _userRepoMock.Object,
                 _vhRepoMock.Object, _polRepoMock.Object, _payRepoMock.Object,
                 _priceMock.Object, _planMock.Object, _transMock.Object, 
-                _auditMock.Object, _fileStorageMock.Object, _claimsRepoMock.Object);
+                _auditMock.Object, _fileStorageMock.Object, _claimsRepoMock.Object, _notifServiceMock.Object);
         }
 
         [Fact]

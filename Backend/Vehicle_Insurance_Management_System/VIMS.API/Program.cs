@@ -13,6 +13,8 @@ using VIMS.Infrastructure;
 using VIMS.Infrastructure.Persistence;
 using VIMS.Infrastructure.Repositories;
 using VIMS.Infrastructure.Services;
+using VIMS.Infrastructure.Services.RAG;
+using VIMS.Application.Settings;
 namespace VIMS.API
 {
     public class Program
@@ -20,6 +22,8 @@ namespace VIMS.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.Configure<GroqSettings>(builder.Configuration.GetSection("Groq"));
+            builder.Services.Configure<GeminiSettings>(builder.Configuration.GetSection("Gemini"));
             builder.Services.AddControllers();
             builder.Services.AddHttpClient();
             builder.Services.AddHttpContextAccessor();
@@ -56,6 +60,19 @@ namespace VIMS.API
             builder.Services.AddScoped<IGarageRepository, GarageRepository>();
             builder.Services.AddScoped<IGarageService, GarageService>();
             builder.Services.AddScoped<IOcrService, OcrService>();
+            builder.Services.AddScoped<IGroqService, GroqService>();
+            builder.Services.AddScoped<IVectorSearchService, CosineVectorSearchService>();
+            builder.Services.AddScoped<IChatbotService, ChatbotService>();
+            builder.Services.AddScoped<IHybridRuleEngineService, HybridRuleEngineService>();
+            builder.Services.AddHttpClient<IEmbeddingService, EmbeddingService>();
+            builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+            builder.Services.AddSingleton<IRAGService, RAGService>();
+            builder.Services.AddScoped<ISafetyService, SafetyService>();
+            builder.Services.AddScoped<IChatService, ChatService>();
+            builder.Services.AddScoped<VertexAgentService>();
+            builder.Services.AddScoped<IVertexAgentService, VertexAgentService>();
+            builder.Services.AddScoped<QueryExecutionService>();
+            builder.Services.AddScoped<IQueryExecutionService, QueryExecutionService>();
 
             builder.Services.AddSignalR();
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();

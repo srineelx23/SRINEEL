@@ -7,6 +7,7 @@ import { AgentDashboard } from './components/agent-dashboard/agent-dashboard';
 import { ClaimsOfficerDashboard } from './components/claims-officer-dashboard/claims-officer-dashboard';
 import { CustomerDashboard } from './components/customer-dashboard/customer-dashboard';
 import { ExplorePlans } from './components/explore-plans/explore-plans';
+import { RulesComponent } from './components/rules/rules';
 import { ErrorPage } from './components/error-page/error-page';
 
 import { authGuard } from './guards/auth.guard';
@@ -41,6 +42,7 @@ export const routes: Routes = [
     data: { roles: ['ClaimsOfficer', 'Claims'] }
   },
   { path: 'explore-plans', component: ExplorePlans },
+  { path: 'our-rules', component: RulesComponent },
   { path: '**', redirectTo: '' }
 ];
 

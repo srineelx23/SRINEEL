@@ -120,6 +120,9 @@ namespace VIMS.Infrastructure.Migrations
                     b.Property<string>("DecisionType")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("FraudRiskAnalysisJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("PolicyId")
                         .HasColumnType("int");
 
@@ -131,6 +134,9 @@ namespace VIMS.Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("claimType")
                         .HasColumnType("int");

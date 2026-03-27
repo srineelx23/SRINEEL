@@ -1,5 +1,4 @@
 <div class="claims-officer-dashboard fade-in">
-    @if (!selectedClaim) {
     <div class="header-section">
         <div class="header-text">
             <h1>Pending Claims</h1>
@@ -69,11 +68,11 @@
         </div>
     </div>
     }
-    }
 
     <!-- Detailed Claim Review Panel -->
     @if (selectedClaim) {
-    <div class="glass-panel fade-in claim-detail-container">
+    <div class="claim-modal-overlay fade-in" (click)="closeClaimReview()">
+    <div class="claim-detail-container claim-modal-content" (click)="$event.stopPropagation()">
         <!-- Status stripe -->
         <div class="claim-detail-stripe" [ngStyle]="{
             'background': selectedClaim.status === 'Approved' ? 'var(--success)' :
@@ -172,6 +171,34 @@
             </div>
         </div>
 
+        <!-- NEW: AI Summary & Mismatch Alert Section -->
+        @if (detailsLoading || selectedClaim.summary || (selectedClaim.riskReasons && selectedClaim.riskReasons.length > 0)) {
+        <div class="ai-summary-card fade-in">
+            @if (detailsLoading) {
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 12px; color: var(--text-muted);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 1.5rem; color: var(--accent);"></i>
+                    <p style="font-size: 0.85rem; font-weight: 600; margin: 0;">Generating AI Document Analysis...</p>
+                </div>
+            } @else {
+                @if (selectedClaim.riskReasons?.toString()?.includes('Vehicle number mismatch')) {
+                <div class="critical-risk-alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    DOCUMENT MISMATCH: Registration number mismatch detected in presented evidence.
+                </div>
+                }
+
+                @if (selectedClaim.summary) {
+                <header>
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    Document Summary
+                </header>
+                <div class="summary-content" [innerHTML]="formatSummary(selectedClaim.summary)">
+                </div>
+                }
+            }
+        </div>
+        }
+
         <!-- Supporting Documents -->
         <div class="supporting-docs-section" style="border-top: 1px solid var(--glass-border); padding-top: 24px;">
             <header>
@@ -192,8 +219,8 @@
                         <span style="font-size: 0.9rem; font-weight: 600;">Submitted Evidence</span>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button (click)="onDownloadPolicyContract.emit(selectedClaim.policyId)" class="btn-outline"
-                            style="padding: 6px 14px; font-size: 0.8rem; border: 1px solid var(--accent); cursor: pointer; background: transparent; border-radius: 4px; display: flex; align-items: center; gap: 6px; color: var(--accent);">
+                        <button (click)="onDownloadPolicyContract.emit(selectedClaim.policyId)" class="btn-outline policy-contract-btn"
+                            style="padding: 6px 14px; font-size: 0.8rem; border: 1px solid var(--accent); cursor: pointer; background: transparent; display: flex; align-items: center; gap: 6px; color: var(--accent);">
                             <i class="fa-solid fa-file-contract"></i> View Policy Contract
                         </button>
                         @if (docPair.document1) {
@@ -204,11 +231,18 @@
                             @else { Bill }
                         </a>
                         }
-                        @if (docPair.document2) {
+                        @if (docPair.document2 && (selectedClaim.claimType !== 'Damage' && selectedClaim.claimType !== '1')) {
                         <a [href]="'https://localhost:7257/' + docPair.document2" target="_blank" class="btn-outline"
                             style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-eye"></i> Invoice
+                            <i class="fa-solid fa-eye"></i> Evidence Invoice
                         </a>
+                        }
+                        
+                        @if ((selectedClaim.claimType === 'Damage' || selectedClaim.claimType === '1') && getOriginalInvoice()) {
+                            <a [href]="'https://localhost:7257/' + getOriginalInvoice()" target="_blank" class="btn-outline"
+                                style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-file-contract"></i> Original Invoice
+                            </a>
                         }
                         @if (selectedClaim.status === 'Approved') {
                         <button (click)="onDownloadSettlementReport.emit(selectedClaim.claimId)" class="btn-outline"
@@ -333,6 +367,7 @@
                 </button>
             </form>
         </div>
+    </div>
     </div>
     }
 </div>

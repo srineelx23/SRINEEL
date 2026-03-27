@@ -13,6 +13,7 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<VehicleApplication?> GetByIdAsync(int id);
         Task<List<VehicleApplication>> GetPendingByAgentIdAsync(int agentId);
         Task<List<VehicleApplication>> GetAllByAgentIdAsync(int agentId);
+        Task<List<VehicleApplication>> GetAllAsync();
         Task<List<VehicleApplication>> GetByCustomerIdAsync(int customerId);
         Task UpdateAsync(VehicleApplication application);
         Task SaveChangesAsync();

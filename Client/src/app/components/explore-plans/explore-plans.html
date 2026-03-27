@@ -9,6 +9,13 @@
             <nav class="nav-links">
             </nav>
             <div class="nav-actions">
+                <!-- Theme Toggle -->
+                <button (click)="themeService.toggleTheme()" class="nav-theme-toggle"
+                    [attr.aria-label]="themeService.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+                    [title]="themeService.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                    {{ themeService.isDarkMode() ? '☀️' : '🌙' }}
+                </button>
+
                 @if (userName()) {
                 <div class="nav-profile-container">
                     <div class="nav-profile-trigger" (click)="showDropdown = !showDropdown">
@@ -199,6 +206,11 @@
                                         [ngClass]="plan.roadsideAssistanceAvailable ? 'fa-check-circle' : 'fa-times-circle'"></i>
                                     Roadside Assistance
                                 </li>
+                                <li [class.active]="plan.engineProtectionAvailable">
+                                    <i class="fas"
+                                        [ngClass]="plan.engineProtectionAvailable ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                                    Engine Protection
+                                </li>
                             </ul>
                         </div>
 
@@ -226,7 +238,7 @@
         @if (selectedPlanForQuote() || calculatedQuote()) {
         <div class="quote-layout fade-in">
             <!-- Quote Calculator Form -->
-            @if (selectedPlanForQuote() && !isApplying() && currentIntent() === 'quote' && !isUploadingDocuments()) {
+            @if (selectedPlanForQuote() && !isApplying() && currentIntent() === 'quote') {
             <div class="glass-panel" style="padding: 32px; position: relative; z-index: 10;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h2 class="form-title" style="margin-bottom: 0;">Instant Quotation</h2>
@@ -269,7 +281,7 @@
                             <div class="vims-custom-select" [class.disabled]="isEVPlan()"
                                 (click)="!isEVPlan() && showFuelDropdown.set(!showFuelDropdown())">
                                 <div class="vims-select-trigger" [class.open]="showFuelDropdown()">
-                                    <span>{{ isEVPlan() ? 'Electric Vehicle (EV)' : quoteForm.FuelType }}</span>
+                                    <span>{{ quoteForm.FuelType }}</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </div>
                                 @if (showFuelDropdown() && !isEVPlan()) {
@@ -284,6 +296,9 @@
                                     <div class="vims-option"
                                         (click)="quoteForm.FuelType = 'Hybrid'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'EV'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
+                                        Electric Vehicle (EV)</div>
                                 </div>
                                 }
                             </div>
@@ -369,60 +384,6 @@
             </div>
             }
 
-            <!-- Document Upload Step (Shows after clicking Buy Now or Continue) -->
-            @if (isUploadingDocuments()) {
-            <div class="glass-panel slide-in" style="padding: 40px; max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h2 class="form-title" style="margin-bottom: 8px; font-size: 1.8rem;">Upload Documents</h2>
-                        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin: 0;">Our AI automatically extracts the details from your Original Purchase Invoice and Registration Certificate (RC) to save you time.</p>
-                    </div>
-                </div>
-
-                <div class="file-upload-wrapper" style="margin-top: 8px;">
-                    <label class="file-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; display: block;">Original Purchase Invoice</label>
-                    <div class="file-input-container" style="padding: 16px 20px; border-radius: 12px; min-height: unset; display: flex; justify-content: space-between; align-items: center; border: 1px dashed var(--accent); cursor: pointer; background: rgba(91, 192, 190, 0.05); transition: all 0.2s ease;" (click)="invoiceInput.click()" [class.has-file]="invoiceFile">
-                        <input type="file" #invoiceInput (change)="onFileChange($event, 'invoice')" hidden accept=".pdf,.jpg,.jpeg,.png">
-                        <div class="file-display" style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fas" [ngClass]="invoiceFile ? 'fa-file-circle-check' : 'fa-file-upload'" style="font-size: 1.2rem; color: var(--accent);"></i>
-                            <span class="file-name-text" style="font-size: 0.95rem; color: var(--text-main);">{{ invoiceFile ? invoiceFile.name : 'Click to select Invoice PDF/Image' }}</span>
-                        </div>
-                        @if (invoiceFile) {
-                        <div class="file-status-badge" style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Selected</div>
-                        }
-                    </div>
-                </div>
-
-                <div class="file-upload-wrapper">
-                    <label class="file-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600; display: block;">Registration Certificate (RC)</label>
-                    <div class="file-input-container" style="padding: 16px 20px; border-radius: 12px; min-height: unset; display: flex; justify-content: space-between; align-items: center; border: 1px dashed var(--accent); cursor: pointer; background: rgba(91, 192, 190, 0.05); transition: all 0.2s ease;" (click)="rcInput.click()" [class.has-file]="rcFile">
-                        <input type="file" #rcInput (change)="onFileChange($event, 'rc')" hidden accept=".pdf,.jpg,.jpeg,.png">
-                        <div class="file-display" style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fas" [ngClass]="rcFile ? 'fa-file-circle-check' : 'fa-file-upload'" style="font-size: 1.2rem; color: var(--accent);"></i>
-                            <span class="file-name-text" style="font-size: 0.95rem; color: var(--text-main);">{{ rcFile ? rcFile.name : 'Click to select RC copy' }}</span>
-                        </div>
-                        @if (rcFile) {
-                        <div class="file-status-badge" style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">Selected</div>
-                        }
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end; align-items: center; padding-top: 16px;">
-                    <button class="btn-text" (click)="cancelQuoteProcess()" style="margin-right: auto; padding: 8px;">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn-outline" style="padding: 8px 20px; font-size: 0.9rem;" (click)="skipExtraction()">Skip Extraction</button>
-                    <button type="button" class="btn-primary" style="padding: 8px 20px; font-size: 0.9rem; background: var(--success); color: white; border: none; box-shadow: 0 4px 12px rgba(46, 213, 115, 0.3);" (click)="extractDetails()" [disabled]="isExtracting()">
-                        @if (isExtracting()) {
-                            <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Extracting...
-                        } @else {
-                            <i class="fas fa-wand-magic-sparkles" style="margin-right: 8px;"></i> Extract Details
-                        }
-                    </button>
-                </div>
-            </div>
-            }
-
             <!-- Application Form (Shows after quote is calculated and user clicks proceed) -->
             @if (isApplying()) {
             <div class="glass-panel slide-in" style="padding: 32px; position: relative; z-index: 10;">
@@ -432,6 +393,19 @@
                         <i class="fas fa-times" style="margin-right: 8px;"></i>Cancel
                     </button>
                 </div>
+
+                @if (selectedPlanDetails(); as plan) {
+                <div class="form-plan-preview" style="margin-bottom: 20px;">
+                    <div class="form-plan-info">
+                        <h4>Selected Plan: {{ plan.planName }}</h4>
+                        <p>{{ plan.policyType | vimsFormat }} Coverage</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Base Premium</span>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">{{ plan.basePremium | currency:'INR' }}</div>
+                    </div>
+                </div>
+                }
 
                 <form class="vims-form" (ngSubmit)="submitApplication()">
                     <div class="direct-apply-preview" style="margin-bottom: 24px;">
@@ -447,7 +421,7 @@
                             <div class="vims-custom-select" [class.disabled]="isEVPlan()"
                                 (click)="!isEVPlan() && showDirectFuelDropdown.set(!showDirectFuelDropdown())">
                                 <div class="vims-select-trigger" [class.open]="showDirectFuelDropdown()">
-                                    <span>{{ isEVPlan() ? 'Electric Vehicle (EV)' : quoteForm.FuelType }}</span>
+                                    <span>{{ quoteForm.FuelType }}</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </div>
                                 @if (showDirectFuelDropdown() && !isEVPlan()) {
@@ -462,6 +436,9 @@
                                     <div class="vims-option"
                                         (click)="quoteForm.FuelType = 'Hybrid'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'EV'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
+                                        Electric Vehicle (EV)</div>
                                 </div>
                                 }
                             </div>
@@ -572,6 +549,14 @@
                             <div class="file-status-badge">Selected</div>
                             }
                         </div>
+                        @if (invoiceFile) {
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="button" class="btn-outline" style="padding: 6px 12px;"
+                                (click)="viewUploadedDocument('invoice')">
+                                <i class="fas fa-eye" style="margin-right: 6px;"></i>View
+                            </button>
+                        </div>
+                        }
                     </div>
 
                     <div class="file-upload-wrapper">
@@ -588,6 +573,14 @@
                             <div class="file-status-badge">Selected</div>
                             }
                         </div>
+                        @if (rcFile) {
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="button" class="btn-outline" style="padding: 6px 12px;"
+                                (click)="viewUploadedDocument('rc')">
+                                <i class="fas fa-eye" style="margin-right: 6px;"></i>View
+                            </button>
+                        </div>
+                        }
                     </div>
 
                     <div style="display: flex; gap: 16px; margin-top: 12px;">

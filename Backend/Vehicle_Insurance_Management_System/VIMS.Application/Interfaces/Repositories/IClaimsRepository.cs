@@ -9,6 +9,7 @@ namespace VIMS.Application.Interfaces.Repositories
         Task AddDocumentAsync(ClaimDocument doc);
         Task<Claims?> GetByIdAsync(int claimId);
         Task<List<Claims>> GetByOfficerIdAsync(int officerId);
+        Task<List<Claims>> GetByCustomerIdsAsync(IReadOnlyCollection<int> customerIds);
         Task UpdateAsync(Claims claim);
         Task<List<Claims>> GetAllAsync();
         Task<bool> ExistsActiveClaimForPolicyAsync(int policyId);

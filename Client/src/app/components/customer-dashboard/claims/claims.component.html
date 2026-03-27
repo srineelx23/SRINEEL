@@ -35,8 +35,7 @@
         </div>
     </div>
 
-    @if (!selectedClaim()) {
-    <div class="claims-grid-layout" [ngStyle]="{'grid-template-columns': isFilingClaim() ? '1.8fr 1fr' : '1fr'}">
+    <div class="claims-grid-layout">
         <div class="table-card" style="padding: 0;">
             <div style="padding: 24px 24px 0 24px;">
                 <h3 style="margin-bottom: 20px;">Claims History</h3>
@@ -87,7 +86,8 @@
     </div>
 
     @if (isFilingClaim()) {
-    <div class="glass-panel file-claim-card">
+    <div class="claim-modal-overlay fade-in" (click)="onCancelClaim.emit()">
+    <div class="file-claim-card file-claim-modal-content" (click)="$event.stopPropagation()">
         <h3>File Incident Claim</h3>
         <form class="vims-form" (ngSubmit)="onSubmitClaim.emit()">
                 <div class="form-group">
@@ -164,13 +164,14 @@
                     (click)="onCancelClaim.emit()">Cancel</button>
             </form>
         </div>
+        </div>
         }
     </div>
-    }
 
     <!-- ===== DETAILED CLAIM VIEW ===== -->
     @if (selectedClaim()) {
-    <div class="glass-panel fade-in claim-detail-container">
+    <div class="claim-modal-overlay fade-in" (click)="onCloseClaimDetails.emit()">
+    <div class="claim-detail-container claim-modal-content" (click)="$event.stopPropagation()">
 
         <!-- Status stripe -->
         <div class="claim-detail-stripe" [ngStyle]="{
@@ -246,6 +247,8 @@
         } @else {
             <!-- Fallback for legacy approved claims or pending/rejected -->
             <div class="claim-settlement-banner"
+                [class.claim-settlement-banner-rejected]="getStatusString(selectedClaim().status) === 'Rejected'"
+                [class.claim-settlement-banner-pending]="getStatusString(selectedClaim().status) !== 'Approved' && getStatusString(selectedClaim().status) !== 'Rejected' && !selectedClaim().approvedAmount"
                 [ngStyle]="{
                                 'background': getStatusString(selectedClaim().status) === 'Approved' ? 'rgba(22,163,74,0.08)' :
                                               getStatusString(selectedClaim().status) === 'Rejected' ? 'rgba(220,38,38,0.08)' : 'rgba(234,179,8,0.06)',
@@ -285,19 +288,24 @@
                 <div class="doc-item">
                     <div class="doc-info">
                         <i class="fa-solid fa-file-pdf" style="color: var(--error);"></i>
-                        <span style="font-size: 0.9rem; font-weight: 600;">Document {{ $index + 1 }}</span>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-size: 0.9rem; font-weight: 600;">Claim Evidence Set {{ $index + 1 }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">
+                                Primary: @if (selectedClaim().claimType === 'Theft') { FIR } @else { Repair Bill }
+                                @if (doc.document2) { | Secondary: Invoice }
+                            </span>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <a [href]="'https://localhost:7257/' + doc.document1" target="_blank" class="btn-outline"
                             style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
                             <i class="fa-solid fa-eye"></i>
-                            @if (selectedClaim().claimType === 'Theft') { View FIR }
-                            @else { View Repair Bill }
+                            View Primary Evidence
                         </a>
                         @if (doc.document2) {
                         <a [href]="'https://localhost:7257/' + doc.document2" target="_blank" class="btn-outline"
                             style="padding: 6px 14px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
-                            <i class="fa-solid fa-eye"></i> View Invoice
+                            <i class="fa-solid fa-eye"></i> View Secondary Evidence (Invoice)
                         </a>
                         }
                     </div>
@@ -306,5 +314,6 @@
             </div>
         </div>
         }
+    </div>
     </div>
     }

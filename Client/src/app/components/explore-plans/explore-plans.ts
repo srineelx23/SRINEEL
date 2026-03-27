@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CustomerService } from '../../services/customer.service';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { VimsFormatPipe } from '../../utils/vims-format.pipe';
 
 @Component({
@@ -14,6 +15,7 @@ import { VimsFormatPipe } from '../../utils/vims-format.pipe';
   styleUrl: './explore-plans.css'
 })
 export class ExplorePlans implements OnInit {
+  protected readonly themeService = inject(ThemeService);
   // Data stores
   plans = signal<any[]>([]);
   filteredPlans = signal<any[]>([]);
@@ -22,6 +24,12 @@ export class ExplorePlans implements OnInit {
   selectedPlanDetails = computed(() => {
     const id = this.selectedPlanForQuote();
     return this.plans().find(p => p.planId === id) || null;
+  });
+
+  isEVPlan = computed(() => {
+    const plan = this.selectedPlanDetails();
+    const applicableType = (plan?.applicableVehicleType || '').toString().toLowerCase();
+    return applicableType.includes('ev');
   });
 
   // Filter State
@@ -55,7 +63,6 @@ export class ExplorePlans implements OnInit {
   userRole = signal<string | null>(null);
   showDropdown = false;
   showVehicleDropdown = signal(false);
-  isEVPlan = signal(false);
 
   // Custom Dropdown States
   showFuelDropdown = signal(false);
@@ -68,8 +75,6 @@ export class ExplorePlans implements OnInit {
   // Application State
   currentIntent = signal<'quote' | 'apply' | null>(null);
   isApplying = signal(false);
-  isUploadingDocuments = signal(false);
-  isExtracting = signal(false);
   applicationForm = {
     RegistrationNumber: '',
     Make: '',
@@ -212,7 +217,6 @@ export class ExplorePlans implements OnInit {
     if (!this.checkAuth(planId)) return;
     this.setupPlanForm(planId);
     this.currentIntent.set('quote');
-    this.isUploadingDocuments.set(true);
     this.isApplying.set(false);
     this.calculatedQuote.set(null);
   }
@@ -221,23 +225,22 @@ export class ExplorePlans implements OnInit {
     if (!this.checkAuth(planId)) return;
     this.setupPlanForm(planId);
     this.currentIntent.set('apply');
-    this.isUploadingDocuments.set(true);
-    this.isApplying.set(false);
+    this.isApplying.set(true);
     this.calculatedQuote.set(null);
   }
 
   private setupPlanForm(planId: number) {
     this.selectedPlanForQuote.set(planId);
     this.quoteForm.PlanId = planId;
-    
-    const plan = this.plans().find(p => p.planId === planId || p.id === planId);
-    if (plan && plan.applicableVehicleType && plan.applicableVehicleType.includes('EV')) {
-      this.isEVPlan.set(true);
+
+    if (this.isEVPlan()) {
       this.quoteForm.FuelType = 'EV';
-    } else {
-      this.isEVPlan.set(false);
-      this.quoteForm.FuelType = 'Petrol'; // Default for non-EV
+      this.showFuelDropdown.set(false);
+      this.showDirectFuelDropdown.set(false);
+      return;
     }
+
+    this.quoteForm.FuelType = this.quoteForm.FuelType || 'Petrol';
   }
 
   private checkAuth(planId: number): boolean {
@@ -267,9 +270,6 @@ export class ExplorePlans implements OnInit {
     this.currentIntent.set(null);
     this.calculatedQuote.set(null);
     this.isApplying.set(false);
-    this.isUploadingDocuments.set(false);
-    this.isExtracting.set(false);
-    this.isEVPlan.set(false);
     this.invoiceFile = null;
     this.rcFile = null;
 
@@ -372,7 +372,6 @@ export class ExplorePlans implements OnInit {
 
   startApplication() {
     this.currentIntent.set('apply');
-    this.isUploadingDocuments.set(false);
     this.isApplying.set(true);
   }
 
@@ -382,168 +381,40 @@ export class ExplorePlans implements OnInit {
     this.onQuoteChange();
   }
 
-  skipExtraction() {
-    this.isUploadingDocuments.set(false);
-    if (this.currentIntent() === 'apply') {
-        this.isApplying.set(true);
-    } else {
-        this.isApplying.set(false); // quote form will show
-    }
-  }
-
-  extractDetails() {
-    if (!this.rcFile || !this.invoiceFile) {
-      this.errorMessage.set('Please select both RC and Invoice documents prior to extraction.');
-      this.autoHideToast();
-      return;
-    }
-
-    this.isExtracting.set(true);
-    this.errorMessage.set('');
-
-    this.customerService.extractDocuments(this.rcFile, this.invoiceFile).subscribe({
-      next: (res: any) => {
-        this.isExtracting.set(false);
-        
-        let extractedYear = res.year || this.currentYear;
-        let invoiceAmount = res.invoiceAmount || 0;
-
-        if (extractedYear > this.currentYear) {
-            this.errorMessage.set('Extracted Manufacture Year cannot be greater than the current year. Please try a clearer image or fill manually.');
-            this.autoHideToast();
-            return;
-        }
-
-        if (this.currentYear - extractedYear > 15) {
-            this.errorMessage.set('Cannot buy insurance for vehicles aged greater than 15 years.');
-            this.autoHideToast();
-            return;
-        }
-
-        if (invoiceAmount <= 0) {
-            this.errorMessage.set('Could not extract a valid invoice amount. Please try a clearer invoice image or fill manually.');
-            this.autoHideToast();
-            return;
-        }
-
-        
-        this.applicationForm.RegistrationNumber = res.registrationNumber || '';
-        this.applicationForm.Make = res.make || '';
-        this.applicationForm.Model = res.model || '';
-        
-        this.quoteForm.InvoiceAmount = invoiceAmount;
-        this.quoteForm.ManufactureYear = extractedYear;
-        
-        if (res.fuelType) {
-            const ft = res.fuelType.toString().toLowerCase();
-            const documentIndicatesEV = ft.includes('ev') || ft.includes('electric');
-            
-            if (this.isEVPlan() && !documentIndicatesEV) {
-                this.errorMessage.set('Plan mismatch: You selected an EV Plan, but your document indicates a non-EV vehicle.');
-                this.autoHideToast();
-                return;
-            } else if (!this.isEVPlan() && documentIndicatesEV) {
-                this.errorMessage.set('Plan mismatch: You selected a traditional Plan, but your document indicates an EV.');
-                this.autoHideToast();
-                return;
-            }
-
-            if (ft.includes('petrol')) this.quoteForm.FuelType = 'Petrol';
-            else if (ft.includes('diesel')) this.quoteForm.FuelType = 'Diesel';
-            else if (ft.includes('hybrid')) this.quoteForm.FuelType = 'Hybrid';
-            else if (documentIndicatesEV || ft.includes('cng')) this.quoteForm.FuelType = ft.includes('cng') ? 'CNG' : 'EV';
-        }
-
-        if (res.vehicleType) {
-            const vt = res.vehicleType.toString().toLowerCase();
-            if (vt.includes('commercial')) this.quoteForm.VehicleType = 'Commercial';
-            else this.quoteForm.VehicleType = 'Private';
-        }
-
-        // ── Vehicle Class vs Plan Type validation ──────────────────────────
-        // The plan's ApplicableVehicleType must match the RC's extracted class.
-        // e.g., a TwoWheeler RC cannot be applied to a Car plan.
-        if (res.vehicleClass && this.selectedPlanDetails()) {
-            const planVehicleType: string = (this.selectedPlanDetails()?.applicableVehicleType || '').toLowerCase();
-            const rcClass: string = (res.vehicleClass || '').toLowerCase();
-
-            // Map aliases so comparisons work:
-            // Plan types:  car, twowheeler, threewheeler, evcar, evtwowheeler, evthreewheeler, heavyvehicle
-            // RC classes:  car, twowheeler, threewheeler, evcar, evtwowheeler, evthreewheeler, heavyvehicle
-            const planGroup = this.getVehicleGroup(planVehicleType);
-            const rcGroup   = this.getVehicleGroup(rcClass);
-
-            if (planGroup !== rcGroup) {
-                this.errorMessage.set(
-                  `Vehicle mismatch: Your RC is for a ${this.friendlyVehicleLabel(rcClass)} ` +
-                  `but the selected plan is for ${this.friendlyVehicleLabel(planVehicleType)}s. ` +
-                  `Please upload the correct documents or choose a matching plan.`
-                );
-                this.autoHideToast();
-                this.isUploadingDocuments.set(true);  // go back to upload page
-                this.isApplying.set(false);
-                return;
-            }
-        }
-
-        this.isUploadingDocuments.set(false);
-        if (this.currentIntent() === 'apply') {
-            this.isApplying.set(true);
-            this.successMessage.set('Details extracted. Please enter the kilometers driven.');
-        } else {
-            this.isApplying.set(false);
-            this.onQuoteChange(); // Auto-calculate premium if inputs filled
-            this.successMessage.set('Details extracted. Please enter the kilometers driven to see your quote.');
-        }
-        
-        setTimeout(() => this.successMessage.set(''), 4000);
-      },
-      error: (err: any) => {
-        this.isExtracting.set(false);
-        this.errorMessage.set('Extraction failed. Please ensure images are clear.');
-        this.autoHideToast();
-      }
-    });
-  }
-
   onFileChange(event: any, field: 'invoice' | 'rc') {
     const file = event.target.files[0];
     if (field === 'invoice') this.invoiceFile = file;
     if (field === 'rc') this.rcFile = file;
   }
 
+  viewUploadedDocument(field: 'invoice' | 'rc') {
+    const file = field === 'invoice' ? this.invoiceFile : this.rcFile;
+    if (!file) {
+      this.errorMessage.set(field === 'invoice' ? 'Please upload an invoice document first.' : 'Please upload an RC document first.');
+      this.autoHideToast();
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  }
+
   submitApplication() {
     this.errorMessage.set('');
     this.successMessage.set('');
 
-    if (!this.applicationForm.RegistrationNumber || !this.applicationForm.Make || !this.applicationForm.Model) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: "Please fill in all vehicle details.", title: 'Application Error' }
-      });
-      return;
-    }
-
-    if (!this.invoiceFile || !this.rcFile) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: "Please upload both the Invoice and RC documents.", title: 'Missing Documents' }
-      });
-      return;
-    }
-
-    const currentYear = new Date().getFullYear();
-    const invoiceAmount = Number(this.quoteForm.InvoiceAmount);
-    const kilometersDriven = Number(this.quoteForm.KilometersDriven);
-    const manufactureYear = Number(this.quoteForm.ManufactureYear);
-
-    if (invoiceAmount < 0 || kilometersDriven < 0 || manufactureYear < 0 || manufactureYear > currentYear) {
-      this.router.navigate(['/error'], {
-        state: { status: 400, message: "Please enter valid field values.", title: 'Validation Error' }
-      });
-      return;
-    }
-
-    if (currentYear - manufactureYear > 15) {
-      this.errorMessage.set("Cannot buy insurance for vehicles aged greater than 15 years");
+    const validationErrors = this.getApplicationValidationErrors();
+    if (validationErrors.length > 0) {
+      this.errorMessage.set(validationErrors.join(' | '));
       this.autoHideToast();
       return;
     }
@@ -560,8 +431,8 @@ export class ExplorePlans implements OnInit {
     formData.append('PolicyYears', String(this.quoteForm.PolicyYears));
     formData.append('InvoiceAmount', String(this.quoteForm.InvoiceAmount));
 
-    formData.append('InvoiceDocument', this.invoiceFile);
-    formData.append('RcDocument', this.rcFile);
+    formData.append('InvoiceDocument', this.invoiceFile!);
+    formData.append('RcDocument', this.rcFile!);
 
     this.customerService.createVehicleApplication(formData).subscribe({
       next: (res) => {
@@ -574,10 +445,17 @@ export class ExplorePlans implements OnInit {
         }, 3000);
       },
       error: (err: any) => {
+        const apiMessage = this.extractApiErrorMessage(err);
+        if (err?.status === 400 && apiMessage) {
+          this.errorMessage.set(apiMessage.replace(/\s*\|\s*/g, ' | '));
+          this.autoHideToast();
+          return;
+        }
+
         this.router.navigate(['/error'], {
           state: {
             status: err.status,
-            message: err.error?.message || typeof err.error === 'string' ? err.error : "Submission failed.",
+            message: apiMessage || 'Submission failed.',
             title: 'Submission Error'
           }
         });
@@ -591,37 +469,138 @@ export class ExplorePlans implements OnInit {
     }, 5000);
   }
 
+  private extractApiErrorMessage(err: any): string {
+    if (!err) {
+      return '';
+    }
+
+    if (typeof err.error === 'string') {
+      const raw = err.error.trim();
+      if (raw.startsWith('{') && raw.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(raw);
+          return parsed?.message || raw;
+        } catch {
+          return raw;
+        }
+      }
+      return raw;
+    }
+
+    if (typeof err.error === 'object' && err.error?.message) {
+      return err.error.message;
+    }
+
+    return err.message || '';
+  }
+
+  private getApplicationValidationErrors(): string[] {
+    const errors: string[] = [];
+    const currentYear = new Date().getFullYear();
+
+    const registration = (this.applicationForm.RegistrationNumber || '').trim();
+    const make = (this.applicationForm.Make || '').trim();
+    const model = (this.applicationForm.Model || '').trim();
+
+    const planId = Number(this.quoteForm.PlanId);
+    const invoiceAmount = Number(this.quoteForm.InvoiceAmount);
+    const kilometersDriven = Number(this.quoteForm.KilometersDriven);
+    const manufactureYear = Number(this.quoteForm.ManufactureYear);
+    const policyYears = Number(this.quoteForm.PolicyYears);
+    const fuelType = (this.quoteForm.FuelType || '').trim().toLowerCase();
+    const vehicleType = (this.quoteForm.VehicleType || '').trim().toLowerCase();
+
+    if (!planId || planId <= 0) {
+      errors.push('Please select a valid plan.');
+    }
+
+    if (!registration) {
+      errors.push('Registration number is required.');
+    } else {
+      const normalizedReg = registration.toUpperCase().replace(/\s|-/g, '');
+      const regRegex = /^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$/;
+      if (!regRegex.test(normalizedReg)) {
+        errors.push('Invalid vehicle registration number format.');
+      }
+    }
+
+    if (!make || make.length < 2 || make.length > 60) {
+      errors.push('Vehicle make must be between 2 and 60 characters.');
+    }
+
+    if (!model || model.length > 80) {
+      errors.push('Vehicle model is required and must not exceed 80 characters.');
+    }
+
+    if (!Number.isFinite(manufactureYear) || manufactureYear < 1980 || manufactureYear > currentYear) {
+      errors.push(`Manufacture year must be between 1980 and ${currentYear}.`);
+    }
+
+    if (Number.isFinite(manufactureYear) && currentYear - manufactureYear > 15) {
+      errors.push('Cannot buy insurance for vehicles aged greater than 15 years.');
+    }
+
+    if (!Number.isFinite(invoiceAmount) || invoiceAmount <= 0) {
+      errors.push('Invoice amount must be greater than 0.');
+    }
+
+    if (!Number.isFinite(kilometersDriven) || kilometersDriven < 0 || kilometersDriven > 999999) {
+      errors.push('Kilometers driven must be between 0 and 999999.');
+    }
+
+    if (!Number.isFinite(policyYears) || policyYears < 1 || policyYears > 5) {
+      errors.push('Policy duration must be between 1 and 5 years.');
+    }
+
+    const validFuelTypes = ['petrol', 'diesel', 'hybrid', 'ev', 'cng'];
+    if (!validFuelTypes.includes(fuelType)) {
+      errors.push('Fuel type must be one of: Petrol, Diesel, Hybrid, EV, CNG.');
+    }
+
+    if (!(vehicleType === 'private' || vehicleType === 'commercial')) {
+      errors.push('Vehicle usage type must be Private or Commercial.');
+    }
+
+    if (this.isEVPlan() && fuelType !== 'ev') {
+      errors.push('Selected EV plan requires EV fuel type.');
+    }
+
+    if (!this.invoiceFile || !this.rcFile) {
+      errors.push('Please upload both Invoice and RC documents.');
+    } else {
+      this.validatePdfFile(this.invoiceFile, 'Invoice document', errors);
+      this.validatePdfFile(this.rcFile, 'RC document', errors);
+    }
+
+    return errors;
+  }
+
+  private validatePdfFile(file: File, label: string, errors: string[]): void {
+    if (!file) {
+      errors.push(`${label} is required.`);
+      return;
+    }
+
+    const fileName = (file.name || '').toLowerCase();
+    const fileType = (file.type || '').toLowerCase();
+    const isPdf = fileName.endsWith('.pdf') && (fileType === 'application/pdf' || fileType === 'application/x-pdf' || fileType === '');
+    if (!isPdf) {
+      errors.push(`${label} must be a PDF file only.`);
+    }
+
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size <= 0) {
+      errors.push(`${label} is empty.`);
+    } else if (file.size > maxSize) {
+      errors.push(`${label} exceeds maximum size of 10 MB.`);
+    }
+  }
+
   logout() {
     this.authService.logout();
     this.isLoggedIn.set(false);
     this.userName.set(null);
   }
 
-  /** Normalizes vehicle type strings to a group key used for plan/RC matching. */
-  getVehicleGroup(type: string): string {
-    const t = (type || '').toLowerCase().replace(/[^a-z]/g, '');
-    if (t === 'evcar')          return 'evcar';
-    if (t === 'evtwowheeler')   return 'evtwowheeler';
-    if (t === 'evthreewheeler') return 'evthreewheeler';
-    if (t === 'twowheeler')     return 'twowheeler';
-    if (t === 'threewheeler')   return 'threewheeler';
-    if (t === 'heavyvehicle')   return 'heavyvehicle';
-    return 'car'; // default — Car, LMV, etc.
-  }
-
-  /** Returns a user-friendly label for a vehicle type string. */
-  friendlyVehicleLabel(type: string): string {
-    const map: Record<string, string> = {
-      car:            'Car',
-      evcar:          'Electric Car (EV)',
-      twowheeler:     'Two-Wheeler',
-      evtwowheeler:   'Electric Two-Wheeler (EV)',
-      threewheeler:   'Three-Wheeler',
-      evthreewheeler: 'Electric Three-Wheeler (EV)',
-      heavyvehicle:   'Heavy Vehicle',
-    };
-    const key = (type || '').toLowerCase().replace(/[^a-z]/g, '');
-    return map[key] || type;
-  }
 }
 

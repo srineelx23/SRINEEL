@@ -1,0 +1,47 @@
+<!-- Floating Trigger Button -->
+<button class="chatbot-trigger" (click)="toggle()" *ngIf="!isOpen()" aria-label="Open AI Assistant">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="trigger-icon">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+</button>
+
+<!-- Spotlight Overlay -->
+<div class="spotlight-overlay" *ngIf="isOpen()">
+    <div class="spotlight-container" 
+         [style.left.px]="position().x" 
+         [style.top.px]="position().y" 
+         [style.width.px]="size().width" 
+         [style.height.px]="size().height"
+         (mousedown)="$event.stopPropagation()">
+         
+        <!-- Input section mimicking Spotlight search -->
+        <div class="spotlight-header" (mousedown)="startDrag($event)" style="cursor: move;">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input #chatbotInput type="text" [(ngModel)]="inputText" (keydown.enter)="send()" placeholder="Ask about policies, transfers, or claims..." class="spotlight-input" [disabled]="isSending()" autocomplete="off" spellcheck="false" />
+            <div class="loader-spinner" *ngIf="isSending()"></div>
+            <button class="close-button" (click)="isOpen.set(false)">ESC</button>
+        </div>
+
+        <!-- Chat history area attached below input -->
+        <div class="spotlight-body" #messagesContainer>
+            <div class="message-wrapper" *ngFor="let msg of messages(); trackBy: trackByIndex" [ngClass]="msg.sender">
+                <div class="message-bubble">{{ msg.text }}</div>
+            </div>
+            <div class="message-wrapper bot" *ngIf="isSending()">
+                <div class="message-bubble typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="spotlight-footer">
+            Press <kbd>Ctrl</kbd> + <kbd>K</kbd> to toggle. Powered by AI
+        </div>
+
+        <!-- Resize Handle -->
+        <div class="resize-handle" (mousedown)="startResize($event)"></div>
+    </div>
+</div>

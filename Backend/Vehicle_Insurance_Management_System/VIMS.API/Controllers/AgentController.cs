@@ -63,5 +63,12 @@ namespace VIMS.API.Controllers
                 return Ok(applications);
           
         }
+
+        [HttpGet("vehicle-application/{id}/validation")]
+        public async Task<IActionResult> GetApplicationValidation(int id)
+        {
+            var result = await _service.ValidateApplicationDocumentsAsync(id);
+            return Ok(result);
+        }
     }
 }

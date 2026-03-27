@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-customer-register',
@@ -12,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './customer-register.css',
 })
 export class CustomerRegister {
+  protected readonly themeService = inject(ThemeService);
   firstName = '';
   lastName = '';
   email = '';

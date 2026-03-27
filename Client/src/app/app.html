@@ -1,13 +1,6 @@
 <!-- Global Fixed Theme Toggle Button -->
-<button (click)="toggleTheme()" class="fixed-theme-toggle"
-    [attr.aria-label]="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-    [title]="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-
-    @if (isDarkMode) {
-    <span class="theme-icon">☀️</span>
-    } @else {
-    <span class="theme-icon">🌙</span>
-    }
-</button>
-
 <router-outlet></router-outlet>
+
+@if (showChatbot()) {
+<app-chatbot-widget></app-chatbot-widget>
+}

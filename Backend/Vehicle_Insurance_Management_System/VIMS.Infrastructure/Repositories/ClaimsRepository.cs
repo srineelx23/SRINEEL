@@ -96,6 +96,25 @@ namespace VIMS.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Claims>> GetByCustomerIdsAsync(IReadOnlyCollection<int> customerIds)
+        {
+            if (customerIds.Count == 0)
+            {
+                return new List<Claims>();
+            }
+
+            return await _context.Claims
+                .Where(c => customerIds.Contains(c.CustomerId))
+                .Include(c => c.Documents)
+                .Include(c => c.Customer)
+                .Include(c => c.ClaimsOfficer)
+                .Include(c => c.Policy)
+                    .ThenInclude(p => p.Plan)
+                .Include(c => c.Policy)
+                    .ThenInclude(p => p.Vehicle)
+                .ToListAsync();
+        }
+
         public async Task<bool> HasAnyClaimsAsync(int policyId)
         {
             return await _context.Claims.AnyAsync(c => c.PolicyId == policyId);

@@ -21,6 +21,10 @@ namespace VIMS.Application.Tests
         private readonly Mock<IPaymentRepository> _paymentRepoMock;
         private readonly Mock<IAuditService> _auditServiceMock;
         private readonly Mock<IFileStorageService> _fileStorageMock;
+        private readonly Mock<INotificationService> _notifServiceMock;
+        private readonly Mock<IOcrService> _ocrServiceMock;
+        private readonly Mock<IGroqService> _groqServiceMock;
+        private readonly Mock<IPolicyTransferRepository> _transferRepoMock;
         private readonly ClaimsService _claimsService;
 
         public ClaimsServiceTests()
@@ -32,10 +36,16 @@ namespace VIMS.Application.Tests
             _paymentRepoMock = new Mock<IPaymentRepository>();
             _auditServiceMock = new Mock<IAuditService>();
             _fileStorageMock = new Mock<IFileStorageService>();
+            _notifServiceMock = new Mock<INotificationService>();
+            _ocrServiceMock = new Mock<IOcrService>();
+            _groqServiceMock = new Mock<IGroqService>();
+            _transferRepoMock = new Mock<IPolicyTransferRepository>();
 
             _claimsService = new ClaimsService(
                 _claimsRepoMock.Object, _userRepoMock.Object, _policyRepoMock.Object,
-                _pricingServiceMock.Object, _paymentRepoMock.Object, _auditServiceMock.Object, _fileStorageMock.Object);
+                _pricingServiceMock.Object, _paymentRepoMock.Object, _auditServiceMock.Object, 
+                _fileStorageMock.Object, _notifServiceMock.Object, 
+                _ocrServiceMock.Object, _groqServiceMock.Object, _transferRepoMock.Object);
         }
 
         [Fact]
@@ -83,8 +93,13 @@ namespace VIMS.Application.Tests
             _claimsRepoMock.Setup(repo => repo.GetByIdAsync(1))
                 .ReturnsAsync(claim);
 
+            var dto = new ApproveClaimDTO
+            {
+                RejectionReason = "Supporting documents do not match policy details."
+            };
+
             // Act
-            var result = await _claimsService.DecideClaimAsync(1, new ApproveClaimDTO(), 10, false);
+            var result = await _claimsService.DecideClaimAsync(1, dto, 10, false);
 
             // Assert
             Assert.Equal("Claim rejected", result);

@@ -21,6 +21,14 @@ namespace VIMS.Infrastructure.Repositories
         {
             return await _context.PolicyPlans.FindAsync(id);
         }
+
+        public async Task<List<PolicyPlan>> GetAllAsync()
+        {
+            return await _context.PolicyPlans
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _context.PolicyPlans

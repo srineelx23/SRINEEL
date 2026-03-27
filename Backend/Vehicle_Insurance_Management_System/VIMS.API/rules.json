@@ -1,0 +1,20 @@
+[
+  {
+    "id": "zero_dep_third_party",
+    "keywords": ["zero depreciation", "third party"],
+    "response": "Zero depreciation is NOT applicable to third-party claims in this system.",
+    "priority": 10
+  },
+  {
+    "id": "engine_protection",
+    "keywords": ["engine protection"],
+    "response": "Engine protection is an optional add-on in this system.",
+    "priority": 8
+  },
+  {
+    "id": "idv_definition",
+    "keywords": ["idv"],
+    "response": "IDV means Insured Declared Value. It is the insured value used to calculate premium and is the upper payout cap for total-loss scenarios.",
+    "priority": 7
+  }
+]

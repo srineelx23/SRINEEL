@@ -12,8 +12,98 @@
     gap: 24px;
 }
 
+.claim-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+:host-context([data-theme='light']) .claim-modal-overlay {
+    background: rgba(148, 163, 184, 0.2);
+}
+
+.claim-modal-content {
+    width: min(920px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 24px 60px rgba(2, 6, 23, 0.28);
+    background: #0f1a36 !important;
+    background-color: #0f1a36 !important;
+    background-image: none !important;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    position: relative;
+    isolation: isolate;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+:host-context([data-theme='light']) .claim-modal-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+.claim-modal-content::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: #0f1a36;
+}
+
+:host-context([data-theme='light']) .claim-modal-content::before {
+    background: #ffffff;
+}
+
 .file-claim-card {
     padding: 32px;
+}
+
+.file-claim-modal-content {
+    width: min(640px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: #0f1a36 !important;
+    background-color: #0f1a36 !important;
+    background-image: none !important;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(2, 6, 23, 0.28);
+    position: relative;
+    isolation: isolate;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+:host-context([data-theme='light']) .file-claim-modal-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+.file-claim-modal-content::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: #0f1a36;
+}
+
+:host-context([data-theme='light']) .file-claim-modal-content::before {
+    background: #ffffff;
 }
 
 .file-claim-card h3 {
@@ -91,7 +181,7 @@
     transition: background 0.2s ease;
 }
 
-[data-theme='light'] .claim-info-card {
+:host-context([data-theme='light']) .claim-info-card {
     background: #f8fafc;
     border-color: #e2e8f0;
 }
@@ -129,6 +219,27 @@
     justify-content: space-between; 
     flex-wrap: wrap; 
     gap: 16px;
+}
+
+.claim-settlement-banner-pending {
+    width: fit-content;
+    min-width: 300px;
+    max-width: 520px;
+    margin: 0 auto 24px;
+    justify-content: flex-start;
+}
+
+.claim-settlement-banner-rejected {
+    max-width: 760px;
+    margin: 0 auto 24px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.claim-settlement-banner-rejected .rejection-reason-box {
+    flex: 0 1 360px;
+    max-width: 360px;
 }
 
 .claim-settlement-banner label {
@@ -213,7 +324,7 @@
     transition: all 0.3s ease;
 }
 
-[data-theme='light'] .minimal-payout-banner {
+:host-context([data-theme='light']) .minimal-payout-banner {
     background: #f0fdf4;
     border-color: #bbf7d0;
 }
@@ -255,7 +366,7 @@
     line-height: 1.2;
 }
 
-[data-theme='light'] .payout-text .amount {
+:host-context([data-theme='light']) .payout-text .amount {
     color: #059669;
 }
 

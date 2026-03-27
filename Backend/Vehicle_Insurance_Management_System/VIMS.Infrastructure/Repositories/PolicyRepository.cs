@@ -48,6 +48,17 @@ namespace VIMS.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Policy>> GetPoliciesByAgentIdAsync(int agentId)
+        {
+            return await _vehicleInsuranceContext.Policies
+                .Where(p => p.AgentId == agentId)
+                .Include(p => p.Vehicle)
+                    .ThenInclude(v => v.VehicleApplication)
+                .Include(p => p.Plan)
+                .Include(p => p.Customer)
+                .ToListAsync();
+        }
+
         public async Task<List<Policy>> GetAllAsync()
         {
             return await _vehicleInsuranceContext.Policies

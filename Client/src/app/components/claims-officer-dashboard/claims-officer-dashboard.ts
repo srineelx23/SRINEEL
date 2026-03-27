@@ -86,6 +86,7 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     payoutBreakdown = signal<any>(null);
     payoutLoading = signal(false);
+    detailsLoading = signal(false);
 
 
     // Settings - Change Password
@@ -105,6 +106,7 @@ export class ClaimsOfficerDashboard implements OnInit {
     ngOnInit() {
         this.extractName();
         this.loadDashboardData();
+        this.syncChatbotContext();
     }
 
     private extractName() {
@@ -170,6 +172,12 @@ export class ClaimsOfficerDashboard implements OnInit {
     switchTab(tabId: string) {
         this.activeTab.set(tabId);
         this.selectedClaim.set(null);
+        this.syncChatbotContext();
+    }
+
+    private syncChatbotContext() {
+        localStorage.setItem('vims.claimsOfficer.activeTab', this.activeTab());
+        window.dispatchEvent(new CustomEvent('vims-chatbot-context-changed'));
     }
 
     goHome() {
@@ -214,22 +222,46 @@ export class ClaimsOfficerDashboard implements OnInit {
 
     // Claim Review
     openClaimReview(claim: any) {
-        // Fetch full details (including fraud score calculated on-demand)
+        // Open the panel immediately with the data we already have from the table
+        this.selectedClaim.set({ ...claim, fraudRiskScore: null, summary: null, riskReasons: [] });
+        this.detailsLoading.set(true);
+        
+        // Reset assessment defaults
+        this.decisionForm.approved = true;
+        this.decisionForm.repairCost = null;
+        this.decisionForm.engineCost = null;
+        this.decisionForm.invoiceAmount = null;
+        this.decisionForm.manufactureYear = null;
+        this.decisionForm.rejectionReason = '';
+
+        // Fetch full details (including AI analysis) asynchronously
         this.claimsService.getClaimDetails(claim.claimId).subscribe({
             next: (fullClaim) => {
                 this.selectedClaim.set(fullClaim);
-                // Reset defaults
-                this.decisionForm.approved = true;
-                this.decisionForm.repairCost = null;
-                this.decisionForm.engineCost = null;
-                this.decisionForm.invoiceAmount = null;
-                this.decisionForm.manufactureYear = null;
-                this.decisionForm.rejectionReason = '';
+                this.detailsLoading.set(false);
+                
+                // Prefill suggested repair cost if found by AI
+                if (fullClaim.suggestedRepairCost) {
+                    this.decisionForm.repairCost = fullClaim.suggestedRepairCost;
+                }
+
+                // Prefill suggested manufacture year if found by AI
+                if (fullClaim.suggestedManufactureYear) {
+                    this.decisionForm.manufactureYear = fullClaim.suggestedManufactureYear;
+                }
+
+                // AI Safeguard: Default to Reject if risk is high (>= 80%)
+                if (fullClaim.fraudRiskScore >= 80) {
+                    this.decisionForm.approved = false;
+                } else {
+                    this.decisionForm.approved = true;
+                }
+                
                 this.updateBreakdown();
             },
             error: (err) => {
                 console.error("Error fetching claim details:", err);
-                this.selectedClaim.set(claim); // Fallback to list object
+                this.detailsLoading.set(false);
             }
         });
     }
@@ -263,82 +295,21 @@ export class ClaimsOfficerDashboard implements OnInit {
         return this.payoutBreakdown();
     }
 
-
-
     getPayoutWarning(): string | null {
+        const bd = this.payoutBreakdown();
+        if (bd && bd.warningMessage) {
+            return bd.warningMessage;
+        }
+
         const claim = this.selectedClaim();
-        if (!claim || !this.decisionForm.approved) return null;
-
-        const plan = claim.policy?.plan;
-        if (!plan) return null;
-
-        const maxCoverage = plan.maxCoverageAmount;
-
-        if (claim.claimType === 'ThirdParty') {
-            const currentYear = new Date().getFullYear();
-            const tpYear = this.decisionForm.manufactureYear;
-            
-            if (tpYear !== null && (tpYear > currentYear || tpYear < 1900)) {
-                return 'Please enter a valid manufacturing year.';
-            }
-
-            const repair = this.decisionForm.repairCost || 0;
-            if (tpYear !== null && tpYear <= currentYear && tpYear >= 1900) {
-                let tpAge = currentYear - tpYear;
-                let depreciationPercent = this.getDepreciationRate(tpAge);
-                
-                if (plan.zeroDepreciationAvailable) depreciationPercent = 0;
-
-                let depreciatedBill = repair - (repair * depreciationPercent);
-                depreciatedBill -= plan.deductibleAmount || 0;
-
-                if (maxCoverage && maxCoverage > 0 && depreciatedBill > maxCoverage) {
-                    return `Payout capped at Maximum Coverage limit (₹${maxCoverage.toLocaleString('en-IN')}).`;
-                }
-            }
-        }
-
-        if (claim.claimType === 'Damage') {
-            const repair = this.decisionForm.repairCost || 0;
-            const engine = (plan.engineProtectionAvailable && this.decisionForm.engineCost) ? this.decisionForm.engineCost : 0;
-            const currentYear = new Date().getFullYear();
-            let age = currentYear - (claim.vehicle?.year || currentYear);
-            
-            let depreciationPercent = this.getDepreciationRate(age);
-
-            if (plan.zeroDepreciationAvailable) depreciationPercent = 0;
-
-            const depreciatedRepair = repair - (repair * depreciationPercent);
-            const depreciatedEngine = engine - (engine * depreciationPercent);
-            let totalDepreciatedDamage = depreciatedRepair + depreciatedEngine;
-
-            const invoiceAmount = claim.policy?.invoiceAmount || 0;
-            let idvDepreciation = this.getDepreciationRate(age);
-            
-            const insuredIdv = invoiceAmount - (invoiceAmount * idvDepreciation);
-            
-            if (totalDepreciatedDamage >= insuredIdv * 0.75) {
-                totalDepreciatedDamage = insuredIdv;
-            }
-
-            totalDepreciatedDamage -= plan.deductibleAmount || 0;
-
-            if (maxCoverage && maxCoverage > 0 && totalDepreciatedDamage > maxCoverage) {
-                return `Payout capped at Maximum Coverage limit (₹${maxCoverage.toLocaleString('en-IN')}).`;
-            }
-        }
+        const currentYear = new Date().getFullYear();
+        const tpYear = this.decisionForm.manufactureYear;
         
-        return null;
-    }
+        if (claim?.claimType === 'ThirdParty' && tpYear !== null && (tpYear > currentYear || tpYear < 1900)) {
+            return 'Please enter a valid manufacturing year.';
+        }
 
-    private getDepreciationRate(age: number): number {
-        if (age <= 0) return 0.05;
-        if (age === 1) return 0.15;
-        if (age === 2) return 0.20;
-        if (age === 3) return 0.30;
-        if (age === 4) return 0.40;
-        if (age === 5) return 0.50;
-        return 0.60;
+        return null;
     }
 
     closeClaimReview() {

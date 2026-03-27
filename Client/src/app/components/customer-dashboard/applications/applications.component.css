@@ -52,7 +52,8 @@
 }
 
 .rejection-text {
-    font-style: italic;
+    font-style: normal;
+    font-weight: 700;
     color: var(--error);
     font-size: 0.88rem;
     max-width: 200px;

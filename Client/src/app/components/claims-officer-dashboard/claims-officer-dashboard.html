@@ -48,6 +48,7 @@
             [decisionForm]="decisionForm"
             [payoutBreakdown]="payoutBreakdown()"
             [payoutWarning]="getPayoutWarning()"
+            [detailsLoading]="detailsLoading()"
             (onOpenClaimReview)="openClaimReview($event)"
             (onCloseClaimReview)="closeClaimReview()"
             (onClaimsSortOptionChange)="claimsSortOption.set($event)"

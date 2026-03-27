@@ -9,6 +9,60 @@
     margin-bottom: 24px;
 }
 
+.claim-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+:host-context([data-theme='light']) .claim-modal-overlay {
+    background: rgba(148, 163, 184, 0.2);
+}
+
+.claim-modal-content {
+    width: min(1000px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: #0f1a36 !important;
+    background-color: #0f1a36 !important;
+    background-image: none !important;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    position: relative;
+    isolation: isolate;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+:host-context([data-theme='light']) .claim-modal-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+.claim-modal-content::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: #0f1a36;
+}
+
+:host-context([data-theme='light']) .claim-modal-content::before {
+    background: #ffffff;
+}
+
 .claim-detail-container {
     max-width: 960px;
     margin: 0 auto;

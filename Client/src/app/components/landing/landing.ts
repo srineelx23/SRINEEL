@@ -1,18 +1,20 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
 import { jwtDecode } from 'jwt-decode';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
 })
 export class Landing implements OnInit {
+  protected readonly themeService = inject(ThemeService);
   private router = inject(Router);
   private authService = inject(AuthService);
   userName = signal<string | null>(null);

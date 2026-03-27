@@ -19,7 +19,12 @@ namespace VIMS.Infrastructure.Services
             
             Directory.CreateDirectory(targetFolder);
 
-            var fileName = Guid.NewGuid() + "_" + file.FileName;
+            // Shorten filename to avoid MAX_PATH issues (Guid + truncated original name or just extension)
+            var extension = Path.GetExtension(file.FileName);
+            var safeOriginalName = Path.GetFileNameWithoutExtension(file.FileName);
+            if (safeOriginalName.Length > 20) safeOriginalName = safeOriginalName.Substring(0, 20);
+            
+            var fileName = $"{Guid.NewGuid()}_{safeOriginalName}{extension}";
             var fullPath = Path.Combine(targetFolder, fileName);
 
             using (var stream = new FileStream(fullPath, FileMode.Create))
@@ -44,7 +49,11 @@ namespace VIMS.Infrastructure.Services
             
             Directory.CreateDirectory(targetFolder);
 
-            var fileName = Guid.NewGuid() + "_" + Path.GetFileName(existingRelativePath);
+            var extension = Path.GetExtension(existingRelativePath);
+            var safeOriginalName = Path.GetFileNameWithoutExtension(existingRelativePath);
+            if (safeOriginalName.Length > 20) safeOriginalName = safeOriginalName.Substring(0, 20);
+
+            var fileName = $"{Guid.NewGuid()}_{safeOriginalName}{extension}";
             var fullPath = Path.Combine(targetFolder, fileName);
 
             File.Copy(sourcePath, fullPath, true);

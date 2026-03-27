@@ -1,5 +1,4 @@
 <div class="tab-content fade-in">
-    @if (!selectedClaim()) {
     <header class="page-header">
         <h1 class="page-title">Processed Claims</h1>
         <p class="page-subtitle">A historical record of claims you've reviewed.</p>
@@ -65,11 +64,11 @@
         </table>
         }
     </div>
-    }
 
     <!-- Read-Only History Detailed View -->
     @if (selectedClaim()) {
-    <div class="glass-panel fade-in claim-detail-container">
+    <div class="claim-modal-overlay fade-in" (click)="closeClaimReview()">
+    <div class="claim-detail-container claim-modal-content" (click)="$event.stopPropagation()">
         <!-- Status stripe -->
         <div class="claim-detail-stripe" [ngStyle]="{
             'background': selectedClaim().status === 'Approved' ? 'var(--success)' : 'var(--error)'
@@ -148,6 +147,7 @@
                 }
             </div>
         </div>
+    </div>
     </div>
     }
 </div>

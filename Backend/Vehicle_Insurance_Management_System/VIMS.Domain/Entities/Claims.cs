@@ -24,6 +24,8 @@ namespace VIMS.Domain.Entities
         public string? DecisionType { get; set; }
         public string? RejectionReason { get; set; }
         public string? SettlementBreakdownJson { get; set; }
+        public string? Summary { get; set; } // Groq summary
+        public string? FraudRiskAnalysisJson { get; set; } // Store risk reasons and score
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         // Navigation
         public Policy Policy { get; set; } = null!;

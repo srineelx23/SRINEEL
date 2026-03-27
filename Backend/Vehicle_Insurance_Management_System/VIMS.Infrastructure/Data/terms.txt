@@ -1,0 +1,8 @@
+Here are some helpful definitions for the insurance terms we use:
+
+- Insured Declared Value (IDV): The calculated current value of your vehicle. It is evaluated by taking your original invoice amount and automatically adjusting it for age-based depreciation. This sets the highest possible limit we will pay in a total-loss scenario.
+- Deductible: A fixed, compulsory amount defined by your insurance plan that is subtracted from your final calculated claim compensation.
+- Zero Depreciation: A premium plan benefit that prevents your repair settlement from being reduced by standard age-depreciation. Note that this benefit is not valid for Third-Party claims.
+- Engine Protection: An optional add-on layer of coverage specifically designed to handle damage repair costs for your vehicle's engine.
+- Total Loss: An outcome triggered when a stolen vehicle claim is approved for its full IDV.
+- Constructive Total Loss: An outcome triggered when severe vehicle damage repair costs reach 75% or more of your vehicle's IDV.

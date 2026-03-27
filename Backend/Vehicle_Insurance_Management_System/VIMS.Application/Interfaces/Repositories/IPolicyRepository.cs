@@ -13,6 +13,7 @@ namespace VIMS.Application.Interfaces.Repositories
         Task AddAsync(Policy policy, bool saveChanges);
         Task AddAndExpireAsync(Policy newPolicy, Policy oldPolicy);
         Task<List<Policy>> GetPoliciesByCustomerIdAsync(int customerId);
+        Task<List<Policy>> GetPoliciesByAgentIdAsync(int agentId);
         Task<Policy?> GetByIdAsync(int policyId);
         Task UpdateAsync(Policy policy);
         Task<List<Policy>> GetAllAsync();

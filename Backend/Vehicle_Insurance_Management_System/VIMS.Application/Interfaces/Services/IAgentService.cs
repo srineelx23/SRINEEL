@@ -14,5 +14,6 @@ namespace VIMS.Application.Interfaces.Services
         Task<List<VehicleApplication>> GetMyPendingApplicationsAsync(int agentId);
         public Task<List<AgentCustomerDetailsDTO>> GetMyApprovedCustomersAsync(int agentId);
         public Task<List<VehicleApplication>> GetMyApplicationsAsync(int agentId);
+        Task<AgentApplicationValidationResultDTO> ValidateApplicationDocumentsAsync(int applicationId);
     }
 }

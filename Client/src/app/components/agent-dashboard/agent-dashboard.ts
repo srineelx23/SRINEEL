@@ -123,6 +123,7 @@ export class AgentDashboard implements OnInit {
   ngOnInit() {
     this.extractName();
     this.loadDashboardData();
+    this.syncChatbotContext();
   }
 
   private extractName() {
@@ -225,6 +226,12 @@ export class AgentDashboard implements OnInit {
     this.activeTab.set(tabId);
     this.selectedApp.set(null);
     this.selectedCustomerRecord.set(null);
+    this.syncChatbotContext();
+  }
+
+  private syncChatbotContext() {
+    localStorage.setItem('vims.agent.activeTab', this.activeTab());
+    window.dispatchEvent(new CustomEvent('vims-chatbot-context-changed'));
   }
 
   goHome() {

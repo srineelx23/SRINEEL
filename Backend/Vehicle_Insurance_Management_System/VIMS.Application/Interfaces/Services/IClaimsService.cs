@@ -16,5 +16,6 @@ namespace VIMS.Application.Interfaces.Services
         Task<Claims?> GetClaimByIdAsync(int claimId);
         Task<List<Claims>> GetClaimsByOfficerIdAsync(int officerId);
         Task<ClaimBreakdownDTO> CalculateClaimBreakdownAsync(int claimId, ApproveClaimDTO dto);
+        Task<ClaimsAnalysisResultDTO> AnalyzeClaimAsync(int claimId);
     }
 }

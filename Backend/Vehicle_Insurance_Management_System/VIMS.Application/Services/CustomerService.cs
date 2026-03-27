@@ -29,8 +29,9 @@ namespace VIMS.Application.Services
         private readonly IFileStorageService _fileStorageService;
         private readonly IClaimsRepository _claimsRepository;
         private readonly INotificationService _notificationService;
+        private readonly IOcrService _ocrService;
  
-        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, IClaimsRepository claimsRepository, INotificationService notificationService)
+        public CustomerService(ICustomerRepository customerRepository, IVehicleApplicationRepository vehicleApplicationRepository, IUserRepository userRepository, IVehicleRepository vehicleRepository, IPolicyRepository policyRepository, IPaymentRepository paymentRepository, IPricingService pricingService, IPolicyPlanService policyPlanService, IPolicyTransferRepository policyTransferRepository, IAuditService auditService, IFileStorageService fileStorageService, IClaimsRepository claimsRepository, INotificationService notificationService, IOcrService ocrService)
         {
             _customerRepository = customerRepository;
             _vehicleApplicationRepository = vehicleApplicationRepository;
@@ -45,6 +46,7 @@ namespace VIMS.Application.Services
             _fileStorageService = fileStorageService;
             _claimsRepository = claimsRepository;
             _notificationService = notificationService;
+            _ocrService = ocrService;
         }
 
         public async Task<IEnumerable<object>> ViewAllPoliciesAsync()
@@ -74,41 +76,127 @@ namespace VIMS.Application.Services
         }
         public async Task CreateApplicationAsync(CreateVehicleApplicationDTO dto,int userId)
         {
-            if (dto.InvoiceAmount < 0 || dto.KilometersDriven < 0 || dto.Year < 0 || dto.Year > DateTime.UtcNow.Year)
-                throw new BadRequestException("Please enter valid field values.");
+            var nowYear = DateTime.UtcNow.Year;
+            var validationErrors = new List<string>();
 
-            if (DateTime.UtcNow.Year - dto.Year > 15)
-                throw new BadRequestException("Cannot buy insurance for vehicles aged greater than 15 years");
+            dto.RegistrationNumber = (dto.RegistrationNumber ?? string.Empty).Trim();
+            dto.Make = (dto.Make ?? string.Empty).Trim();
+            dto.Model = (dto.Model ?? string.Empty).Trim();
+            dto.FuelType = (dto.FuelType ?? string.Empty).Trim();
+            dto.VehicleType = (dto.VehicleType ?? string.Empty).Trim();
 
-            // ==============================
-            // 0️⃣ Validate EV Conflict
-            // ==============================
+            if (dto.PlanId <= 0) validationErrors.Add("Plan is required.");
+
+            if (string.IsNullOrWhiteSpace(dto.RegistrationNumber))
+                validationErrors.Add("Registration number is required.");
+            else
+            {
+                var regSanitized = dto.RegistrationNumber.ToUpperInvariant().Replace(" ", string.Empty).Replace("-", string.Empty);
+                var regRegex = new Regex(@"^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$");
+                if (!regRegex.IsMatch(regSanitized))
+                    validationErrors.Add("Invalid vehicle registration number format.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Make) || dto.Make.Length < 2 || dto.Make.Length > 60)
+                validationErrors.Add("Vehicle make must be between 2 and 60 characters.");
+
+            if (string.IsNullOrWhiteSpace(dto.Model) || dto.Model.Length > 80)
+                validationErrors.Add("Vehicle model is required and must not exceed 80 characters.");
+
+            if (dto.Year < 1980 || dto.Year > nowYear)
+                validationErrors.Add($"Manufacture year must be between 1980 and {nowYear}.");
+
+            if (dto.Year > 0 && nowYear - dto.Year > 15)
+                validationErrors.Add("Cannot buy insurance for vehicles aged greater than 15 years.");
+
+            if (dto.InvoiceAmount <= 0)
+                validationErrors.Add("Invoice amount must be greater than 0.");
+
+            if (dto.KilometersDriven < 0 || dto.KilometersDriven > 999999)
+                validationErrors.Add("Kilometers driven must be between 0 and 999999.");
+
+            if (dto.PolicyYears < 1 || dto.PolicyYears > 5)
+                validationErrors.Add("Policy duration must be between 1 and 5 years.");
+
+            var normalizedFuel = NormalizeFuelType(dto.FuelType);
+            if (string.IsNullOrWhiteSpace(normalizedFuel)
+                || !(normalizedFuel == "petrol" || normalizedFuel == "diesel" || normalizedFuel == "hybrid" || normalizedFuel == "ev" || normalizedFuel == "cng"))
+            {
+                validationErrors.Add("Fuel type must be one of: Petrol, Diesel, Hybrid, EV, CNG.");
+            }
+
+            var normalizedUsage = (dto.VehicleType ?? string.Empty).Trim().ToLowerInvariant();
+            if (!(normalizedUsage == "private" || normalizedUsage == "commercial"))
+            {
+                validationErrors.Add("Vehicle usage type must be either Private or Commercial.");
+            }
+
+            if (dto.InvoiceDocument == null || dto.RcDocument == null)
+            {
+                validationErrors.Add("Both Invoice and RC documents are required.");
+            }
+            else
+            {
+                ValidatePdfFile(dto.InvoiceDocument, "Invoice document", validationErrors);
+                ValidatePdfFile(dto.RcDocument, "RC document", validationErrors);
+            }
+
+            if (validationErrors.Count > 0)
+                throw new BadRequestException(string.Join(" | ", validationErrors));
+
             var plan = await _policyPlanService.GetPolicyPlanAsync(dto.PlanId);
-            if (plan == null) 
+            if (plan == null)
                 throw new BadRequestException("Selected insurance plan no longer exists.");
 
-            bool isEVPlan = plan.ApplicableVehicleType != null && plan.ApplicableVehicleType.Contains("EV");
+            var postPlanErrors = new List<string>();
 
-            if (isEVPlan && dto.FuelType != "EV")
-                throw new BadRequestException("This plan is exclusively for Electric Vehicles. Please select 'EV' as fuel type.");
+            if (plan.Status != PlanStatus.Active)
+                postPlanErrors.Add("Selected insurance plan is not active.");
 
-            if (!isEVPlan && dto.FuelType == "EV")
-                throw new BadRequestException("EV fuel type is not applicable for this vehicle category.");
+            var planVehicleGroup = NormalizeVehicleTypeGroup(plan.ApplicableVehicleType);
+            if (string.IsNullOrWhiteSpace(planVehicleGroup))
+                postPlanErrors.Add("Selected insurance plan has an invalid vehicle type configuration.");
 
-            // ==============================
-            // 1️⃣ Validate Registration Number
-            // ==============================
+            if (normalizedFuel == "ev" && !plan.ApplicableVehicleType.Contains("EV", StringComparison.OrdinalIgnoreCase))
+                postPlanErrors.Add("EV fuel type is only allowed for EV plans.");
+
+            if (normalizedFuel != "ev" && plan.ApplicableVehicleType.Contains("EV", StringComparison.OrdinalIgnoreCase))
+                postPlanErrors.Add("Selected EV plan requires EV fuel type.");
+
+            if (postPlanErrors.Count > 0)
+                throw new BadRequestException(string.Join(" | ", postPlanErrors));
+
+            if (dto.RcDocument != null && dto.InvoiceDocument != null)
+            {
+                var extracted = await _ocrService.ExtractVehicleDetailsAsync(dto.RcDocument, dto.InvoiceDocument);
+                var documentVehicleGroup = NormalizeVehicleTypeGroup(extracted.VehicleClass);
+
+                var documentValidationErrors = new List<string>();
+
+                if (!string.IsNullOrEmpty(planVehicleGroup)
+                    && !string.IsNullOrEmpty(documentVehicleGroup)
+                    && !string.Equals(planVehicleGroup, documentVehicleGroup, StringComparison.OrdinalIgnoreCase))
+                {
+                    documentValidationErrors.Add($"Vehicle type does not match. Uploaded vehicle type: {FormatVehicleType(extracted.VehicleClass)}. Selected vehicle type: {FormatVehicleType(plan.ApplicableVehicleType)}.");
+                }
+
+                var selectedFuelType = NormalizeFuelType(dto.FuelType);
+                var uploadedFuelType = NormalizeFuelType(extracted.FuelType);
+
+                if (!string.IsNullOrEmpty(selectedFuelType)
+                    && !string.IsNullOrEmpty(uploadedFuelType)
+                    && !string.Equals(selectedFuelType, uploadedFuelType, StringComparison.OrdinalIgnoreCase))
+                {
+                    documentValidationErrors.Add("Fuel type selected does not match the uploaded documents.");
+                }
+
+                if (documentValidationErrors.Count > 0)
+                {
+                    throw new BadRequestException(string.Join(" | ", documentValidationErrors));
+                }
+            }
 
             var regNumber = dto.RegistrationNumber.ToUpper().Replace(" ", "").Replace("-", "");
-
-            var regex = new Regex(@"^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$");
-
-            if (!regex.IsMatch(regNumber))
-                throw new BadRequestException("Invalid vehicle registration number format.");
-
-            // ==============================
-            // 2️⃣ Check if vehicle already insured
-            // ==============================
 
             var existingVehicle = await _vehicleRepository.GetByRegistrationNumberAsync(regNumber);
 
@@ -147,6 +235,7 @@ namespace VIMS.Application.Services
 
             if (dto.InvoiceDocument != null)
             {
+                EnsurePdfOnly(dto.InvoiceDocument, "Invoice document");
                 string invoicePath = await _fileStorageService.SaveFileAsync(dto.InvoiceDocument, "user", storageIdentifier, "invoice");
                 if (!string.IsNullOrEmpty(invoicePath))
                 {
@@ -160,6 +249,7 @@ namespace VIMS.Application.Services
 
             if (dto.RcDocument != null)
             {
+                EnsurePdfOnly(dto.RcDocument, "RC document");
                 string rcPath = await _fileStorageService.SaveFileAsync(dto.RcDocument, "user", storageIdentifier, "rc");
                 if (!string.IsNullOrEmpty(rcPath))
                 {
@@ -184,6 +274,99 @@ namespace VIMS.Application.Services
             {
                 await _notificationService.CreateNotificationAsync(application.AssignedAgentId.Value, "New Policy Request Assigned", $"A new policy request for {application.RegistrationNumber} has been assigned to you.", NotificationType.NewPolicyRequestAssigned, "VehicleApplication", application.VehicleApplicationId.ToString());
             }
+        }
+
+        private static void ValidatePdfFile(IFormFile file, string label, List<string> errors)
+        {
+            if (file == null)
+            {
+                errors.Add($"{label} is required.");
+                return;
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            var isPdfExtension = string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase);
+            var isPdfContentType = string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file.ContentType, "application/x-pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdfExtension || !isPdfContentType)
+            {
+                errors.Add($"{label} must be a PDF file only.");
+            }
+
+            const long maxSizeInBytes = 10 * 1024 * 1024;
+            if (file.Length <= 0)
+            {
+                errors.Add($"{label} is empty.");
+            }
+            else if (file.Length > maxSizeInBytes)
+            {
+                errors.Add($"{label} exceeds maximum size of 10 MB.");
+            }
+        }
+
+        private static void EnsurePdfOnly(IFormFile file, string label)
+        {
+            var extension = Path.GetExtension(file.FileName);
+            var isPdfExtension = string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase);
+            var isPdfContentType = string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file.ContentType, "application/x-pdf", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPdfExtension || !isPdfContentType)
+            {
+                throw new BadRequestException($"{label} must be a PDF file only.");
+            }
+        }
+
+        private static string NormalizeVehicleTypeGroup(string? vehicleType)
+        {
+            var normalized = (vehicleType ?? string.Empty).ToLowerInvariant().Replace("-", string.Empty).Replace("_", string.Empty).Replace(" ", string.Empty);
+
+            if (normalized.Contains("twowheeler") || normalized.Contains("2wheeler") || normalized.Contains("motorcycle") || normalized.Contains("scooter"))
+            {
+                return "twowheeler";
+            }
+
+            if (normalized.Contains("threewheeler") || normalized.Contains("3wheeler") || normalized.Contains("autorickshaw") || normalized.Contains("erickshaw") || normalized.Contains("rickshaw"))
+            {
+                return "threewheeler";
+            }
+
+            if (normalized.Contains("heavyvehicle") || normalized.Contains("hmv") || normalized.Contains("truck") || normalized.Contains("bus"))
+            {
+                return "heavyvehicle";
+            }
+
+            if (normalized.Contains("car") || normalized.Contains("lmv"))
+            {
+                return "car";
+            }
+
+            return string.Empty;
+        }
+
+        private static string NormalizeFuelType(string? fuelType)
+        {
+            var normalized = (fuelType ?? string.Empty).Trim().ToLowerInvariant();
+
+            if (normalized.Contains("petrol")) return "petrol";
+            if (normalized.Contains("diesel")) return "diesel";
+            if (normalized.Contains("hybrid")) return "hybrid";
+            if (normalized.Contains("electric") || normalized == "ev") return "ev";
+            if (normalized.Contains("cng")) return "cng";
+
+            return normalized;
+        }
+
+        private static string FormatVehicleType(string? vehicleType)
+        {
+            var value = (vehicleType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "Unknown";
+            }
+
+            return value;
         }
 
 
