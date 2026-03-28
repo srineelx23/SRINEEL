@@ -22,5 +22,11 @@ namespace VIMS.Application.DTOs
         public bool IsFeePending { get; set; }
         public string VehicleType { get; set; }
         public bool RoadsideAssistanceAvailable { get; set; }
+
+        // Referral discount preview for pending premium payments
+        public bool IsReferralDiscountEligible { get; set; }
+        public decimal ReferralDiscountAmount { get; set; }
+        public decimal PremiumAfterReferralDiscount { get; set; }
+        public string? ReferralDiscountReason { get; set; }
     }
 }

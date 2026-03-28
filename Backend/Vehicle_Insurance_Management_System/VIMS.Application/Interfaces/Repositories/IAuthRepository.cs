@@ -15,5 +15,6 @@ namespace VIMS.Application.Interfaces.Repositories
         public Task<User> RegisterAdminAsync(User admin);
         public Task<User> GetUserByIdAsync(int userId);
         public Task UpdateUserAsync(User user);
+        public Task<User?> GetUserByReferralCodeAsync(string referralCode);
     }
 }

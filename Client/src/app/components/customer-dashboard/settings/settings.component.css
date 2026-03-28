@@ -122,3 +122,39 @@
     font-size: 0.8rem;
     border-radius: 999px;
 }
+
+.referral-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.referral-value {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: var(--text-main);
+}
+
+.copy-referral-btn {
+    border: 1px solid var(--border-light);
+    background: rgba(91, 192, 190, 0.08);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.copy-success {
+    margin-top: 8px;
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    color: var(--accent);
+}

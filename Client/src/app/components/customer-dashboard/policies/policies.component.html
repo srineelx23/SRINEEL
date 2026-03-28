@@ -134,13 +134,22 @@
                         <div class="policy-meta-grid">
                             <div class="meta-item">
                                 <span class="meta-label">Total Due</span>
-                                <span class="meta-value" style="color: var(--error);">{{ p.premiumAmount | currency:'INR' }}</span>
+                                <span class="meta-value" style="color: var(--error);">{{ (p.isReferralDiscountEligible ? p.premiumAfterReferralDiscount : p.premiumAmount) | currency:'INR' }}</span>
                             </div>
                             <div class="meta-item">
                                 <span class="meta-label">Type</span>
                                 <span class="meta-value">{{ p.isFeePending ? 'Fee' : 'Premium' | vimsFormat }}</span>
                             </div>
                         </div>
+                        @if (p.isReferralDiscountEligible) {
+                        <p style="margin: 10px 0 0; font-size: 0.8rem; color: var(--success); font-weight: 600;">
+                            5% referral discount applied: -{{ p.referralDiscountAmount | currency:'INR' }}
+                        </p>
+                        } @else if (!p.isFeePending && p.referralDiscountReason) {
+                        <p style="margin: 10px 0 0; font-size: 0.76rem; color: var(--text-muted);">
+                            {{ p.referralDiscountReason }}
+                        </p>
+                        }
                     </div>
                     <div class="policy-card-footer" style="padding: 10px; background: rgba(239, 68, 68, 0.05);">
                         <button class="btn-primary"
@@ -262,6 +271,18 @@
                     <p class="policy-data-row"><strong class="policy-data-label">Premium Paid:</strong> 
                         <span class="policy-data-value">{{ selectedPolicy().premiumAmount | currency:'INR' }}</span>
                     </p>
+                    @if (selectedPolicy().isReferralDiscountEligible) {
+                    <p class="policy-data-row"><strong class="policy-data-label">Referral Discount:</strong>
+                        <span class="policy-data-value" style="color: var(--success);">-{{ selectedPolicy().referralDiscountAmount | currency:'INR' }}</span>
+                    </p>
+                    <p class="policy-data-row"><strong class="policy-data-label">Payable Now:</strong>
+                        <span class="policy-data-value">{{ selectedPolicy().premiumAfterReferralDiscount | currency:'INR' }}</span>
+                    </p>
+                    } @else if (selectedPolicy().status === 'PendingPayment' && !selectedPolicy().isFeePending && selectedPolicy().referralDiscountReason) {
+                    <p class="policy-data-row"><strong class="policy-data-label">Referral:</strong>
+                        <span style="color: var(--text-muted);">{{ selectedPolicy().referralDiscountReason }}</span>
+                    </p>
+                    }
                     <p class="policy-data-row"><strong class="policy-data-label">Insured IDV:</strong> 
                         <span class="policy-data-value">{{ selectedPolicy().idv | currency:'INR' }}</span>
                     </p>

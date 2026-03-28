@@ -11,6 +11,9 @@ namespace VIMS.Domain.Entities
     {
         public int UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
+        public string? ReferralCode { get; set; }
+        public int? ReferredByUserId { get; set; }
+        public bool HasUsedReferral { get; set; }
         public string Email { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
         public UserRole Role { get; set; }
@@ -27,5 +30,8 @@ namespace VIMS.Domain.Entities
         public ICollection<Policy>? AgentPolicies { get; set; }
         public ICollection<Claims>? CustomerClaims { get; set; }
         public ICollection<Claims>? ClaimsHandled { get; set; }
+        public Wallet? Wallet { get; set; }
+        public ICollection<Referral>? ReferralsMade { get; set; }
+        public ICollection<Referral>? ReferralsReceived { get; set; }
     }
 }

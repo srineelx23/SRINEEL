@@ -99,6 +99,7 @@
                             <th>Full Name</th>
                             <th>Identifier (Email)</th>
                             <th>Authorization Role</th>
+                            <th>ReferralCode</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -118,6 +119,7 @@
                                     {{ u.displayRole }}
                                 </span>
                             </td>
+                            <td>{{ u.displayRole === 'Customer' ? (u.referralCode || '-') : '-' }}</td>
                         </tr>
                         }
                     </tbody>

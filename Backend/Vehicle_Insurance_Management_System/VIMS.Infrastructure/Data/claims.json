@@ -1,0 +1,27 @@
+{
+  "id": "claims_1",
+  "title": "Insurance Claims Process",
+  "filing": {
+    "rule": "Only one claim can be processed at a time",
+    "documents": {
+      "theft": "FIR is mandatory",
+      "own_damage": "Repair Bill and Vehicle Invoice required",
+      "third_party": "Repair Bill and Vehicle Invoice required"
+    },
+    "coverage_condition": "Claims are processed only if covered under the plan"
+  },
+  "settlements": {
+    "depreciation": "5% for new cars up to 60% for cars older than 5 years",
+    "zero_dep": "No depreciation if Zero Depreciation plan is active",
+    "deductible": "Mandatory deductible applied",
+    "max_payout": "Cannot exceed Maximum Coverage Amount"
+  },
+  "total_loss": {
+    "conditions": [
+      "Vehicle theft",
+      "Damage exceeding 75% of vehicle value"
+    ],
+    "settlement": "Paid as Insured Declared Value (IDV)",
+    "policy_status": "Policy is marked as claimed after payout"
+  }
+}

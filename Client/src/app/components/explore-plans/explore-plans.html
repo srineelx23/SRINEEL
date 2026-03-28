@@ -651,10 +651,29 @@
                         </div>
                         }
 
+                        @if (calculatedQuote().isReferralDiscountEligible) {
+                        <div class="breakdown-row">
+                            <span class="breakdown-label">Referral Discount (First Payment)</span>
+                            <span class="breakdown-value discount">- {{ calculatedQuote().referralDiscountAmount |
+                                currency:'INR' }}</span>
+                        </div>
+                        }
+
                         <div class="breakdown-row total-net">
                             <span class="breakdown-label">Final Premium</span>
                             <span class="breakdown-value">{{ calculatedQuote().premium | currency:'INR' }}</span>
                         </div>
+
+                        @if (calculatedQuote().isReferralDiscountEligible) {
+                        <div class="breakdown-row total-net" style="margin-top: 6px;">
+                            <span class="breakdown-label">Payable After Referral</span>
+                            <span class="breakdown-value" style="color: var(--success);">{{ calculatedQuote().premiumAfterReferralDiscount | currency:'INR' }}</span>
+                        </div>
+                        } @else if (calculatedQuote().referralDiscountReason) {
+                        <p style="margin: 10px 0 0; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+                            {{ calculatedQuote().referralDiscountReason }}
+                        </p>
+                        }
                     </div>
                 </div>
                 

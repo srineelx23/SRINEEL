@@ -452,6 +452,47 @@ namespace VIMS.Infrastructure.Migrations
                     b.ToTable("PolicyTransfers");
                 });
 
+            modelBuilder.Entity("VIMS.Domain.Entities.Referral", b =>
+                {
+                    b.Property<int>("ReferralId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReferralId"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("RefereeUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReferrerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RewardAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReferralId");
+
+                    b.HasIndex("RefereeUserId")
+                        .IsUnique();
+
+                    b.HasIndex("ReferrerUserId");
+
+                    b.ToTable("Referrals");
+                });
+
             modelBuilder.Entity("VIMS.Domain.Entities.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -468,6 +509,9 @@ namespace VIMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("HasUsedReferral")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -477,6 +521,12 @@ namespace VIMS.Infrastructure.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReferralCode")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("ReferredByUserId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
@@ -491,6 +541,12 @@ namespace VIMS.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("ReferralCode")
+                        .IsUnique()
+                        .HasFilter("[ReferralCode] IS NOT NULL");
+
+                    b.HasIndex("ReferredByUserId");
 
                     b.ToTable("Users");
                 });
@@ -647,6 +703,32 @@ namespace VIMS.Infrastructure.Migrations
                     b.ToTable("VehicleDocuments");
                 });
 
+            modelBuilder.Entity("VIMS.Domain.Entities.Wallet", b =>
+                {
+                    b.Property<int>("WalletId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WalletId"));
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("WalletId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Wallets");
+                });
+
             modelBuilder.Entity("VIMS.Domain.Entities.ClaimDocument", b =>
                 {
                     b.HasOne("VIMS.Domain.Entities.Claims", "Claim")
@@ -774,6 +856,33 @@ namespace VIMS.Infrastructure.Migrations
                     b.Navigation("SenderCustomer");
                 });
 
+            modelBuilder.Entity("VIMS.Domain.Entities.Referral", b =>
+                {
+                    b.HasOne("VIMS.Domain.Entities.User", "RefereeUser")
+                        .WithMany("ReferralsReceived")
+                        .HasForeignKey("RefereeUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("VIMS.Domain.Entities.User", "ReferrerUser")
+                        .WithMany("ReferralsMade")
+                        .HasForeignKey("ReferrerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RefereeUser");
+
+                    b.Navigation("ReferrerUser");
+                });
+
+            modelBuilder.Entity("VIMS.Domain.Entities.User", b =>
+                {
+                    b.HasOne("VIMS.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReferredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("VIMS.Domain.Entities.Vehicle", b =>
                 {
                     b.HasOne("VIMS.Domain.Entities.User", "Customer")
@@ -830,6 +939,17 @@ namespace VIMS.Infrastructure.Migrations
                     b.Navigation("VehicleApplication");
                 });
 
+            modelBuilder.Entity("VIMS.Domain.Entities.Wallet", b =>
+                {
+                    b.HasOne("VIMS.Domain.Entities.User", "User")
+                        .WithOne("Wallet")
+                        .HasForeignKey("VIMS.Domain.Entities.Wallet", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("VIMS.Domain.Entities.Claims", b =>
                 {
                     b.Navigation("Documents");
@@ -857,7 +977,13 @@ namespace VIMS.Infrastructure.Migrations
 
                     b.Navigation("CustomerPolicies");
 
+                    b.Navigation("ReferralsMade");
+
+                    b.Navigation("ReferralsReceived");
+
                     b.Navigation("Vehicles");
+
+                    b.Navigation("Wallet");
                 });
 
             modelBuilder.Entity("VIMS.Domain.Entities.Vehicle", b =>

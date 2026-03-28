@@ -21,6 +21,8 @@ export class CustomerRegister {
   confirmPassword = '';
   securityQuestion = '';
   securityAnswer = '';
+  referralCode = '';
+  registerStep = signal(1);
 
   errorMessage = signal('');
   successMessage = signal('');
@@ -57,10 +59,8 @@ export class CustomerRegister {
     return this.password === this.confirmPassword && this.password !== '';
   }
 
-  register() {
+  continueToReferralStep() {
     this.errorMessage.set('');
-    this.successMessage.set('');
-    this.emailTouched.set(true);
 
     if (!this.firstName || !this.lastName || !this.email || !this.password || !this.securityQuestion || !this.securityAnswer) {
       const missingFields = [];
@@ -98,6 +98,24 @@ export class CustomerRegister {
       return;
     }
 
+    this.registerStep.set(2);
+  }
+
+  backToDetailsStep() {
+    this.errorMessage.set('');
+    this.registerStep.set(1);
+  }
+
+  register() {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.emailTouched.set(true);
+
+    this.continueToReferralStep();
+    if (this.registerStep() !== 2) {
+      return;
+    }
+
     // Combine for the backend DTO
     const fullName = `${this.firstName.trim()} ${this.lastName.trim()}`;
 
@@ -106,7 +124,8 @@ export class CustomerRegister {
       Email: this.email.trim(),
       Password: this.password,
       SecurityQuestion: this.securityQuestion,
-      SecurityAnswer: this.securityAnswer.trim().toLowerCase()
+      SecurityAnswer: this.securityAnswer.trim().toLowerCase(),
+      ReferralCode: this.referralCode.trim() || null
     };
 
     this.authService.registerCustomer(payload).subscribe({

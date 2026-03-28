@@ -23,6 +23,7 @@ export interface RenewPolicyDTO {
 export class CustomerService {
     private http = inject(HttpClient);
     private backendUrl = 'https://localhost:7257/api/Customer';
+    private referralUrl = 'https://localhost:7257/api/Referral';
 
     constructor() { }
 
@@ -131,5 +132,17 @@ export class CustomerService {
 
     requestRoadsideAssistance(data: any): Observable<any> {
         return this.http.post(`${this.backendUrl}/roadside-assistance`, data);
+    }
+
+    applyReferralCode(referralCode: string): Observable<any> {
+        return this.http.post(`${this.referralUrl}/apply`, { referralCode });
+    }
+
+    getReferralHistory(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.referralUrl}/history`);
+    }
+
+    getWalletBalance(): Observable<{ balance: number }> {
+        return this.http.get<{ balance: number }>(`${this.referralUrl}/wallet/balance`);
     }
 }

@@ -9,6 +9,24 @@
     margin-bottom: 24px;
 }
 
+.history-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .history-header-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .history-header-row .table-header-actions {
+        justify-content: flex-start !important;
+    }
+}
+
 .claim-modal-overlay {
     position: fixed;
     inset: 0;

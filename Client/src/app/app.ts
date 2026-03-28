@@ -5,11 +5,12 @@ import { filter } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
 import { ChatbotWidgetComponent } from './components/chatbot-widget/chatbot-widget';
+import { AdminAiAssistantComponent } from './components/admin-ai-assistant/admin-ai-assistant';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, ChatbotWidgetComponent],
+  imports: [RouterOutlet, CommonModule, ChatbotWidgetComponent, AdminAiAssistantComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -20,7 +21,8 @@ export class App implements OnInit, OnDestroy {
   private readonly chatbotContextHandler = () => this.evaluateChatbotVisibility(this.router.url);
 
   protected readonly title = signal('Client');
-  showChatbot = signal(false);
+  showCustomerChatbot = signal(false);
+  showAdminAssistant = signal(false);
 
   ngOnInit() {
     this.evaluateChatbotVisibility(this.router.url);
@@ -43,51 +45,51 @@ export class App implements OnInit, OnDestroy {
   }
 
   private evaluateChatbotVisibility(url: string): void {
+    this.showCustomerChatbot.set(false);
+    this.showAdminAssistant.set(false);
+
     if (!this.authService.isLoggedIn()) {
-      this.showChatbot.set(false);
       return;
     }
 
     const normalizedUrl = (url || '').toLowerCase().split('?')[0].split('#')[0];
     const hideOnRoutes = ['/', '/login', '/register', '/error'];
     if (hideOnRoutes.includes(normalizedUrl)) {
-      this.showChatbot.set(false);
       return;
     }
 
     const role = this.authService.getUserRole();
     if (!role) {
-      this.showChatbot.set(false);
       return;
     }
 
     if (role === 'Customer') {
-      this.showChatbot.set(normalizedUrl === '/explore-plans');
+      this.showCustomerChatbot.set(normalizedUrl === '/explore-plans');
       return;
     }
 
     if (role === 'Agent') {
       if (normalizedUrl !== '/agent-dashboard') {
-        this.showChatbot.set(false);
         return;
       }
 
       const activeTab = (localStorage.getItem('vims.agent.activeTab') || '').toLowerCase();
-      this.showChatbot.set(activeTab === 'applications');
+      this.showCustomerChatbot.set(activeTab === 'applications');
       return;
     }
 
     if (role === 'ClaimsOfficer') {
-      if (normalizedUrl !== '/claims-officer-dashboard') {
-        this.showChatbot.set(false);
+      if (normalizedUrl !== '/claims-dashboard') {
         return;
       }
 
       const activeTab = (localStorage.getItem('vims.claimsOfficer.activeTab') || '').toLowerCase();
-      this.showChatbot.set(activeTab === 'pending');
+      this.showCustomerChatbot.set(activeTab === 'pending');
       return;
     }
 
-    this.showChatbot.set(role === 'Admin');
+    if (role === 'Admin') {
+      this.showAdminAssistant.set(normalizedUrl === '/admin-dashboard');
+    }
   }
 }

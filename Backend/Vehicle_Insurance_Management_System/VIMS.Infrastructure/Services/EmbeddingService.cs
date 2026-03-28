@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using VIMS.Application.Interfaces.Services;
 
 namespace VIMS.Infrastructure.Services
@@ -13,11 +14,13 @@ namespace VIMS.Infrastructure.Services
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
+        private readonly ILogger<EmbeddingService> _logger;
 
-        public EmbeddingService(HttpClient httpClient, IConfiguration configuration)
+        public EmbeddingService(HttpClient httpClient, IConfiguration configuration, ILogger<EmbeddingService> logger)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _apiKey = configuration["Gemini:ApiKey"] ?? string.Empty;
+            _logger = logger;
         }
 
         public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default)
@@ -44,8 +47,19 @@ namespace VIMS.Infrastructure.Services
             };
 
             using var response = await _httpClient.PostAsJsonAsync(requestUri, requestBody, cancellationToken);
-            
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "Embedding request failed with status {StatusCode}. Response: {Body}",
+                    (int)response.StatusCode,
+                    body);
+                throw new HttpRequestException(
+                    $"Gemini embedding request failed with status {(int)response.StatusCode} ({response.StatusCode}).",
+                    null,
+                    response.StatusCode);
+            }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var jsonDoc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
@@ -60,10 +74,11 @@ namespace VIMS.Infrastructure.Services
                 {
                     result[i++] = value.GetSingle();
                 }
+
                 return result;
             }
 
-            return Array.Empty<float>();
+            throw new InvalidOperationException("Gemini embedding response did not contain embedding values.");
         }
     }
 }

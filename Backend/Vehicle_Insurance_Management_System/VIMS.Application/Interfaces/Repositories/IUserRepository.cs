@@ -13,5 +13,7 @@ namespace VIMS.Application.Interfaces.Repositories
         public Task<User?> GetLeastLoadedClaimsOfficerAsync();
         public Task<User?> GetByIdAsync(int id);
         public Task<User?> GetByEmailAsync(string email);
+        public Task<User?> GetByReferralCodeAsync(string referralCode);
+        public Task UpdateAsync(User user);
     }
 }

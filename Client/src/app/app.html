@@ -1,6 +1,10 @@
 <!-- Global Fixed Theme Toggle Button -->
 <router-outlet></router-outlet>
 
-@if (showChatbot()) {
+@if (showCustomerChatbot()) {
 <app-chatbot-widget></app-chatbot-widget>
+}
+
+@if (showAdminAssistant()) {
+<app-admin-ai-assistant></app-admin-ai-assistant>
 }

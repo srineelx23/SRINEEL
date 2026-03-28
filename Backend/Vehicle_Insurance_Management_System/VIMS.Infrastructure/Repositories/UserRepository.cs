@@ -58,5 +58,17 @@ namespace VIMS.Infrastructure.Repositories
             return await _context.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
         }
+
+        public async Task<User?> GetByReferralCodeAsync(string referralCode)
+        {
+            var normalizedCode = (referralCode ?? string.Empty).Trim().ToUpper();
+            return await _context.Users.FirstOrDefaultAsync(u => u.ReferralCode != null && u.ReferralCode.ToUpper() == normalizedCode);
+        }
+
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

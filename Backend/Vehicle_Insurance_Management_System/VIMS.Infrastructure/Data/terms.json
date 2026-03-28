@@ -1,0 +1,12 @@
+{
+  "id": "terms_1",
+  "title": "Insurance Terms and Definitions",
+  "definitions": {
+    "idv": "Insured Declared Value is the current value of the vehicle after depreciation and is the maximum payout in total loss",
+    "deductible": "Fixed compulsory amount deducted from claim compensation",
+    "zero_depreciation": "Prevents depreciation deduction in repair claims but not valid for third-party claims",
+    "engine_protection": "Covers engine damage repair costs",
+    "total_loss": "Full IDV payout when a stolen vehicle claim is approved",
+    "constructive_total_loss": "Occurs when repair cost reaches 75% or more of IDV"
+  }
+}

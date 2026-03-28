@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using VIMS.Application.DTOs;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Domain.Entities;
+using VIMS.Domain.Enums;
 
 namespace VIMS.API.Controllers
 {
@@ -74,7 +75,15 @@ namespace VIMS.API.Controllers
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _adminService.GetAllUsersAsync();
-            return Ok(users);
+            var result = users.Select(u => new
+            {
+                u.UserId,
+                u.FullName,
+                u.Email,
+                u.Role,
+                ReferralCode = u.Role == UserRole.Customer ? u.ReferralCode : null
+            });
+            return Ok(result);
         }
 
         [HttpGet("claims")]

@@ -16,6 +16,11 @@ import { jwtDecode } from 'jwt-decode';
 import { extractErrorMessage } from '../../utils/error-handler';
 import { InitiateTransferModalComponent } from './modals/initiate-transfer-modal.component';
 import { AcceptTransferModalComponent } from './modals/accept-transfer-modal.component';
+import {
+  CreateOrderResponse,
+  RazorpayService,
+  RazorpayVerifyPayload
+} from '../../services/razorpay.service';
 
 import { NotificationsComponent } from '../notifications/notifications';
 
@@ -32,6 +37,9 @@ export class CustomerDashboard implements OnInit {
 
   // Data stores
   customerName = signal('Customer');
+  referralCode = signal('');
+  walletBalance = signal(0);
+  referralHistory = signal<any[]>([]);
   userRole = signal('Customer');
   policies = signal<any[]>([]);
   claims = signal<any[]>([]);
@@ -326,8 +334,13 @@ export class CustomerDashboard implements OnInit {
   transferError = signal('');
   transferSuccess = signal('');
   pendingAcceptTransfer = signal<any>(null);
+  showCancelPolicyModal = signal(false);
+  cancelPolicyTargetId = signal<number | null>(null);
+  cancelPolicyTargetNumber = signal<string | null>(null);
+  cancelPolicyInput = '';
 
   private customerService = inject(CustomerService);
+  private razorpayService = inject(RazorpayService);
   private authService = inject(AuthService);
   private router = inject(Router);
 
@@ -348,13 +361,20 @@ export class CustomerDashboard implements OnInit {
           'Customer';
         this.customerName.set(name);
 
+        const code =
+          decodedToken.ReferralCode ||
+          decodedToken.referralCode ||
+          '';
+        this.referralCode.set(code);
+
         const role = this.authService.getRoleFromStoredToken();
         if (role === 'Admin') this.userRole.set('Executive Admin');
         else if (role === 'Agent') this.userRole.set('Agent');
         else if (role === 'ClaimsOfficer') this.userRole.set('Claims Officer');
         else this.userRole.set(role || 'Customer');
       } catch (error) {
-        console.error('Failed to parse token for name', error);
+        this.customerName.set('Customer');
+        this.referralCode.set('');
       }
     }
   }
@@ -372,6 +392,7 @@ export class CustomerDashboard implements OnInit {
     if (tab === 'applied') this.loadApplications();
     if (tab === 'payments') this.loadPayments();
     if (tab === 'transfers') { this.loadIncomingTransfers(); this.loadOutgoingTransfers(); }
+    if (tab === 'settings') this.loadReferralAndWalletData();
   }
 
   loadOverviewData() {
@@ -381,12 +402,39 @@ export class CustomerDashboard implements OnInit {
     this.loadPayments();
     this.loadIncomingTransfers();
     this.loadOutgoingTransfers();
+    this.loadReferralAndWalletData();
+  }
+
+  loadReferralAndWalletData() {
+    this.customerService.getWalletBalance().subscribe({
+      next: (res) => this.walletBalance.set(Number(res?.balance || 0)),
+      error: () => this.walletBalance.set(0)
+    });
+
+    this.customerService.getReferralHistory().subscribe({
+      next: (res) => this.referralHistory.set(Array.isArray(res) ? res : []),
+      error: () => this.referralHistory.set([])
+    });
+  }
+
+  applyReferralCode(code: string) {
+    this.customerService.applyReferralCode(code).subscribe({
+      next: () => {
+        this.successMessage.set('Referral code applied successfully. Discount will apply on your first premium payment.');
+        this.loadReferralAndWalletData();
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err: any) => {
+        this.errorMessage.set(extractErrorMessage(err));
+        this.autoHideToast();
+      }
+    });
   }
 
   loadPayments() {
     this.customerService.getMyPayments().subscribe({
       next: (res) => this.payments.set(res),
-      error: (err) => console.error(err)
+      error: () => {}
     });
   }
 
@@ -399,7 +447,6 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
-        console.error('Download failed', err);
         this.router.navigate(['/error'], {
           state: { status: err.status, message: "Failed to download invoice.", title: 'Download Error' }
         });
@@ -416,7 +463,6 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
-        console.error('Download failed', err);
         this.errorMessage.set("Failed to download settlement report.");
         this.autoHideToast();
       }
@@ -432,7 +478,6 @@ export class CustomerDashboard implements OnInit {
         setTimeout(() => this.successMessage.set(''), 3000);
       },
       error: (err: any) => {
-        console.error('Download failed', err);
         this.errorMessage.set("Failed to download policy contract.");
         this.autoHideToast();
       }
@@ -443,21 +488,21 @@ export class CustomerDashboard implements OnInit {
 
     this.customerService.getMyPolicies().subscribe({
       next: (res) => this.policies.set(res),
-      error: (err) => console.error(err)
+      error: () => {}
     });
   }
 
   loadClaims() {
     this.customerService.getMyClaims().subscribe({
       next: (res) => this.claims.set(res),
-      error: (err) => console.error(err)
+      error: () => {}
     });
   }
 
   loadApplications() {
     this.customerService.getMyApplications().subscribe({
       next: (res) => this.applications.set(res),
-      error: (err) => console.error(err)
+      error: () => {}
     });
   }
 
@@ -521,7 +566,7 @@ export class CustomerDashboard implements OnInit {
           this.plans.set(res);
           this.onClaimPolicyChange();
         },
-        error: (err) => console.error(err)
+        error: () => {}
       });
     } else {
       this.onClaimPolicyChange();
@@ -604,7 +649,7 @@ export class CustomerDashboard implements OnInit {
   viewPolicyDetails(policyId: number) {
     this.customerService.getPolicy(policyId).subscribe({
       next: (res) => this.selectedPolicy.set(res),
-      error: (err) => console.error(err)
+      error: () => {}
     });
   }
 
@@ -613,16 +658,53 @@ export class CustomerDashboard implements OnInit {
   }
 
   payPremium(policyId: number) {
-    this.customerService.payAnnualPremium(policyId).subscribe({
-      next: () => {
-        this.successMessage.set("Premium paid successfully!");
-        this.loadPolicies();
-        if (this.selectedPolicy()?.policyId === policyId) {
-          this.viewPolicyDetails(policyId);
+    this.razorpayService.createOrder(policyId).subscribe({
+      next: (orderData: CreateOrderResponse) => {
+        if (!orderData?.orderId || !orderData?.keyId) {
+          this.errorMessage.set('Invalid payment order received from server. Please retry.');
+          this.autoHideToast();
+          return;
         }
-        setTimeout(() => this.successMessage.set(''), 3000);
+
+        const onSuccess = (response: any) => {
+          const verifyData: RazorpayVerifyPayload = {
+            policyId: policyId,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature
+          };
+
+          this.razorpayService.verifyPayment(verifyData).subscribe({
+            next: (res: any) => {
+              const discountAmount = Number(res?.discountAmount || orderData.discountAmount || 0);
+              const discountMessage = discountAmount > 0
+                ? ` Referral discount applied: Rs ${discountAmount.toFixed(2)}.`
+                : '';
+              this.successMessage.set(`Premium paid successfully via Razorpay!${discountMessage}`);
+              this.loadOverviewData();
+              if (this.selectedPolicy()?.policyId === policyId) {
+                this.viewPolicyDetails(policyId);
+              }
+              setTimeout(() => this.successMessage.set(''), 3000);
+            },
+            error: (err: any) => {
+              this.errorMessage.set("Payment verification failed. Please contact support.");
+              this.autoHideToast();
+            }
+          });
+        };
+
+        this.razorpayService
+          .launchCheckout(orderData, onSuccess, (message: string) => {
+            this.errorMessage.set(message);
+            this.autoHideToast();
+          })
+          .catch((error: any) => {
+            this.errorMessage.set(error?.message || 'Unable to start payment checkout.');
+            this.autoHideToast();
+          });
       },
-      error: (err) => {
+      error: (err: any) => {
         this.errorMessage.set(extractErrorMessage(err));
         this.autoHideToast();
       }
@@ -630,23 +712,61 @@ export class CustomerDashboard implements OnInit {
   }
 
   cancelPolicy(policyId: number) {
-    if (confirm("Are you sure you want to cancel this policy?")) {
-      this.customerService.cancelPolicy(policyId).subscribe({
-        next: () => {
-          this.successMessage.set("Policy cancelled.");
-          this.loadPolicies();
-          if (this.selectedPolicy()?.policyId === policyId) {
-            this.viewPolicyDetails(policyId);
-          }
-          this.renewingPolicyId.set(null);
-          setTimeout(() => this.successMessage.set(''), 3000);
-        },
-        error: (err) => {
-          this.errorMessage.set(extractErrorMessage(err));
-          this.autoHideToast();
-        }
-      });
+    const policy = this.policies().find((p: any) => p.policyId === policyId)
+      || (this.selectedPolicy() && this.selectedPolicy().policyId === policyId ? this.selectedPolicy() : null);
+    const policyNumber = policy?.policyNumber;
+
+    if (!policyNumber) {
+      this.errorMessage.set('Unable to resolve policy number for confirmation. Please refresh and try again.');
+      this.autoHideToast();
+      return;
     }
+
+    this.cancelPolicyTargetId.set(policyId);
+    this.cancelPolicyTargetNumber.set(policyNumber);
+    this.cancelPolicyInput = '';
+    this.showCancelPolicyModal.set(true);
+  }
+
+  closeCancelPolicyModal() {
+    this.showCancelPolicyModal.set(false);
+    this.cancelPolicyTargetId.set(null);
+    this.cancelPolicyTargetNumber.set(null);
+    this.cancelPolicyInput = '';
+  }
+
+  confirmCancelPolicy() {
+    const policyId = this.cancelPolicyTargetId();
+    const policyNumber = this.cancelPolicyTargetNumber();
+    if (!policyId || !policyNumber) {
+      this.closeCancelPolicyModal();
+      return;
+    }
+
+    const confirmationToken = `delete-policy-${policyNumber}`;
+    if (this.cancelPolicyInput.trim() !== confirmationToken) {
+      this.errorMessage.set(`Confirmation failed. Type exactly: ${confirmationToken}`);
+      this.autoHideToast();
+      return;
+    }
+
+    this.closeCancelPolicyModal();
+
+    this.customerService.cancelPolicy(policyId).subscribe({
+      next: () => {
+        this.successMessage.set("Policy cancelled.");
+        this.loadPolicies();
+        if (this.selectedPolicy()?.policyId === policyId) {
+          this.viewPolicyDetails(policyId);
+        }
+        this.renewingPolicyId.set(null);
+        setTimeout(() => this.successMessage.set(''), 3000);
+      },
+      error: (err) => {
+        this.errorMessage.set(extractErrorMessage(err));
+        this.autoHideToast();
+      }
+    });
   }
 
   startRenew(policyId: number) {
@@ -659,7 +779,7 @@ export class CustomerDashboard implements OnInit {
     if (!this.plans() || this.plans().length === 0) {
       this.customerService.getAllPolicyPlans().subscribe({
         next: (res) => this.plans.set(res),
-        error: (err) => console.error(err)
+        error: () => {}
       });
     }
   }
@@ -851,18 +971,14 @@ export class CustomerDashboard implements OnInit {
           latitude: position.coords.latitude
         };
 
-        console.log('Sending Roadside Assistance Request:', data);
-
         this.customerService.requestRoadsideAssistance(data).subscribe({
           next: (res: any) => {
             // Display message from response or a default one
-            console.log('n8n response:', res);
             const msg = res?.message || res?.msg || 'Assistance is on the way! We have received your location.';
             this.successMessage.set(msg);
             setTimeout(() => this.successMessage.set(''), 7000);
           },
           error: (err: any) => {
-            console.error('Roadside assistance failed', err);
             // Even if n8n returns an error, we might want to tell the user something went wrong
             this.errorMessage.set('Could not contact roadside assistance. Please try again or call support.');
             this.autoHideToast();
@@ -870,7 +986,6 @@ export class CustomerDashboard implements OnInit {
         });
       },
       (error) => {
-        console.error('Geolocation error', error);
         this.errorMessage.set('Unable to retrieve your location. Please check your browser permissions.');
         this.autoHideToast();
       }

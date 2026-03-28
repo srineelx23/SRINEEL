@@ -6,6 +6,7 @@ namespace VIMS.Domain.Enums
         DebitCard,
         NetBanking,
         UPI,
-        Wallet
+        Wallet,
+        Online
     }
 }

@@ -27,6 +27,7 @@ namespace VIMS.API.Controllers
         private readonly IInvoiceService _invoiceService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IGarageRepository _garageRepository;
+        private readonly IReferralService _referralService;
 
         public CustomerController(
             ICustomerService customerService, 
@@ -37,7 +38,8 @@ namespace VIMS.API.Controllers
             VIMS.Application.Interfaces.Repositories.IPaymentRepository paymentRepository, 
             IInvoiceService invoiceService, 
             IHttpClientFactory httpClientFactory,
-            IGarageRepository garageRepository)
+            IGarageRepository garageRepository,
+            IReferralService referralService)
         {
             _customerService = customerService;
             _policyPlanService = policyPlanService;
@@ -48,6 +50,7 @@ namespace VIMS.API.Controllers
             _invoiceService = invoiceService;
             _httpClientFactory = httpClientFactory;
             _garageRepository = garageRepository;
+            _referralService = referralService;
         }
 
         [HttpGet("invoice/download/{paymentId}")]
@@ -93,6 +96,8 @@ namespace VIMS.API.Controllers
             if (policy == null || policy.CustomerId != customerId)
                 return NotFound(new { message = "Policy not found" });
 
+            var amountDue = policy.PremiumAmount;
+
             // Detect if this is a transfer fee pending payment (same logic as GetMyPolicies)
             bool isFeePending = false;
             var isTransfer = policy.Vehicle?.VehicleApplication?.IsTransfer == true;
@@ -100,17 +105,37 @@ namespace VIMS.API.Controllers
             {
                 var payments = await _paymentRepository.GetByPolicyIdAsync(policy.PolicyId);
                 isFeePending = payments == null || !payments.Any();
+                if (isFeePending)
+                {
+                    amountDue = 500;
+                }
             }
+
+            bool canPreviewReferral = !isFeePending && policy.Status == VIMS.Domain.Enums.PolicyStatus.PendingPayment;
+            var referralPreview = canPreviewReferral
+                ? await _referralService.GetDiscountPreviewAsync(customerId, policy.PolicyId, amountDue)
+                : new ReferralDiscountPreviewDTO
+                {
+                    BaseAmount = amountDue,
+                    FinalAmount = amountDue,
+                    DiscountAmount = 0,
+                    IsEligible = false,
+                    Reason = "Referral discount is not available."
+                };
 
             var result = new
             {
                 policyId = policy.PolicyId,
                 policyNumber = policy.PolicyNumber,
                 status = policy.Status.ToString(),
-                premiumAmount = isFeePending ? 500 : policy.PremiumAmount,
+                premiumAmount = amountDue,
                 invoiceAmount = policy.InvoiceAmount,
                 idv = policy.IDV, // Added missing IDV
                 isFeePending,
+                isReferralDiscountEligible = referralPreview.IsEligible,
+                referralDiscountAmount = referralPreview.DiscountAmount,
+                premiumAfterReferralDiscount = referralPreview.FinalAmount,
+                referralDiscountReason = referralPreview.Reason,
                 startDate = policy.StartDate,
                 endDate = policy.EndDate,
                 vehicle = policy.Vehicle == null ? null : new { 
@@ -276,6 +301,13 @@ namespace VIMS.API.Controllers
             // Pricing service expects the DTO and plan per its interface signature
             var result = _pricingService.CalculateAnnualPremium(dto, plan, false);
 
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var referralPreview = await _referralService.GetDiscountPreviewForQuoteAsync(userId, result.Premium);
+            result.IsReferralDiscountEligible = referralPreview.IsEligible;
+            result.ReferralDiscountAmount = referralPreview.DiscountAmount;
+            result.PremiumAfterReferralDiscount = referralPreview.FinalAmount;
+            result.ReferralDiscountReason = referralPreview.Reason;
+
             return Ok(result);
         }
         [HttpGet("my-policies")]
@@ -289,6 +321,27 @@ namespace VIMS.API.Controllers
             int customerId = int.Parse(userIdValue);
 
             var result = await _customerService.GetMyPoliciesAsync(customerId);
+
+            foreach (var policy in result)
+            {
+                bool canPreviewReferral = !policy.IsFeePending
+                    && string.Equals(policy.Status, "PendingPayment", StringComparison.OrdinalIgnoreCase);
+
+                if (!canPreviewReferral)
+                {
+                    policy.IsReferralDiscountEligible = false;
+                    policy.ReferralDiscountAmount = 0;
+                    policy.PremiumAfterReferralDiscount = policy.PremiumAmount;
+                    policy.ReferralDiscountReason = "Referral discount is not available.";
+                    continue;
+                }
+
+                var preview = await _referralService.GetDiscountPreviewAsync(customerId, policy.PolicyId, policy.PremiumAmount);
+                policy.IsReferralDiscountEligible = preview.IsEligible;
+                policy.ReferralDiscountAmount = preview.DiscountAmount;
+                policy.PremiumAfterReferralDiscount = preview.FinalAmount;
+                policy.ReferralDiscountReason = preview.Reason;
+            }
 
             return Ok(result);
         }

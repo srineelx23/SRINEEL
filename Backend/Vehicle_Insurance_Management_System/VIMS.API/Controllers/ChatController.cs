@@ -28,7 +28,7 @@ namespace VIMS.API.Controllers
 
             try
             {
-                var response = await _chatService.AnswerQueryAsync(request.Query, cancellationToken);
+                var response = await _chatService.AnswerQueryAsync(request.Query, request.History, cancellationToken);
                 return Ok(new { Response = response });
             }
             catch (Exception ex)

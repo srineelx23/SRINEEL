@@ -49,8 +49,10 @@
             <!-- Right Form Side -->
             <div class="login-form-container">
                 <h2 class="form-title">Create Account</h2>
+                <p class="step-caption">Step {{ registerStep() }} of 2</p>
 
                 <form class="vims-form" (ngSubmit)="register()">
+                    @if (registerStep() === 1) {
                     <!-- Names Row -->
                     <div style="display: flex; gap: 16px; width: 100%;">
                         <div class="form-group" style="flex: 1;" [class.field-error]="firstNameTouched() && !firstName">
@@ -131,8 +133,46 @@
                         <span class="field-hint-error">Answer required</span>
                         }
                     </div>
-                    <button type="submit" class="btn-primary full-width-btn" style="margin-top: 8px;">Complete
-                        Registration</button>
+
+                    <button type="button" class="btn-primary full-width-btn" style="margin-top: 8px;" (click)="continueToReferralStep()">
+                        Continue to Referral Benefits
+                    </button>
+                    }
+
+                    @if (registerStep() === 2) {
+                    <div class="referral-step-panel">
+                        <h3 class="referral-step-title">Referral Benefits</h3>
+                        <p class="referral-step-subtitle">Apply a referral code now and unlock first-payment savings.</p>
+
+                        <div class="referral-highlights">
+                            <div class="referral-highlight-card">
+                                <div class="referral-highlight-value">5%</div>
+                                <div class="referral-highlight-label">Discount on first premium</div>
+                            </div>
+                            <div class="referral-highlight-card">
+                                <div class="referral-highlight-value">Rs 1000</div>
+                                <div class="referral-highlight-label">Maximum discount cap</div>
+                            </div>
+                            <div class="referral-highlight-card">
+                                <div class="referral-highlight-value">One-Time</div>
+                                <div class="referral-highlight-label">Valid only once per account</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 8px;">
+                            <input type="text" id="referralCode" name="referralCode" [(ngModel)]="referralCode"
+                                class="form-control" placeholder=" ">
+                            <label for="referralCode" class="floating-label">Referral Code (Optional)</label>
+                        </div>
+
+                        <p class="referral-note">You can skip this and complete registration. You can also apply a referral later from settings before first payment.</p>
+                    </div>
+
+                    <div class="referral-actions-row">
+                        <button type="button" class="btn-secondary-outline" (click)="backToDetailsStep()">Back</button>
+                        <button type="submit" class="btn-primary" style="min-width: 190px;">Complete Registration</button>
+                    </div>
+                    }
                 </form>
             </div>
         </div>

@@ -4,6 +4,12 @@ import { Observable } from 'rxjs';
 
 export interface ChatbotRequest {
     query: string;
+    history?: ChatbotHistoryItem[];
+}
+
+export interface ChatbotHistoryItem {
+    role: 'user' | 'assistant';
+    content: string;
 }
 
 export interface ChatbotResponse {
@@ -17,8 +23,8 @@ export class ChatbotService {
     private http = inject(HttpClient);
     private readonly backendUrl = 'https://localhost:7257/api/chat';
 
-    ask(query: string): Observable<ChatbotResponse> {
-        const payload: ChatbotRequest = { query };
+    ask(query: string, history: ChatbotHistoryItem[] = []): Observable<ChatbotResponse> {
+        const payload: ChatbotRequest = { query, history };
         return this.http.post<ChatbotResponse>(this.backendUrl, payload);
     }
 }

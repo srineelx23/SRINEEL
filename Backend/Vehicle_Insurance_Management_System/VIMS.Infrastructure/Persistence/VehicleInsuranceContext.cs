@@ -26,6 +26,8 @@ namespace VIMS.Infrastructure.Persistence
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<Garage> Garages => Set<Garage>();
         public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<Referral> Referrals => Set<Referral>();
+        public DbSet<Wallet> Wallets => Set<Wallet>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,6 +44,11 @@ namespace VIMS.Infrastructure.Persistence
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.ReferralCode)
+                .IsUnique()
+                .HasFilter("[ReferralCode] IS NOT NULL");
 
             modelBuilder.Entity<Vehicle>()
                 .HasIndex(v => v.RegistrationNumber)
@@ -91,6 +98,39 @@ namespace VIMS.Infrastructure.Persistence
                 .WithMany(p => p.Payments)
                 .HasForeignKey(p => p.PolicyId);
 
+            // ================= REFERRAL/WALLET =================
+            modelBuilder.Entity<User>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(u => u.ReferredByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Referral>()
+                .HasOne(r => r.ReferrerUser)
+                .WithMany(u => u.ReferralsMade)
+                .HasForeignKey(r => r.ReferrerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Referral>()
+                .HasOne(r => r.RefereeUser)
+                .WithMany(u => u.ReferralsReceived)
+                .HasForeignKey(r => r.RefereeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Referral>()
+                .HasIndex(r => r.RefereeUserId)
+                .IsUnique();
+
+            modelBuilder.Entity<Wallet>()
+                .HasOne(w => w.User)
+                .WithOne(u => u.Wallet)
+                .HasForeignKey<Wallet>(w => w.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Wallet>()
+                .HasIndex(w => w.UserId)
+                .IsUnique();
+
             // ================= CLAIM =================
             modelBuilder.Entity<Claims>()
                 .HasOne(c => c.Policy)
@@ -122,6 +162,18 @@ namespace VIMS.Infrastructure.Persistence
 
             modelBuilder.Entity<Payment>()
                 .Property(p => p.Amount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Referral>()
+                .Property(r => r.DiscountAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Referral>()
+                .Property(r => r.RewardAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Wallet>()
+                .Property(w => w.Balance)
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<Claims>()

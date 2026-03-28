@@ -1,0 +1,25 @@
+{
+  "id": "policy_1",
+  "title": "Vehicle Insurance Policy Guide",
+  "eligibility": {
+    "vehicle_types": "Private and Commercial vehicles using Petrol, Diesel, Hybrid, EV, or CNG",
+    "ev_rule": "EV plans are only for EV vehicles",
+    "age_limit": "Vehicles older than 15 years are not eligible",
+    "duration": "Coverage duration is between 1 to 5 years",
+    "discounts": {
+      "commitment_discount": "Up to 12% for 5-year plan",
+      "loyalty_discount": "5% for returning customers"
+    }
+  },
+  "payments_and_renewals": {
+    "activation": "Policy becomes active after first premium payment",
+    "grace_period": "30 days to pay premiums",
+    "cancellation": "Policy is cancelled if payment is not made within 30 days",
+    "renewal_window": "Allowed 30 days before or after expiry",
+    "renewal_condition": "Cannot renew if there is an outstanding balance"
+  },
+  "transfers": {
+    "transfer_fee": "₹500",
+    "conditions": "Transfer not allowed if there is an active claim"
+  }
+}   

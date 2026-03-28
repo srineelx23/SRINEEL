@@ -456,7 +456,7 @@ namespace VIMS.Application.Services
             return result;
         }
 
-        public async Task<string> PayAnnualPremiumAsync(int policyId, int customerId)
+        public async Task<string> PayAnnualPremiumAsync(int policyId, int customerId, decimal? amountOverride = null, PaymentMethod paymentMethod = PaymentMethod.NetBanking, string? transactionReference = null)
         {
             var policy = await _policyRepository.GetByIdAsync(policyId);
 
@@ -477,11 +477,11 @@ namespace VIMS.Application.Services
                 var feePayment = new Payment
                 {
                     PolicyId = policy.PolicyId,
-                    Amount = 500, // Fixed Transfer Fee
+                    Amount = amountOverride ?? 500, // Fixed Transfer Fee
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
-                    TransactionReference = "Transfer Fee",
-                    PaymentMethod = PaymentMethod.NetBanking
+                    TransactionReference = transactionReference ?? "Transfer Fee",
+                    PaymentMethod = paymentMethod
                 };
 
                 // After paying the fee, if the current year was already paid by the old owner, 
@@ -522,11 +522,11 @@ namespace VIMS.Application.Services
                 var payment = new Payment
                 {
                     PolicyId = policy.PolicyId,
-                    Amount = result.Premium,
+                    Amount = amountOverride ?? result.Premium,
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
-                    TransactionReference = "Premium",
-                    PaymentMethod = PaymentMethod.NetBanking
+                    TransactionReference = transactionReference ?? "Premium",
+                    PaymentMethod = paymentMethod
                 };
                 policy.Status = PolicyStatus.Active;
                 policy.CurrentYearNumber = 1;
@@ -587,11 +587,11 @@ namespace VIMS.Application.Services
             var newPayment = new Payment
             {
                 PolicyId = policy.PolicyId,
-                Amount = annualResult.Premium,
+                Amount = amountOverride ?? annualResult.Premium,
                 PaymentDate = DateTime.UtcNow,
                 Status = PaymentStatus.Paid,
-                TransactionReference = "Premium",
-                PaymentMethod = PaymentMethod.NetBanking
+                TransactionReference = transactionReference ?? "Premium",
+                PaymentMethod = paymentMethod
             };
 
             policy.CurrentYearNumber++;

@@ -140,8 +140,12 @@
         @if (activeTab() === 'settings') {
         <app-settings
             [customerName]="customerName"
+            [referralCode]="referralCode"
+            [walletBalance]="walletBalance"
+            [referralHistory]="referralHistory"
             [changePasswordForm]="changePasswordForm"
             [changePwdLoading]="changePwdLoading"
+            (onApplyReferralCode)="applyReferralCode($event)"
             (onChangePassword)="changePassword()">
         </app-settings>
         }
@@ -175,4 +179,27 @@
         (onAccept)="acceptTransfer($event)"
         (onClose)="closeAcceptModal()">
     </app-accept-transfer-modal>
-}
+}
+
+@if (showCancelPolicyModal()) {
+    <div class="policy-cancel-backdrop" (click)="closeCancelPolicyModal()">
+        <div class="policy-cancel-modal" (click)="$event.stopPropagation()">
+            <h3>Confirm Policy Cancellation</h3>
+            <p>
+                This action is permanent. To confirm, type:
+                <strong>delete-policy-{{ cancelPolicyTargetNumber() }}</strong>
+            </p>
+
+            <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="cancelPolicyInput"
+                placeholder="Type confirmation text exactly" />
+
+            <div class="policy-cancel-actions">
+                <button type="button" class="btn-outline" (click)="closeCancelPolicyModal()">Cancel</button>
+                <button type="button" class="btn-primary danger" (click)="confirmCancelPolicy()">Delete Policy</button>
+            </div>
+        </div>
+    </div>
+}

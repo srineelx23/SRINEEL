@@ -35,6 +35,12 @@ namespace VIMS.Infrastructure.Services
                 new Claim(ClaimTypes.Name,customer.FullName),
                 new Claim(ClaimTypes.Role, customer.Role.ToString())
             };
+
+            if (customer.Role == UserRole.Customer && !string.IsNullOrWhiteSpace(customer.ReferralCode))
+            {
+                claims.Add(new Claim("ReferralCode", customer.ReferralCode));
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(

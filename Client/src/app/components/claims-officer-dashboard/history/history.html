@@ -1,25 +1,30 @@
 <div class="tab-content fade-in">
     <header class="page-header">
-        <h1 class="page-title">Processed Claims</h1>
-        <p class="page-subtitle">A historical record of claims you've reviewed.</p>
+        <div class="history-header-row">
+            <div>
+                <h1 class="page-title">Processed Claims</h1>
+                <p class="page-subtitle">A historical record of claims you've reviewed.</p>
+            </div>
+
+            <div class="table-header-actions" style="margin-bottom: 0; display: flex; justify-content: flex-end;">
+                <div class="vims-dropdown-container">
+                    <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
+                        <i class="fa-solid fa-arrow-down-wide-short"></i>
+                        <span>{{ getSortLabel(claimsSortOption()) }}</span>
+                        <i class="fa-solid fa-chevron-down" [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
+                    </div>
+                    @if (showSortDropdown()) {
+                    <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
+                        <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="setSortOption('dateDesc')">Newest First</div>
+                        <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="setSortOption('dateAsc')">Oldest First</div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
     </header>
 
     <div class="glass-panel" style="padding: 24px;">
-        <div class="table-header-actions" style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
-            <div class="vims-dropdown-container">
-                <div class="vims-dropdown-trigger" (click)="showSortDropdown.set(!showSortDropdown())">
-                    <i class="fa-solid fa-arrow-down-wide-short"></i>
-                    <span>{{ getSortLabel(claimsSortOption()) }}</span>
-                    <i class="fa-solid fa-chevron-down" [style.transform]="showSortDropdown() ? 'rotate(180deg)' : 'none'"></i>
-                </div>
-                @if (showSortDropdown()) {
-                <div class="vims-dropdown-menu fade-in" (mouseleave)="showSortDropdown.set(false)">
-                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateDesc'" (click)="setSortOption('dateDesc')">Newest First</div>
-                    <div class="vims-dropdown-item" [class.active]="claimsSortOption() === 'dateAsc'" (click)="setSortOption('dateAsc')">Oldest First</div>
-                </div>
-                }
-            </div>
-        </div>
         @if (reviewedClaims().length === 0) {
         <p style="color: var(--text-muted); padding: 16px;">No history records available.</p>
         }

@@ -15,6 +15,7 @@ using VIMS.Infrastructure.Repositories;
 using VIMS.Infrastructure.Services;
 using VIMS.Infrastructure.Services.RAG;
 using VIMS.Application.Settings;
+using VIMS.Application.Services.AdminAI;
 namespace VIMS.API
 {
     public class Program
@@ -50,35 +51,51 @@ namespace VIMS.API
             builder.Services.AddScoped<IPolicyPlanRepository, PolicyPlanRepository>();
             builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
             builder.Services.AddScoped<VIMS.Application.Interfaces.Repositories.IPaymentRepository, VIMS.Infrastructure.Repositories.PaymentRepository>();
+            builder.Services.AddScoped<IReferralRepository, ReferralRepository>();
+            builder.Services.AddScoped<IWalletRepository, WalletRepository>();
             builder.Services.AddScoped<IPolicyPlanService, PolicyPlanService>();
             builder.Services.AddScoped<IPricingService, PricingService>();
+            builder.Services.AddScoped<IReferralService, ReferralService>();
+            builder.Services.AddScoped<IWalletService, WalletService>();
             builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             builder.Services.AddScoped<IAuditService, AuditService>();
             builder.Services.AddScoped<IPolicyTransferRepository, PolicyTransferRepository>();
             builder.Services.AddScoped<IFileStorageService, FileStorageService>();
             builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+            builder.Services.AddScoped<IRazorpayService, RazorpayPaymentService>();
             builder.Services.AddScoped<IGarageRepository, GarageRepository>();
             builder.Services.AddScoped<IGarageService, GarageService>();
             builder.Services.AddScoped<IOcrService, OcrService>();
             builder.Services.AddScoped<IGroqService, GroqService>();
-            builder.Services.AddScoped<IVectorSearchService, CosineVectorSearchService>();
-            builder.Services.AddScoped<IChatbotService, ChatbotService>();
-            builder.Services.AddScoped<IHybridRuleEngineService, HybridRuleEngineService>();
+            builder.Services.AddSingleton<IVectorSearchService, CosineVectorSearchService>();
+            builder.Services.AddSingleton<IVectorStoreService, InMemoryVectorStoreService>();
             builder.Services.AddHttpClient<IEmbeddingService, EmbeddingService>();
-            builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+            builder.Services.AddHttpClient<IGeminiService, HybridAIService>();
             builder.Services.AddSingleton<IRAGService, RAGService>();
             builder.Services.AddScoped<ISafetyService, SafetyService>();
             builder.Services.AddScoped<IChatService, ChatService>();
-            builder.Services.AddScoped<VertexAgentService>();
-            builder.Services.AddScoped<IVertexAgentService, VertexAgentService>();
-            builder.Services.AddScoped<QueryExecutionService>();
-            builder.Services.AddScoped<IQueryExecutionService, QueryExecutionService>();
 
             builder.Services.AddSignalR();
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IPushNotificationService, VIMS.API.Hubs.PushNotificationService>();
             builder.Services.AddHostedService<VIMS.API.Services.PolicyExpirationWorker>();
+
+            builder.Services.AddScoped<IChatOrchestratorService, ChatOrchestratorService>();
+            builder.Services.AddScoped<IIntentParser, IntentParser>();
+            builder.Services.AddScoped<IContextBuilder, ContextBuilder>();
+            builder.Services.AddScoped<IPromptBuilder, PromptBuilder>();
+            builder.Services.AddScoped<ILlmService, LlmRouterService>();
+            builder.Services.AddHttpClient<IGeminiLlmProvider, VIMS.Infrastructure.Services.AdminAI.GeminiService>();
+            builder.Services.AddHttpClient<IGroqLlmProvider, VIMS.Infrastructure.Services.AdminAI.GroqService>();
+            builder.Services.AddScoped<IClaimService, VIMS.Infrastructure.Services.AdminAI.ClaimService>();
+            builder.Services.AddScoped<IUserService, VIMS.Infrastructure.Services.AdminAI.UserService>();
+            builder.Services.AddScoped<IPolicyService, VIMS.Infrastructure.Services.AdminAI.PolicyService>();
+            builder.Services.AddScoped<IAdminVehicleService, VIMS.Infrastructure.Services.AdminAI.AdminVehicleService>();
+            builder.Services.AddScoped<IAdminPaymentService, VIMS.Infrastructure.Services.AdminAI.AdminPaymentService>();
+            builder.Services.AddScoped<IAdminVehicleApplicationService, VIMS.Infrastructure.Services.AdminAI.AdminVehicleApplicationService>();
+            builder.Services.AddScoped<IAdminGarageService, VIMS.Infrastructure.Services.AdminAI.AdminGarageService>();
+            builder.Services.AddScoped<IAdminNotificationService, VIMS.Infrastructure.Services.AdminAI.AdminNotificationService>();
 
 
 

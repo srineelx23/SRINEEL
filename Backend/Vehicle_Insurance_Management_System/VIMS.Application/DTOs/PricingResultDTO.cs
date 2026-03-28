@@ -18,5 +18,11 @@ namespace VIMS.Application.DTOs
         public decimal RiskLoadingAmount { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal TaxAmount { get; set; }
+
+        // Referral preview fields (shown before checkout/payment)
+        public bool IsReferralDiscountEligible { get; set; }
+        public decimal ReferralDiscountAmount { get; set; }
+        public decimal PremiumAfterReferralDiscount { get; set; }
+        public string? ReferralDiscountReason { get; set; }
     }
 }

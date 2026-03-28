@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, ViewChild, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ChatbotService } from '../../services/chatbot.service';
+import { ChatbotHistoryItem, ChatbotService } from '../../services/chatbot.service';
 
 interface UiMessage {
     sender: 'user' | 'bot';
@@ -154,6 +154,8 @@ export class ChatbotWidgetComponent implements OnInit {
             return;
         }
 
+        const historyForRequest = this.buildHistoryForRequest(query);
+
         this.messages.update(prev => [
             ...prev,
             {
@@ -167,7 +169,7 @@ export class ChatbotWidgetComponent implements OnInit {
         this.inputText.set('');
         this.isSending.set(true);
 
-        this.chatbotService.ask(query).subscribe({
+        this.chatbotService.ask(query, historyForRequest).subscribe({
             next: (res) => {
                 this.messages.update(prev => [
                     ...prev,
@@ -207,5 +209,22 @@ export class ChatbotWidgetComponent implements OnInit {
             if (!container) return;
             container.scrollTop = container.scrollHeight;
         });
+    }
+
+    private buildHistoryForRequest(currentQuery: string): ChatbotHistoryItem[] {
+        const intro = 'I am your Vehicle Insurance Assistant. How can I help you today?';
+        const history = this.messages()
+            .filter(m => {
+                const text = m.text?.trim();
+                return !!text && text !== intro;
+            })
+            .slice(-10)
+            .map<ChatbotHistoryItem>(m => ({
+                role: m.sender === 'bot' ? 'assistant' : 'user',
+                content: m.text.trim()
+            }));
+
+        history.push({ role: 'user', content: currentQuery });
+        return history;
     }
 }

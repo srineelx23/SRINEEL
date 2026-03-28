@@ -10,5 +10,6 @@ namespace VIMS.Application.Interfaces.Repositories
         Task<List<Payment>> GetAllAsync();
         Task<List<Payment>> GetByPolicyIdAsync(int policyId);
         Task<Payment?> GetByIdWithDetailsAsync(int paymentId);
+        Task UpdateAsync(Payment payment);
     }
 }

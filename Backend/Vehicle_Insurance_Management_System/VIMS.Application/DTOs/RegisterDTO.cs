@@ -14,5 +14,6 @@ namespace VIMS.Application.DTOs
         public string? Password { get; set; }
         public string? SecurityQuestion { get; set; }
         public string? SecurityAnswer { get; set; }
+        public string? ReferralCode { get; set; }
     }
 }

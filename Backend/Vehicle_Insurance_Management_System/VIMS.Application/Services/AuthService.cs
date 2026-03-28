@@ -37,16 +37,32 @@ namespace VIMS.Application.Services
                 throw new BadRequestException("Customer Already Exists");
             }
             var user = _mapper.Map<User>(registerDTO);
+            // ReferralCode in RegisterDTO is the inviter's code, not the new user's own code.
+            // Keep user's own ReferralCode empty so it can be generated uniquely after insert.
+            user.ReferralCode = null;
             if (string.IsNullOrEmpty(registerDTO.Password))
             {
                 throw new BadRequestException("Password is required for registration.");
             }
+
+            if (!string.IsNullOrWhiteSpace(registerDTO.ReferralCode))
+            {
+                var referrer = await _authRepository.GetUserByReferralCodeAsync(registerDTO.ReferralCode);
+                if (referrer == null || referrer.Role != UserRole.Customer || !referrer.IsActive)
+                {
+                    throw new BadRequestException("Invalid referral code.");
+                }
+
+                user.ReferredByUserId = referrer.UserId;
+            }
+
             user.PasswordHash = _hasher.HashPassword(user, registerDTO.Password);
 
             if (!string.IsNullOrEmpty(registerDTO.SecurityAnswer)) {
                 user.SecurityAnswerHash = _hasher.HashPassword(user, registerDTO.SecurityAnswer.Trim().ToLower());
             }
             var result = await _authRepository.RegisterCustomerAsync(user);
+            await AssignReferralCodeForCustomerAsync(result);
             await _auditService.LogActionWithUserAsync("CustomerRegister", "Auth", $"Customer {user.FullName} registered.", user.UserId, user.Email, user.Role.ToString(), "User", user.UserId.ToString());
             return result;
         }
@@ -81,11 +97,15 @@ namespace VIMS.Application.Services
             {
                 throw new NotFoundException("User Does Not Exist");
             }
+
             var validCredentials = _hasher.VerifyHashedPassword(customer, customer.PasswordHash, dto.Password);
             if (validCredentials == PasswordVerificationResult.Failed)
             {
                 throw new BadRequestException("Invalid Credentials");
             }
+
+            await AssignReferralCodeForCustomerAsync(customer);
+
             var token = _jwtService.GenerateToken(customer);
             var authResult = new AuthResultDTO
             {
@@ -173,6 +193,27 @@ namespace VIMS.Application.Services
 
             await _authRepository.UpdateUserAsync(user);
             await _auditService.LogActionWithUserAsync("CompleteFirstLogin", "Auth", $"User completed first login: {user.Email}", user.UserId, user.Email, user.Role.ToString());
+        }
+
+        private async Task AssignReferralCodeForCustomerAsync(User user)
+        {
+            if (user.Role != UserRole.Customer || !string.IsNullOrWhiteSpace(user.ReferralCode))
+            {
+                return;
+            }
+
+            user.ReferralCode = BuildCustomerReferralCode(user.FullName, user.UserId);
+            await _authRepository.UpdateUserAsync(user);
+        }
+
+        private static string BuildCustomerReferralCode(string fullName, int userId)
+        {
+            var firstWord = (fullName ?? string.Empty)
+                .Trim()
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault() ?? "USER";
+
+            return $"{firstWord.ToUpperInvariant()}{userId}";
         }
     }
 }

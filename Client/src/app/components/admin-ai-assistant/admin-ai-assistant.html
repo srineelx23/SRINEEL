@@ -1,0 +1,84 @@
+<button class="admin-console-trigger" (click)="togglePanel()" *ngIf="!isOpen()" aria-label="Ask Athena">
+  <span class="pulse-dot"></span>
+  <span class="trigger-text">Ask Athena</span>
+</button>
+
+<div class="spotlight-overlay" *ngIf="isOpen()">
+  <div class="overlay-haze"></div>
+  <section
+    class="admin-console"
+    [style.left.px]="position().x"
+    [style.top.px]="position().y"
+    [style.width.px]="size().width"
+    [style.height.px]="size().height">
+    <header class="console-header" (mousedown)="startDrag($event)">
+      <div class="brand-block">
+        <h3>Athena</h3>
+      </div>
+      <div class="header-actions">
+        <button class="close-btn" (click)="togglePanel()">ESC</button>
+      </div>
+    </header>
+
+    <div class="console-body">
+      <div class="console-main">
+        <div class="console-stream" #scrollContainer>
+          <article
+            class="console-message"
+            *ngFor="let msg of messages(); trackBy: trackByIndex"
+            [class.admin]="msg.sender === 'admin'"
+            [class.assistant]="msg.sender === 'assistant'">
+            <div class="message-head">
+              <p class="message-role">{{ msg.sender === 'admin' ? 'ADMIN' : 'ATHENA' }}</p>
+              <p class="message-time">{{ formatTime(msg.timestamp) }}</p>
+            </div>
+
+            <p class="message-text">{{ msg.text }}</p>
+
+            <div class="message-meta" *ngIf="msg.sender === 'assistant'">
+              <span *ngIf="msg.confidence">Confidence: {{ msg.confidence }}</span>
+              <span *ngIf="msg.rulesApplied && msg.rulesApplied.length > 0">
+                Rules: {{ msg.rulesApplied.slice(0, 3).join(', ') }}
+              </span>
+            </div>
+          </article>
+
+          <article class="console-message assistant" *ngIf="isSending()">
+            <div class="message-head">
+              <p class="message-role">ATHENA</p>
+              <p class="message-time">processing</p>
+            </div>
+            <p class="message-text loading">Analyzing DB, eligibility rules, payments, and policy constraints...</p>
+          </article>
+        </div>
+
+        <div class="prompt-strip" aria-label="Suggested prompts">
+          <div class="prompt-strip-list">
+            <button class="prompt-chip" (click)="applyPrompt('What is the total premium collected so far?')">Total Premium</button>
+            <button class="prompt-chip" (click)="applyPrompt('Show suspicious referral patterns this week.')">Referral Risk</button>
+            <button class="prompt-chip" (click)="applyPrompt('List claims rejected today with reason summary.')">Rejected Claims</button>
+            <button class="prompt-chip" (click)="applyPrompt('Which policies are expiring in the next 30 days?')">Expiring Policies</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="console-input-row">
+      <input
+        #adminInput
+        type="text"
+        [(ngModel)]="question"
+        (keydown.enter)="sendQuestion()"
+        [disabled]="isSending()"
+        placeholder="Ask Athena: Why was claim 105 rejected?"
+        class="console-input" />
+      <button class="send-btn" (click)="sendQuestion()" [disabled]="isSending()">Analyze</button>
+    </footer>
+
+    <div class="console-footer">
+      Press Ctrl + K to toggle. Athena responses are grounded in live admin data and rule context.
+    </div>
+
+    <div class="resize-handle" (mousedown)="startResize($event)"></div>
+  </section>
+</div>

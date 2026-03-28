@@ -148,6 +148,14 @@ namespace VIMS.Infrastructure.Services
 
             var breakdown = _pricingService.CalculateAnnualPremium(pricingDto, plan, policy.IsRenewed);
 
+            // Referral discount is applied at payment time (if eligible), so derive it from
+            // quote premium versus actual collected amount for this premium invoice.
+            decimal referralDiscountApplied = 0;
+            if (!isTransfer && payment.Amount > 0 && breakdown.Premium > payment.Amount)
+            {
+                referralDiscountApplied = Math.Round(breakdown.Premium - payment.Amount, 2);
+            }
+
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -206,6 +214,7 @@ namespace VIMS.Infrastructure.Services
                             if (breakdown.ODComponent > 0) AddRow("Own Damage Coverage", breakdown.ODComponent);
                             if (breakdown.RiskLoadingAmount > 0) AddRow("Risk & Add-on Loadings", breakdown.RiskLoadingAmount);
                             if (breakdown.DiscountAmount > 0) AddRow("Promotional / Loyalty Discount", breakdown.DiscountAmount, true);
+                            if (referralDiscountApplied > 0) AddRow("Referral Discount (5% First Premium)", referralDiscountApplied, true);
                             if (breakdown.TaxAmount > 0) AddRow("GST", breakdown.TaxAmount);
                         });
 
@@ -215,6 +224,10 @@ namespace VIMS.Infrastructure.Services
                             {
                                 c.Item().Text("TOTAL AMOUNT PAID").FontSize(10).SemiBold().FontColor(MutedColor);
                                 c.Item().Text($"INR {payment.Amount:N2}").FontSize(18).SemiBold().FontColor(PrimaryColor);
+                                if (referralDiscountApplied > 0)
+                                {
+                                    c.Item().Text($"Referral savings: INR {referralDiscountApplied:N2}").FontSize(9).SemiBold().FontColor(SuccessColor);
+                                }
                                 c.Item().Text("Transaction Success").FontSize(9).SemiBold().FontColor(SuccessColor);
                             });
                         });

@@ -70,6 +70,64 @@
                         Member Name</p>
                     <p style="font-size: 1.1rem; font-weight: 600; color: var(--text-main);">{{ customerName() }}</p>
                 </div>
+                @if (referralCode()) {
+                <div>
+                    <p
+                        style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                        ReferralCode</p>
+                    <div class="referral-row">
+                        <p class="referral-value">{{ referralCode() }}</p>
+                        <button type="button" class="copy-referral-btn" (click)="copyReferralCode()">
+                            <i class="fa-regular fa-copy"></i>
+                            Copy
+                        </button>
+                    </div>
+                    @if (copySuccessMessage()) {
+                    <p class="copy-success">{{ copySuccessMessage() }}</p>
+                    }
+                </div>
+                }
+                <div>
+                    <p
+                        style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                        Wallet Balance</p>
+                    <p class="referral-value">Rs {{ walletBalance() | number:'1.2-2' }}</p>
+                </div>
+                @if (!referralCode()) {
+                <div>
+                    <p
+                        style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                        Apply Referral Code</p>
+                    <div class="referral-row">
+                        <input
+                            type="text"
+                            class="form-control"
+                            placeholder="Enter referral code"
+                            [(ngModel)]="applyReferralCodeInput"
+                            style="height: 40px;" />
+                        <button type="button" class="copy-referral-btn" (click)="applyReferralCode()">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+                }
+                @if (referralHistory().length > 0) {
+                <div>
+                    <p
+                        style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                        Referral Rewards</p>
+                    <div style="display: grid; gap: 8px;">
+                        @for (item of referralHistory(); track item.referralId) {
+                        <div style="padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 10px;">
+                            <div style="font-weight: 600; font-size: 0.9rem;">{{ item.refereeName }}</div>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">
+                                {{ item.status }} | Discount Rs {{ item.discountAmount || 0 }} | Reward Rs {{ item.rewardAmount || 0 }}
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
                 <div>
                     <p
                         style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">

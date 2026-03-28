@@ -53,6 +53,12 @@ namespace VIMS.Infrastructure.Repositories
                     .ThenInclude(po => po.Plan)
                 .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
         }
+
+        public async Task UpdateAsync(Payment payment)
+        {
+            _context.Payments.Update(payment);
+            await _context.SaveChangesAsync();
+        }
     }
 }
 

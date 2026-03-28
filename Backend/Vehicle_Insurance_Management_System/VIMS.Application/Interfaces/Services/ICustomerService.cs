@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using VIMS.Application.DTOs;
 using VIMS.Domain.Entities;
+using VIMS.Domain.Enums;
 
 namespace VIMS.Application.Interfaces.Services
 {
@@ -16,7 +17,7 @@ namespace VIMS.Application.Interfaces.Services
         public Task<List<CustomerApplicationDTO>> GetMyApplicationsAsync(int customerId);
         Task<List<CustomerPolicyDTO>> GetMyPoliciesAsync(int customerId);
         public Task<string> RenewPolicyAsync(int policyId,RenewPolicyDTO dto,int customerId);
-        public Task<string> PayAnnualPremiumAsync(int policyId, int customerId);
+        public Task<string> PayAnnualPremiumAsync(int policyId, int customerId, decimal? amountOverride = null, PaymentMethod paymentMethod = PaymentMethod.NetBanking, string? transactionReference = null);
 
         // Policy Transfer
         Task<string> InitiateTransferAsync(InitiateTransferDTO dto, int senderCustomerId);

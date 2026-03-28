@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using VIMS.Application.DTOs;
 using VIMS.Application.Interfaces.Services;
 
 namespace VIMS.Infrastructure.Services.RAG
@@ -12,14 +15,16 @@ namespace VIMS.Infrastructure.Services.RAG
     public class RAGService : IRAGService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly List<DocumentChunk> _chunks;
+        private readonly IVectorStoreService _vectorStoreService;
+        private readonly ILogger<RAGService> _logger;
         private bool _isInitialized = false;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-        public RAGService(IServiceProvider serviceProvider)
+        public RAGService(IServiceProvider serviceProvider, IVectorStoreService vectorStoreService, ILogger<RAGService> logger)
         {
             _serviceProvider = serviceProvider;
-            _chunks = new List<DocumentChunk>();
+            _vectorStoreService = vectorStoreService;
+            _logger = logger;
         }
 
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -33,29 +38,80 @@ namespace VIMS.Infrastructure.Services.RAG
 
                 var dataPath = Path.Combine(AppContext.BaseDirectory, "Data");
                 if (!Directory.Exists(dataPath))
-                    throw new DirectoryNotFoundException($"Data folder not found in output directory: {dataPath}");
+                {
+                    _logger.LogWarning("RAG data folder not found in output directory: {DataPath}", dataPath);
+                    _isInitialized = true;
+                    return;
+                }
 
-                // Use robust DI scope handling
                 using var scope = _serviceProvider.CreateScope();
                 var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
 
-                var files = Directory.GetFiles(dataPath, "*.txt");
-                foreach (var file in files)
-                {
-                    var text = await File.ReadAllTextAsync(file, cancellationToken);
-                    var rawChunks = SplitIntoOptimalChunks(text, 400); 
+                await _vectorStoreService.ClearAsync(cancellationToken);
 
-                    foreach (var chunkText in rawChunks)
+                // 1. Process .txt files
+                var txtFiles = Directory.GetFiles(dataPath, "*.txt");
+                foreach (var file in txtFiles)
+                {
+                    try
                     {
-                        var vector = await embeddingService.GenerateEmbeddingAsync(chunkText, cancellationToken);
-                        if (vector != null && vector.Length > 0)
+                        var text = await File.ReadAllTextAsync(file, cancellationToken);
+                        await IndexTextAsync(text, embeddingService, cancellationToken, "txt", Path.GetFileName(file));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "RAG indexing skipped for file {FileName}", Path.GetFileName(file));
+                    }
+                }
+
+                // 2. Process .json files
+                var jsonFiles = Directory.GetFiles(dataPath, "*.json");
+                foreach (var file in jsonFiles)
+                {
+                    try
+                    {
+                        var text = await File.ReadAllTextAsync(file, cancellationToken);
+                        // For RAG we index the whole JSON structure as a context block for now
+                        // In a bigger system we might iterate properties
+                        await IndexTextAsync(text, embeddingService, cancellationToken, "json", Path.GetFileName(file));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "RAG indexing skipped for file {FileName}", Path.GetFileName(file));
+                    }
+                }
+
+                // 3. Process .jsonl files
+                var jsonlFiles = Directory.GetFiles(dataPath, "*.jsonl");
+                foreach (var file in jsonlFiles)
+                {
+                    try
+                    {
+                        var lines = await File.ReadAllLinesAsync(file, cancellationToken);
+                        foreach (var line in lines)
                         {
-                            _chunks.Add(new DocumentChunk
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+                            try
                             {
-                                Text = chunkText,
-                                Embedding = vector
-                            });
+                                using var doc = JsonDocument.Parse(line);
+                                if (doc.RootElement.TryGetProperty("content", out var contentElem))
+                                {
+                                    await IndexTextAsync(contentElem.GetString() ?? "", embeddingService, cancellationToken, "jsonl", Path.GetFileName(file));
+                                }
+                                else
+                                {
+                                    await IndexTextAsync(line, embeddingService, cancellationToken, "jsonl", Path.GetFileName(file));
+                                }
+                            }
+                            catch
+                            {
+                                await IndexTextAsync(line, embeddingService, cancellationToken, "jsonl", Path.GetFileName(file));
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "RAG indexing skipped for file {FileName}", Path.GetFileName(file));
                     }
                 }
 
@@ -67,11 +123,61 @@ namespace VIMS.Infrastructure.Services.RAG
             }
         }
 
+        private async Task IndexTextAsync(
+            string text,
+            IEmbeddingService embeddingService,
+            CancellationToken ct,
+            string sourceType,
+            string sourceId)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            var rawChunks = SplitIntoOptimalChunks(text, 400); 
+            var entries = new List<(RagChunkDTO Chunk, float[] Embedding)>();
+
+            foreach (var chunkText in rawChunks)
+            {
+                try
+                {
+                    var vector = await embeddingService.GenerateEmbeddingAsync(chunkText, ct);
+                    if (vector != null && vector.Length > 0)
+                    {
+                        entries.Add((
+                            new RagChunkDTO
+                            {
+                                SourceType = sourceType,
+                                SourceId = sourceId,
+                                Text = chunkText,
+                                Similarity = 0f
+                            },
+                            vector));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "RAG chunk skipped for source {SourceType}:{SourceId}", sourceType, sourceId);
+                }
+            }
+
+            if (entries.Count > 0)
+            {
+                await _vectorStoreService.UpsertAsync(entries, ct);
+            }
+        }
+
         public async Task<List<string>> RetrieveAsync(string query, CancellationToken cancellationToken = default)
         {
             if (!_isInitialized)
             {
-                await InitializeAsync(cancellationToken);
+                try
+                {
+                    await InitializeAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "RAG initialization failed. Continuing without rule retrieval.");
+                    return new List<string>();
+                }
             }
 
             if (string.IsNullOrWhiteSpace(query))
@@ -81,31 +187,42 @@ namespace VIMS.Infrastructure.Services.RAG
 
             using var scope = _serviceProvider.CreateScope();
             var embeddingService = scope.ServiceProvider.GetRequiredService<IEmbeddingService>();
+            var vectorSearchService = scope.ServiceProvider.GetRequiredService<IVectorSearchService>();
 
-            var queryVector = await embeddingService.GenerateEmbeddingAsync(query, cancellationToken);
+            float[] queryVector;
+            try
+            {
+                queryVector = await embeddingService.GenerateEmbeddingAsync(query, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "RAG query embedding failed. Returning empty rule set.");
+                return new List<string>();
+            }
             if (queryVector == null || queryVector.Length == 0)
             {
                 return new List<string>();
             }
 
-            var scoredChunks = _chunks
-                .Select(chunk => new
-                {
-                    Chunk = chunk,
-                    Score = ComputeCosineSimilarity(queryVector, chunk.Embedding)
-                })
-                .OrderByDescending(x => x.Score)
-                .Take(3)
-                .Select(x => x.Chunk.Text)
+            var candidates = await _vectorStoreService.GetAllAsync(cancellationToken);
+            var topMatches = vectorSearchService.GetTopMatches(queryVector, candidates, 3);
+
+            var scoredChunks = topMatches
+                .Select(c => c.Text)
                 .ToList();
 
             return scoredChunks;
         }
 
+        public Task<List<string>> SearchAsync(string query, CancellationToken cancellationToken = default)
+        {
+            return RetrieveAsync(query, cancellationToken);
+        }
+
         private List<string> SplitIntoOptimalChunks(string text, int targetSize)
         {
             var chunks = new List<string>();
-            var words = text.Split(new[] { ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var words = text.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             var currentChunk = new List<string>();
             var currentLength = 0;
 
@@ -130,29 +247,5 @@ namespace VIMS.Infrastructure.Services.RAG
             return chunks;
         }
 
-        private float ComputeCosineSimilarity(float[] vectorA, float[] vectorB)
-        {
-            if (vectorA.Length != vectorB.Length)
-                return 0f;
-
-            float dotProduct = 0f;
-            float magnitudeA = 0f;
-            float magnitudeB = 0f;
-
-            for (int i = 0; i < vectorA.Length; i++)
-            {
-                dotProduct += vectorA[i] * vectorB[i];
-                magnitudeA += vectorA[i] * vectorA[i];
-                magnitudeB += vectorB[i] * vectorB[i];
-            }
-
-            magnitudeA = (float)Math.Sqrt(magnitudeA);
-            magnitudeB = (float)Math.Sqrt(magnitudeB);
-
-            if (magnitudeA == 0 || magnitudeB == 0)
-                return 0f;
-
-            return dotProduct / (magnitudeA * magnitudeB);
-        }
     }
 }
