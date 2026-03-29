@@ -56,6 +56,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   userRole = signal('Executive Admin');
   users = signal<any[]>([]);
   policies = signal<any[]>([]);
+  applications = signal<any[]>([]);
   claims = signal<any[]>([]);
   payments = signal<any[]>([]);
   plans = signal<any[]>([]);
@@ -63,6 +64,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
   transfers = signal<any[]>([]);
   showUserDropdown = signal(false);
   showRoleDropdown = signal(false);
+  vehicleTypeBreakdown = signal<{ label: string; count: number; share: number }[]>([]);
+  vehicleTypeRevenueByType = signal<Record<string, number>>({});
 
   // Sorting State
   claimsSortOption = signal('dateDesc');
@@ -142,6 +145,22 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   pendingClaimsCount = computed(() => {
     return this.claims().filter((c: any) => c.status === 'Pending' || c.status === 0).length;
+  });
+
+  pendingApplicationsForApprovalCount = computed(() => {
+    return this.applications().filter((a: any) => {
+      const status = (a?.status ?? a?.Status ?? '').toString().trim().toLowerCase();
+      return status === 'underreview' || status === 'under review' || status === '0';
+    }).length;
+  });
+
+  pendingPremiumAmount = computed(() => {
+    return this.policies()
+      .filter((p: any) => {
+        const status = (p?.status ?? '').toString().trim().toLowerCase();
+        return status === 'pendingpayment' || status === 'pending payment' || status === '1';
+      })
+      .reduce((sum: number, p: any) => sum + Number(p?.premiumAmount || 0), 0);
   });
 
   totalClaimsCount = computed(() => {
@@ -655,35 +674,65 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }]
   };
 
+  applicationApprovalChartOptions = computed<ChartConfiguration['options']>(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    layout: { padding: 10 },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          padding: 20,
+          font: { size: 12, family: "'Outfit', sans-serif", weight: 600 },
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
+        titleColor: this.isDarkMode() ? '#F8FAFC' : '#1E293B',
+        titleFont: { family: "'Outfit', sans-serif", size: 13 },
+        bodyFont: { family: "'Inter', sans-serif", size: 14, weight: 'bold' },
+        bodyColor: this.isDarkMode() ? '#A5B4FC' : '#4F46E5',
+        borderColor: this.isDarkMode() ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+        borderWidth: 1,
+        padding: 16,
+        cornerRadius: 12,
+        usePointStyle: true
+      }
+    }
+  }));
+
+  applicationApprovalChartData: ChartData<'doughnut'> = {
+    labels: ['Pending Agent Approval', 'Approved', 'Rejected'],
+    datasets: [{
+      data: [0, 0, 0],
+      backgroundColor: ['rgba(129, 140, 248, 0.9)', 'rgba(52, 211, 153, 0.9)', 'rgba(251, 113, 133, 0.9)'],
+      hoverBackgroundColor: ['#818CF8', '#34D399', '#FB7185'],
+      borderColor: this.isDarkMode() ? '#070F22' : '#FFFFFF',
+      borderWidth: 0,
+      hoverOffset: 8
+    }]
+  };
+
   vehicleTypeChartOptions = computed<ChartConfiguration['options']>(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    indexAxis: 'y' as const,
-    layout: { padding: { right: 20 } },
-    scales: {
-      x: {
-        beginAtZero: true,
-        grid: { color: this.isDarkMode() ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', drawTicks: false },
-        ticks: {
-          color: this.isDarkMode() ? '#94A3B8' : '#64748B',
-          font: { family: "'Outfit', sans-serif" },
-          padding: 8,
-          callback: (v: any) => '₹' + (v >= 1_00_000 ? (v / 1_00_000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)
-        },
-        border: { display: false }
-      },
-      y: {
-        grid: { display: false },
-        ticks: {
-          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
-          font: { weight: 600, family: "'Inter', sans-serif", size: 12 },
-          padding: 8
-        },
-        border: { display: false }
-      }
-    },
+    cutout: '70%',
+    layout: { padding: 10 },
     plugins: {
-      legend: { display: false },
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: this.isDarkMode() ? '#F1F5F9' : '#1E293B',
+          padding: 20,
+          font: { size: 12, family: "'Outfit', sans-serif", weight: 500 },
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
       tooltip: {
         backgroundColor: this.isDarkMode() ? 'rgba(11, 25, 44, 0.98)' : 'rgba(255,255,255,0.98)',
         titleColor: this.isDarkMode() ? '#5BC0BE' : '#2563EB',
@@ -696,13 +745,18 @@ export class AdminDashboard implements OnInit, OnDestroy {
         cornerRadius: 12,
         usePointStyle: true,
         callbacks: {
-          label: (ctx: any) => ` ${ctx.dataset.label}: ₹${ctx.parsed.x.toLocaleString('en-IN')}`
+          label: (ctx: any) => {
+            const label = String(ctx.label || 'Unknown');
+            const policyCount = Number(ctx.parsed || 0);
+            const revenue = this.vehicleTypeRevenueByType()[label] || 0;
+            return ` ${label}: ${policyCount.toLocaleString('en-IN')} policies | Revenue: ₹${revenue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+          }
         }
       }
     }
   }));
 
-  vehicleTypeChartData: ChartData<'bar'> = {
+  vehicleTypeChartData: ChartData<'doughnut'> = {
     labels: [],
     datasets: []
   };
@@ -893,6 +947,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
       this.rebuildFinancialChart();
       this.rebuildPlanCharts();
     });
+    this.adminService.getAllVehicleApplications().subscribe(res => {
+      this.applications.set(res);
+      this.updateApplicationApprovalChart(res);
+    });
     this.adminService.getAllUsers().subscribe(res => this.users.set(res));
     this.adminService.getAllTransfers().subscribe(res => this.transfers.set(res));
   }
@@ -983,6 +1041,37 @@ export class AdminDashboard implements OnInit, OnDestroy {
     };
   }
 
+  updateApplicationApprovalChart(applicationData: any[]) {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    applicationData.forEach((a: any) => {
+      const rawStatus = (a?.status ?? a?.Status ?? '').toString().trim().toLowerCase();
+      if (rawStatus === 'approved' || rawStatus === '1') {
+        approved++;
+        return;
+      }
+      if (rawStatus === 'rejected' || rawStatus === '2') {
+        rejected++;
+        return;
+      }
+      pending++;
+    });
+
+    this.applicationApprovalChartData = {
+      labels: ['Pending Agent Approval', 'Approved', 'Rejected'],
+      datasets: [{
+        data: [pending, approved, rejected],
+        backgroundColor: ['rgba(129, 140, 248, 0.9)', 'rgba(52, 211, 153, 0.9)', 'rgba(251, 113, 133, 0.9)'],
+        hoverBackgroundColor: ['#818CF8', '#34D399', '#FB7185'],
+        borderColor: this.isDarkMode() ? '#070F22' : '#FFFFFF',
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    };
+  }
+
   rebuildPlanCharts() {
     const plans = this.plans() || [];
     const policies = this.policies() || [];
@@ -1033,6 +1122,22 @@ export class AdminDashboard implements OnInit, OnDestroy {
     const payoutByVType = new Map<string, number>();
     const volByVType = new Map<string, number>();
 
+    // 3b. Aggregate policy volumes (use policies, not claims) for distribution charts
+    policies.forEach((pol: any) => {
+      const polId = String(pol.policyId || pol.PolicyId || '');
+      const pType = policyTypeMap.get(polId) || 'General';
+      const vType = policyVehicleMap.get(polId) || 'General';
+
+      const status = String(pol.status ?? pol.Status ?? '').trim().toLowerCase().replace(/\s+/g, '');
+      const isActive = status === 'active' || status === '2' || status === '0';
+      if (!isActive) {
+        return;
+      }
+
+      volByPType.set(pType, (volByPType.get(pType) || 0) + 1);
+      volByVType.set(vType, (volByVType.get(vType) || 0) + 1);
+    });
+
     // 4. Handle Claim Payout Exclusion
     const claimSignatures = new Set<string>();
     claims.filter((c: any) => {
@@ -1072,9 +1177,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
       const pType = policyTypeMap.get(polId) || 'General';
       const vType = policyVehicleMap.get(polId) || 'General';
 
-      volByPType.set(pType, (volByPType.get(pType) || 0) + 1);
-      volByVType.set(vType, (volByVType.get(vType) || 0) + 1);
-
       const status = String(c.status || c.Status || '').toLowerCase();
       if (status === 'approved' || c.status === 1 || c.Status === 1) {
         const amt = c.approvedAmount || c.ApprovedAmount;
@@ -1086,15 +1188,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     });
 
     // 7. Define Dynamic Labels
-    const allPolicyTypes = Array.from(new Set([
-      ...Array.from(planToTypeMap.values()),
-      ...Array.from(premByPType.keys())
-    ])).sort();
+    const allPolicyTypes = Array.from(volByPType.keys()).sort();
 
-    const allVehicleTypes = Array.from(new Set([
-      ...Array.from(planToVehicleMap.values()),
-      ...Array.from(premByVType.keys())
-    ])).sort();
+    const allVehicleTypes = Array.from(volByVType.keys()).sort();
 
     // 8. Final Chart Construction
     this.policyDistributionChartData = {
@@ -1122,16 +1218,50 @@ export class AdminDashboard implements OnInit, OnDestroy {
       labels: allVehicleTypes,
       datasets: [
         {
-          label: 'Premiums Collected',
-          data: allVehicleTypes.map(t => premByVType.get(t) || 0),
-          backgroundColor: 'rgba(59,130,246,0.9)',
-          hoverBackgroundColor: '#60A5FA',
-          borderRadius: Number.MAX_VALUE,
-          borderSkipped: false,
-          barThickness: 16
+          label: 'Policies',
+          data: allVehicleTypes.map(t => volByVType.get(t) || 0),
+          backgroundColor: [
+            'rgba(59,130,246,0.88)',
+            'rgba(16,185,129,0.88)',
+            'rgba(245,158,11,0.88)',
+            'rgba(244,63,94,0.88)',
+            'rgba(139,92,246,0.88)',
+            'rgba(6,182,212,0.88)',
+            'rgba(99,102,241,0.88)'
+          ],
+          hoverBackgroundColor: [
+            '#60A5FA',
+            '#34D399',
+            '#FBBF24',
+            '#FB7185',
+            '#A78BFA',
+            '#22D3EE',
+            '#818CF8'
+          ],
+          borderColor: 'transparent',
+          borderWidth: 0,
+          hoverOffset: 8
         }
       ]
     };
+
+    const revenueByType: Record<string, number> = {};
+    allVehicleTypes.forEach(type => {
+      revenueByType[type] = premByVType.get(type) || 0;
+    });
+    this.vehicleTypeRevenueByType.set(revenueByType);
+
+    const totalVehiclePolicies = allVehicleTypes.reduce((sum, type) => sum + (volByVType.get(type) || 0), 0);
+    const breakdown = allVehicleTypes
+      .map(type => {
+        const count = volByVType.get(type) || 0;
+        const share = totalVehiclePolicies > 0 ? (count / totalVehiclePolicies) * 100 : 0;
+        return { label: type, count, share };
+      })
+      .filter(item => item.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    this.vehicleTypeBreakdown.set(breakdown);
   }
 
   switchTab(tabId: string) {

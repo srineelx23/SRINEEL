@@ -74,6 +74,11 @@ namespace VIMS.Application.Services.AdminAI
 
             try
             {
+                var history = (request?.History ?? new List<string>())
+                    .Where(h => !string.IsNullOrWhiteSpace(h))
+                    .TakeLast(8)
+                    .ToList();
+
                 var intent = _intentParser.Parse(question);
                 var lowerQuestion = question.ToLowerInvariant();
 
@@ -223,6 +228,19 @@ namespace VIMS.Application.Services.AdminAI
                     }
                 }
 
+                var isPendingPremiumQuestion = ContainsAny(
+                    lowerQuestion,
+                    "pending premium",
+                    "pending premiums",
+                    "pending payment",
+                    "pending payments",
+                    "unpaid premium",
+                    "unpaid premiums",
+                    "premium due",
+                    "due premium",
+                    "overdue premium",
+                    "overdue premiums");
+
                 if (intent.IncludePolicies)
                 {
                     if (intent.PolicyId.HasValue)
@@ -236,7 +254,18 @@ namespace VIMS.Application.Services.AdminAI
                     else if (intent.UserId.HasValue)
                     {
                         var userPolicies = await _policyService.GetPoliciesByUserIdAsync(intent.UserId.Value, cancellationToken);
+                        if (isPendingPremiumQuestion)
+                        {
+                            userPolicies = userPolicies
+                                .Where(p => IsPendingPaymentStatus(p.Status))
+                                .ToList();
+                        }
                         policies.AddRange(userPolicies);
+                    }
+                    else if (isPendingPremiumQuestion)
+                    {
+                        var pendingPolicies = await _policyService.GetPendingPaymentPoliciesAsync(200, cancellationToken);
+                        policies.AddRange(pendingPolicies);
                     }
                     else
                     {
@@ -276,7 +305,7 @@ namespace VIMS.Application.Services.AdminAI
                     referralAbuseSignals,
                     rules);
 
-                var prompt = _promptBuilder.Build(question, context);
+                var prompt = _promptBuilder.Build(question, context, history);
                 var llmResponse = await _llmService.GenerateAsync(prompt, cancellationToken);
 
                 var finalRulesApplied = llmResponse.RulesApplied.Count > 0
@@ -313,6 +342,17 @@ namespace VIMS.Application.Services.AdminAI
         private static bool ContainsAny(string input, params string[] values)
         {
             return values.Any(input.Contains);
+        }
+
+        private static bool IsPendingPaymentStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return false;
+            }
+
+            var normalized = status.Trim().Replace(" ", string.Empty).ToLowerInvariant();
+            return normalized == "pendingpayment" || normalized == "1";
         }
     }
 }

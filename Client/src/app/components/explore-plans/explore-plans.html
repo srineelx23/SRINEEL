@@ -297,6 +297,9 @@
                                         (click)="quoteForm.FuelType = 'Hybrid'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
                                     <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'CNG'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
+                                        CNG</div>
+                                    <div class="vims-option"
                                         (click)="quoteForm.FuelType = 'EV'; showFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Electric Vehicle (EV)</div>
                                 </div>
@@ -436,6 +439,9 @@
                                     <div class="vims-option"
                                         (click)="quoteForm.FuelType = 'Hybrid'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Hybrid System</div>
+                                    <div class="vims-option"
+                                        (click)="quoteForm.FuelType = 'CNG'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
+                                        CNG</div>
                                     <div class="vims-option"
                                         (click)="quoteForm.FuelType = 'EV'; showDirectFuelDropdown.set(false); onQuoteChange(); $event.stopPropagation()">
                                         Electric Vehicle (EV)</div>

@@ -17,7 +17,7 @@ namespace VIMS.Application.Services.AdminAI
 
             var includeClaims = ContainsAny(lower, "claim", "rejected", "rejection", "approved", "fraud");
             var includeUsers = ContainsAny(lower, "user", "customer", "officer", "admin");
-            var includePolicies = ContainsAny(lower, "policy", "eligible", "coverage", "plan");
+            var includePolicies = ContainsAny(lower, "policy", "eligible", "coverage", "plan", "premium", "pending premium", "pending payment", "unpaid premium", "premium due", "overdue premium", "idv");
             var includeReferrals = ContainsAny(lower, "referral", "refer", "abuse", "referrer", "referee", "code");
             var includeVehicles = ContainsAny(lower, "vehicle", "registration", "car", "idv");
             var includePayments = ContainsAny(lower, "payment", "premium", "invoice", "transaction", "collected");

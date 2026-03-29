@@ -514,25 +514,66 @@ namespace VIMS.Application.Services
                 return null;
             }
 
-            var exShowroomMatch = Regex.Match(invoiceText,
-                @"Ex[\s\-]*Showroom\s*Price[^\r\n]*[\r\n]+([^\r\n]+)",
+            var exShowroomLineMatch = Regex.Match(
+                invoiceText,
+                @"(?im)^.*Ex[\s\-]*Showroom\s*Price.*$",
                 RegexOptions.IgnoreCase);
 
-            if (exShowroomMatch.Success)
+            if (exShowroomLineMatch.Success)
             {
-                var nextLine = exShowroomMatch.Groups[1].Value;
-                var priceMatches = Regex.Matches(nextLine, @"-?(?:\d{1,2},)?\d{2},\d{3}|-?\d{5,}");
-                if (priceMatches.Count > 0)
+                var amountFromSameLine = ExtractAmountFromLine(exShowroomLineMatch.Value);
+                if (amountFromSameLine.HasValue)
                 {
-                    var lastNum = priceMatches[priceMatches.Count - 1].Value.Replace(",", "");
-                    if (decimal.TryParse(lastNum, out var amount))
+                    return amountFromSameLine.Value;
+                }
+
+                // Some PDFs place the numeric columns on the next physical line.
+                var tailText = invoiceText.Substring(exShowroomLineMatch.Index);
+                var lines = tailText
+                    .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                    .Skip(1)
+                    .Take(2)
+                    .ToList();
+
+                foreach (var line in lines)
+                {
+                    var amount = ExtractAmountFromLine(line);
+                    if (amount.HasValue)
                     {
-                        return amount;
+                        return amount.Value;
                     }
                 }
             }
 
             return null;
+        }
+
+        private static decimal? ExtractAmountFromLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return null;
+            }
+
+            var matches = Regex.Matches(line, @"-?(?:\d{1,3}(?:,\d{2,3})+|\d{5,})");
+            if (matches.Count == 0)
+            {
+                return null;
+            }
+
+            // Ignore small numeric columns such as HSN/Qty and pick monetary figures.
+            var parsed = matches
+                .Select(m => m.Value.Replace(",", ""))
+                .Select(v => decimal.TryParse(v, out var amt) ? amt : 0m)
+                .Where(amt => amt >= 10000m)
+                .ToList();
+
+            if (parsed.Count == 0)
+            {
+                return null;
+            }
+
+            return parsed.Max();
         }
 
         private static string NormalizeAlnum(string value)

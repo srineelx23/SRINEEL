@@ -23,6 +23,17 @@ namespace VIMS.API.Services
         {
             _logger.LogInformation("PolicyExpirationWorker is starting.");
 
+            try
+            {
+                // Add initial delay to let app fully start before running background job
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("PolicyExpirationWorker startup delay was cancelled.");
+                return;
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 // Run once a day at midnight? Or just run and wait 24h.
@@ -37,12 +48,25 @@ namespace VIMS.API.Services
                         await notificationService.CheckAndNotifyExpiringPoliciesAsync();
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("PolicyExpirationWorker was cancelled.");
+                    break;
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred while checking for expiring policies.");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("PolicyExpirationWorker delay was cancelled.");
+                    break;
+                }
             }
 
             _logger.LogInformation("PolicyExpirationWorker is stopping.");

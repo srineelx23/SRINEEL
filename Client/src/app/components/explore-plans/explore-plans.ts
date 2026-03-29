@@ -518,7 +518,7 @@ export class ExplorePlans implements OnInit {
       errors.push('Registration number is required.');
     } else {
       const normalizedReg = registration.toUpperCase().replace(/\s|-/g, '');
-      const regRegex = /^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$/;
+      const regRegex = /^[A-Z]{2}[A-Z0-9]{1,3}[A-Z]{1,3}\d{1,4}$/;
       if (!regRegex.test(normalizedReg)) {
         errors.push('Invalid vehicle registration number format.');
       }

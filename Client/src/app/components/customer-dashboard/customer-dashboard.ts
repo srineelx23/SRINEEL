@@ -380,6 +380,11 @@ export class CustomerDashboard implements OnInit {
   }
 
   switchTab(tab: string) {
+    if (tab === 'explore-plans') {
+      this.router.navigate(['/explore-plans']);
+      return;
+    }
+
     this.activeTab.set(tab);
     this.renewingPolicyId.set(null); // Reset renew state on tab switch
     if (tab === 'overview') this.loadOverviewData();

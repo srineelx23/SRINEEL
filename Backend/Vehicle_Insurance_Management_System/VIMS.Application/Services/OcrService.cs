@@ -105,49 +105,37 @@ namespace VIMS.Application.Services
 
 
             // 6. Ex-Showroom Price
-            // The PDF table places "Ex-Showroom Price" on one line,
-            // and the numbers (1 | 8703 | 1 | 14,89,000 | 14,89,000) on the NEXT line.
-            // Strategy: match "Ex-Showroom Price" then ALSO grab the next line,
-            // find all numbers with 5+ chars (e.g. "14,89,000") and take the last (= Amount column).
-            var exShowroomMatch = Regex.Match(invoiceText,
-                @"Ex[\s\-]*Showroom\s*Price[^\r\n]*[\r\n]+([^\r\n]+)",
+            // Prefer the amount on the same line as "Ex-Showroom Price".
+            // If OCR splits table cells into the next line, use the immediate following lines.
+            var exShowroomLineMatch = Regex.Match(
+                invoiceText,
+                @"(?im)^.*Ex[\s\-]*Showroom\s*Price.*$",
                 RegexOptions.IgnoreCase);
 
-            if (exShowroomMatch.Success)
+            if (exShowroomLineMatch.Success)
             {
-                // The next line after "Ex-Showroom Price"
-                var nextLine = exShowroomMatch.Groups[1].Value;
-                Console.WriteLine($"[OcrService] Ex-Showroom next line: {nextLine}");
-
-                // Find all numbers (with optional commas) that are large enough to be a price
-                // "-?[\d,]+" with at least one comma OR 5+ digits = price-sized number
-                var priceMatches = Regex.Matches(nextLine, @"-?(?:\d{1,2},)?\d{2},\d{3}|-?\d{5,}");
-                if (priceMatches.Count > 0)
+                var sameLineAmount = ExtractAmountFromLine(exShowroomLineMatch.Value);
+                if (sameLineAmount.HasValue)
                 {
-                    // Last match = Amount column (rightmost in the table: 14,89,000)
-                    var lastNum = priceMatches[priceMatches.Count - 1].Value.Replace(",", "");
-                    Console.WriteLine($"[OcrService] Extracted amount string: {lastNum}");
-                    if (decimal.TryParse(lastNum, out decimal amt))
-                        result.InvoiceAmount = amt;
+                    result.InvoiceAmount = sameLineAmount.Value;
                 }
-            }
-
-            // Fallback: scan entire invoice for "Ex-Showroom" near a big number
-            if (result.InvoiceAmount == 0)
-            {
-                // Look up to 3 lines after "Ex-Showroom Price"
-                var fallbackMatch = Regex.Match(invoiceText,
-                    @"Ex[\s\-]*Showroom\s*Price(?:[^\r\n]*[\r\n]){1,3}",
-                    RegexOptions.IgnoreCase);
-                if (fallbackMatch.Success)
+                else
                 {
-                    var block = fallbackMatch.Value;
-                    var nums = Regex.Matches(block, @"-?(?:\d{1,2},)?\d{2},\d{3}|-?\d{5,}");
-                    if (nums.Count > 0)
+                    var tailText = invoiceText.Substring(exShowroomLineMatch.Index);
+                    var lines = tailText
+                        .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                        .Skip(1)
+                        .Take(2)
+                        .ToList();
+
+                    foreach (var line in lines)
                     {
-                        var lastNum = nums[nums.Count - 1].Value.Replace(",", "");
-                        if (decimal.TryParse(lastNum, out decimal amt))
-                            result.InvoiceAmount = amt;
+                        var amount = ExtractAmountFromLine(line);
+                        if (amount.HasValue)
+                        {
+                            result.InvoiceAmount = amount.Value;
+                            break;
+                        }
                     }
                 }
             }
@@ -241,6 +229,33 @@ namespace VIMS.Application.Services
                 @"(?:Model\s*Name|Vehicle\s*Model|Model|Variant)\s*[:\-]?\s*([A-Za-z0-9\-/ ]{2,})",
                 RegexOptions.IgnoreCase);
             return match.Success ? match.Groups[1].Value.Trim() : string.Empty;
+        }
+
+        private static decimal? ExtractAmountFromLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return null;
+            }
+
+            var matches = Regex.Matches(line, @"-?(?:\d{1,3}(?:,\d{2,3})+|\d{5,})");
+            if (matches.Count == 0)
+            {
+                return null;
+            }
+
+            var parsed = matches
+                .Select(m => m.Value.Replace(",", ""))
+                .Select(v => decimal.TryParse(v, out var amt) ? amt : 0m)
+                .Where(amt => amt >= 10000m)
+                .ToList();
+
+            if (parsed.Count == 0)
+            {
+                return null;
+            }
+
+            return parsed.Max();
         }
 
         private static string NormalizeAlphaNumeric(string value)

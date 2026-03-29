@@ -60,15 +60,6 @@
   pointer-events: none;
 }
 
-.overlay-haze {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 14% 20%, rgba(30, 109, 176, 0.22), transparent 30%),
-    radial-gradient(circle at 80% 18%, rgba(13, 159, 157, 0.16), transparent 32%),
-    linear-gradient(180deg, rgba(6, 17, 29, 0.35), rgba(7, 17, 28, 0.5));
-}
-
 .admin-console {
   position: fixed;
   pointer-events: auto;

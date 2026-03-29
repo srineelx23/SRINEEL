@@ -5,6 +5,7 @@ namespace VIMS.Domain.DTOs
         public int PolicyId { get; set; }
         public string PolicyNumber { get; set; } = string.Empty;
         public int CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
         public int VehicleId { get; set; }
         public int PlanId { get; set; }
         public string Status { get; set; } = string.Empty;

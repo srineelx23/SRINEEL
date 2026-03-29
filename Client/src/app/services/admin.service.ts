@@ -45,6 +45,10 @@ export class AdminService {
         return this.http.get<any[]>(`${this.apiUrl}/policies`);
     }
 
+    getAllVehicleApplications(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.apiUrl}/vehicle-applications`);
+    }
+
     deactivatePlan(id: number): Observable<any> {
         return this.http.put(`${this.apiUrl}/deactivate/${id}`, {});
     }

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 export interface AdminChatRequest {
   question: string;
+  history?: string[];
 }
 
 export interface AdminChatResponse {
@@ -20,8 +21,8 @@ export class AdminChatService {
   private readonly http = inject(HttpClient);
   private readonly backendUrl = 'https://localhost:7257/api/admin/chat';
 
-  ask(question: string): Observable<AdminChatResponse> {
-    const payload: AdminChatRequest = { question };
+  ask(question: string, history: string[] = []): Observable<AdminChatResponse> {
+    const payload: AdminChatRequest = { question, history };
     return this.http.post<AdminChatResponse>(this.backendUrl, payload);
   }
 }

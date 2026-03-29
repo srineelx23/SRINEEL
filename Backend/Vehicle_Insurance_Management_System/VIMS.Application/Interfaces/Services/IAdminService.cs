@@ -22,6 +22,7 @@ namespace VIMS.Application.Interfaces.Services
         Task<List<Claims>> GetAllClaimsAsync();
         Task<List<Payment>> GetAllPaymentsAsync();
         Task<List<Policy>> GetAllPoliciesAsync();
+        Task<List<VehicleApplication>> GetAllVehicleApplicationsAsync();
         Task<List<PolicyTransfer>> GetAllTransfersAsync();
     }
 }

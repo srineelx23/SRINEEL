@@ -21,7 +21,9 @@ export class OverviewComponent {
 
   // Operational Metrics
   activePoliciesCount = input.required<number>();
+  pendingPremiumAmount = input.required<number>();
   pendingClaimsCount = input.required<number>();
+  pendingApplicationsForApprovalCount = input.required<number>();
   totalClaimsCount = input.required<number>();
   totalCustomersCount = input.required<number>();
 
@@ -41,6 +43,10 @@ export class OverviewComponent {
   claimsStatusChartData = input.required<ChartData<'doughnut'>>();
   claimsStatusChartOptions = input.required<ChartConfiguration['options']>();
 
-  vehicleTypeChartData = input.required<ChartData<'bar'>>();
+  applicationApprovalChartData = input.required<ChartData<'doughnut'>>();
+  applicationApprovalChartOptions = input.required<ChartConfiguration['options']>();
+
+  vehicleTypeChartData = input.required<ChartData<'doughnut'>>();
   vehicleTypeChartOptions = input.required<ChartConfiguration['options']>();
+  vehicleTypeBreakdown = input<{ label: string; count: number; share: number }[]>([]);
 }

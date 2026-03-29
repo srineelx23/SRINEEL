@@ -27,6 +27,7 @@ namespace VIMS.Application.Services
         private readonly IClaimsRepository _claimsRepository;
         private readonly IPaymentRepository _paymentRepository;
         private readonly IPolicyRepository _policyRepository;
+        private readonly IVehicleApplicationRepository _vehicleApplicationRepository;
         private readonly IPolicyTransferRepository _transferRepository;
         private readonly IHttpClientFactory _httpClientFactory;
 
@@ -38,6 +39,7 @@ namespace VIMS.Application.Services
             IClaimsRepository claimsRepository,
             IPaymentRepository paymentRepository,
             IPolicyRepository policyRepository,
+            IVehicleApplicationRepository vehicleApplicationRepository,
             IPolicyTransferRepository transferRepository,
             IHttpClientFactory httpClientFactory)
         {
@@ -48,6 +50,7 @@ namespace VIMS.Application.Services
             _claimsRepository = claimsRepository;
             _paymentRepository = paymentRepository;
             _policyRepository = policyRepository;
+            _vehicleApplicationRepository = vehicleApplicationRepository;
             _transferRepository = transferRepository;
             _httpClientFactory = httpClientFactory;
             _passwordHasher = new PasswordHasher<User>();
@@ -171,6 +174,11 @@ namespace VIMS.Application.Services
         public async Task<List<Policy>> GetAllPoliciesAsync()
         {
             return await _policyRepository.GetAllAsync();
+        }
+
+        public async Task<List<VehicleApplication>> GetAllVehicleApplicationsAsync()
+        {
+            return await _vehicleApplicationRepository.GetAllAsync();
         }
 
         public async Task<List<PolicyTransfer>> GetAllTransfersAsync()

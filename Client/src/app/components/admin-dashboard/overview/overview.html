@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- 3 Small Charts Row -->
+    <!-- Compact Distribution Row -->
     <div class="chart-grid-3">
         <!-- 1. Active Policies -->
         <div class="bg-white chart-card-medium">
@@ -113,16 +113,51 @@
             </div>
         </div>
 
-        <!-- 3. Customer Satisfaction Output -->
         <div class="bg-white chart-card-medium">
             <div class="chart-header-row" style="margin-bottom: 24px;">
                 <div>
-                    <div class="title-sm">Total Customers</div>
-                    <div class="text-muted">{{ totalCustomersCount() }} Accounts mapped by class</div>
+                    <div class="title-sm">Agent Approval Queue</div>
+                    <div class="text-muted">{{ pendingApplicationsForApprovalCount() }} applications awaiting agent decision</div>
                 </div>
             </div>
             <div class="chart-canvas-container">
-                <canvas baseChart [data]="vehicleTypeChartData()" [options]="vehicleTypeChartOptions()" [type]="'bar'"></canvas>
+                <canvas baseChart [data]="applicationApprovalChartData()" [options]="applicationApprovalChartOptions()" [type]="'doughnut'"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Vehicle Types Detailed Row -->
+    <div class="bg-white vehicle-types-card">
+        <div class="chart-header-row" style="margin-bottom: 18px;">
+            <div>
+                <div class="title-sm">Vehicle Types</div>
+                <div class="text-muted">Expanded vehicle mix with pending premium amount and count breakdown</div>
+            </div>
+        </div>
+
+        <div class="vehicle-types-row">
+            <div class="chart-canvas-container vehicle-types-chart-wrap large">
+                <canvas baseChart [data]="vehicleTypeChartData()" [options]="vehicleTypeChartOptions()" [type]="'doughnut'"></canvas>
+                <div class="chart-center-overlay">
+                    <span class="center-label">Pending</span>
+                    <span class="center-value">{{ pendingPremiumAmount() | currency:'INR':'symbol':'1.0-0' }}</span>
+                </div>
+            </div>
+
+            <div class="vehicle-breakdown-panel">
+                <p class="breakdown-title">Category Breakdown</p>
+                @for (item of vehicleTypeBreakdown(); track item.label) {
+                <div class="breakdown-item">
+                    <div class="breakdown-head">
+                        <span class="breakdown-name">{{ item.label }}</span>
+                        <span class="breakdown-value">{{ item.count }} ({{ item.share | number:'1.0-0' }}%)</span>
+                    </div>
+                    <div class="breakdown-bar-track">
+                        <div class="breakdown-bar-fill" [style.width.%]="item.share"></div>
+                    </div>
+                </div>
+                }
             </div>
         </div>
     </div>

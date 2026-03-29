@@ -29,7 +29,9 @@
             [netReserve]="netProfit()"
             [lossRatio]="lossRatio()"
             [activePoliciesCount]="totalActivePolicies()"
+            [pendingPremiumAmount]="pendingPremiumAmount()"
             [pendingClaimsCount]="pendingClaimsCount()"
+            [pendingApplicationsForApprovalCount]="pendingApplicationsForApprovalCount()"
             [totalClaimsCount]="totalClaimsCount()"
             [totalCustomersCount]="totalCustomersCount()"
             [recentPolicies]="sortedPolicies()"
@@ -41,8 +43,11 @@
             [policyDistributionChartOptions]="policyDistributionChartOptions()"
             [claimsStatusChartData]="claimsStatusChartData"
             [claimsStatusChartOptions]="claimsStatusChartOptions()"
+            [applicationApprovalChartData]="applicationApprovalChartData"
+            [applicationApprovalChartOptions]="applicationApprovalChartOptions()"
             [vehicleTypeChartData]="vehicleTypeChartData"
-            [vehicleTypeChartOptions]="vehicleTypeChartOptions()">
+            [vehicleTypeChartOptions]="vehicleTypeChartOptions()"
+            [vehicleTypeBreakdown]="vehicleTypeBreakdown()">
         </app-overview>
         }
 

@@ -165,6 +165,21 @@ namespace VIMS.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("vehicle-applications")]
+        public async Task<IActionResult> GetAllVehicleApplications()
+        {
+            var applications = await _adminService.GetAllVehicleApplicationsAsync();
+            var result = applications.Select(a => new
+            {
+                a.VehicleApplicationId,
+                a.AssignedAgentId,
+                Status = a.Status.ToString(),
+                a.CreatedAt,
+                a.IsTransfer
+            });
+            return Ok(result);
+        }
+
         [HttpPut("deactivate/{id}")]
         public async Task<IActionResult> DeactivatePlan(int id)
         {

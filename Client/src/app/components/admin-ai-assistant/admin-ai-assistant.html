@@ -4,7 +4,6 @@
 </button>
 
 <div class="spotlight-overlay" *ngIf="isOpen()">
-  <div class="overlay-haze"></div>
   <section
     class="admin-console"
     [style.left.px]="position().x"
@@ -37,9 +36,6 @@
 
             <div class="message-meta" *ngIf="msg.sender === 'assistant'">
               <span *ngIf="msg.confidence">Confidence: {{ msg.confidence }}</span>
-              <span *ngIf="msg.rulesApplied && msg.rulesApplied.length > 0">
-                Rules: {{ msg.rulesApplied.slice(0, 3).join(', ') }}
-              </span>
             </div>
           </article>
 

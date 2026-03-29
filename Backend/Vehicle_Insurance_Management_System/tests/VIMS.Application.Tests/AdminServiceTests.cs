@@ -22,6 +22,7 @@ namespace VIMS.Application.Tests
         private readonly Mock<IClaimsRepository> _claimsRepoMock;
         private readonly Mock<IPaymentRepository> _paymentRepoMock;
         private readonly Mock<IPolicyRepository> _policyRepoMock;
+        private readonly Mock<IVehicleApplicationRepository> _vehicleApplicationRepoMock;
         private readonly Mock<IPolicyTransferRepository> _transferRepoMock;
         private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
         private readonly AdminService _adminService;
@@ -35,6 +36,7 @@ namespace VIMS.Application.Tests
             _claimsRepoMock = new Mock<IClaimsRepository>();
             _paymentRepoMock = new Mock<IPaymentRepository>();
             _policyRepoMock = new Mock<IPolicyRepository>();
+            _vehicleApplicationRepoMock = new Mock<IVehicleApplicationRepository>();
             _transferRepoMock = new Mock<IPolicyTransferRepository>();
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
 
@@ -46,6 +48,7 @@ namespace VIMS.Application.Tests
                 _claimsRepoMock.Object,
                 _paymentRepoMock.Object,
                 _policyRepoMock.Object,
+                _vehicleApplicationRepoMock.Object,
                 _transferRepoMock.Object,
                 _httpClientFactoryMock.Object);
         }

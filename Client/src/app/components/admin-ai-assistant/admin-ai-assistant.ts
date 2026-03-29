@@ -148,13 +148,17 @@ export class AdminAiAssistantComponent {
     this.isSending.set(true);
     this.scrollToBottom();
 
-    this.adminChatService.ask(text).subscribe({
+    const history = this.messages()
+      .slice(-8)
+      .map(m => `${m.sender === 'admin' ? 'ADMIN' : 'ATHENA'}: ${m.text}`);
+
+    this.adminChatService.ask(text, history).subscribe({
       next: (res) => {
         this.messages.update(prev => [
           ...prev,
           {
             sender: 'assistant',
-            text: res?.answer || 'Insufficient data to answer.',
+            text: this.sanitizeAssistantAnswer(res?.answer) || 'Insufficient data to answer.',
             timestamp: new Date(),
             confidence: res?.confidence || 'LOW',
             rulesApplied: Array.isArray(res?.rulesApplied) ? res.rulesApplied : []
@@ -197,6 +201,19 @@ export class AdminAiAssistantComponent {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  private sanitizeAssistantAnswer(answer?: string): string {
+    const text = (answer || '').trim();
+    if (!text) {
+      return '';
+    }
+
+    // Remove appended rules block formats if the model includes them in plain text.
+    return text
+      .replace(/\n?\s*rules\s*applied\s*:\s*[\s\S]*$/i, '')
+      .replace(/\n?\s*rules\s*:\s*[\s\S]*$/i, '')
+      .trim();
   }
 
   private scrollToBottom(): void {

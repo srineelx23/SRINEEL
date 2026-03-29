@@ -92,7 +92,7 @@ namespace VIMS.Application.Services
             else
             {
                 var regSanitized = dto.RegistrationNumber.ToUpperInvariant().Replace(" ", string.Empty).Replace("-", string.Empty);
-                var regRegex = new Regex(@"^[A-Z]{2}\d{1,2}[A-Z]{1,2}\d{1,4}$");
+                var regRegex = new Regex(@"^[A-Z]{2}[A-Z0-9]{1,3}[A-Z]{1,3}\d{1,4}$");
                 if (!regRegex.IsMatch(regSanitized))
                     validationErrors.Add("Invalid vehicle registration number format.");
             }

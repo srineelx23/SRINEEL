@@ -25,6 +25,7 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     PolicyId = p.PolicyId,
                     PolicyNumber = p.PolicyNumber,
                     CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
                     VehicleId = p.VehicleId,
                     PlanId = p.PlanId,
                     Status = p.Status.ToString(),
@@ -54,6 +55,7 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     PolicyId = p.PolicyId,
                     PolicyNumber = p.PolicyNumber,
                     CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
                     VehicleId = p.VehicleId,
                     PlanId = p.PlanId,
                     Status = p.Status.ToString(),
@@ -84,6 +86,7 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     PolicyId = p.PolicyId,
                     PolicyNumber = p.PolicyNumber,
                     CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
                     VehicleId = p.VehicleId,
                     PlanId = p.PlanId,
                     Status = p.Status.ToString(),
@@ -100,6 +103,130 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleYear = p.Vehicle.Year
                 })
                 .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<PolicyContextDto>> GetPendingPaymentPoliciesAsync(int take = 200, CancellationToken cancellationToken = default)
+        {
+            var safeTake = take <= 0 ? 200 : take;
+            return await _context.Policies
+                .AsNoTracking()
+                .Where(p => p.Status == PolicyStatus.PendingPayment)
+                .OrderByDescending(p => p.StartDate)
+                .Take(safeTake)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    PlanId = p.PlanId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    InvoiceAmount = p.InvoiceAmount,
+                    IDV = p.IDV,
+                    ClaimCount = p.ClaimCount,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleMake = p.Vehicle.Make,
+                    VehicleModel = p.Vehicle.Model,
+                    VehicleYear = p.Vehicle.Year
+                })
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<PolicyContextDto?> GetPolicyWithHighestIdvAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.Policies
+                .AsNoTracking()
+                .Where(p => p.Status != PolicyStatus.Draft)
+                .OrderByDescending(p => p.IDV)
+                .ThenByDescending(p => p.PolicyId)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    PlanId = p.PlanId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    InvoiceAmount = p.InvoiceAmount,
+                    IDV = p.IDV,
+                    ClaimCount = p.ClaimCount,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleMake = p.Vehicle.Make,
+                    VehicleModel = p.Vehicle.Model,
+                    VehicleYear = p.Vehicle.Year
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<PolicyContextDto?> GetPolicyWithHighestPremiumAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.Policies
+                .AsNoTracking()
+                .Where(p => p.Status != PolicyStatus.Draft)
+                .OrderByDescending(p => p.PremiumAmount)
+                .ThenByDescending(p => p.PolicyId)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    PlanId = p.PlanId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    InvoiceAmount = p.InvoiceAmount,
+                    IDV = p.IDV,
+                    ClaimCount = p.ClaimCount,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleMake = p.Vehicle.Make,
+                    VehicleModel = p.Vehicle.Model,
+                    VehicleYear = p.Vehicle.Year
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<int> GetSoldPoliciesCountByPolicyTypeAsync(string policyType, bool includePendingPayment = false, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(policyType))
+            {
+                return 0;
+            }
+
+            var normalizedType = policyType.Trim().Replace(" ", string.Empty).ToLowerInvariant();
+
+            var soldStatuses = new List<PolicyStatus>
+            {
+                PolicyStatus.Active,
+                PolicyStatus.Claimed,
+                PolicyStatus.Expired,
+                PolicyStatus.Cancelled
+            };
+
+            if (includePendingPayment)
+            {
+                soldStatuses.Add(PolicyStatus.PendingPayment);
+            }
+
+            return await _context.Policies
+                .AsNoTracking()
+                .Where(p => soldStatuses.Contains(p.Status))
+                .Where(p => p.Plan != null && p.Plan.PolicyType != null)
+                .Where(p => p.Plan.PolicyType.Replace(" ", "").ToLower() == normalizedType)
+                .CountAsync(cancellationToken);
         }
 
         public async Task<int> GetTotalPoliciesCountAsync(string? planNameContains = null, CancellationToken cancellationToken = default)
