@@ -20,6 +20,7 @@ interface AdminMessage {
 })
 export class AdminAiAssistantComponent {
   private readonly adminChatService = inject(AdminChatService);
+  private readonly sessionId = this.ensureSessionId();
 
   @ViewChild('scrollContainer') scrollContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('adminInput') adminInput?: ElementRef<HTMLInputElement>;
@@ -152,7 +153,7 @@ export class AdminAiAssistantComponent {
       .slice(-8)
       .map(m => `${m.sender === 'admin' ? 'ADMIN' : 'ATHENA'}: ${m.text}`);
 
-    this.adminChatService.ask(text, history).subscribe({
+    this.adminChatService.ask(text, history, this.sessionId).subscribe({
       next: (res) => {
         this.messages.update(prev => [
           ...prev,
@@ -260,5 +261,20 @@ export class AdminAiAssistantComponent {
       position: this.position(),
       size: this.size()
     }));
+  }
+
+  private ensureSessionId(): string {
+    const key = 'vims_admin_ai_session_id';
+    const existing = localStorage.getItem(key);
+    if (existing && existing.trim().length > 0) {
+      return existing;
+    }
+
+    const generated = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+      ? crypto.randomUUID()
+      : `athena-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    localStorage.setItem(key, generated);
+    return generated;
   }
 }

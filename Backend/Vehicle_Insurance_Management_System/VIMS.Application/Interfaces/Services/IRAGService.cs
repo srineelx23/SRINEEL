@@ -7,7 +7,7 @@ namespace VIMS.Application.Interfaces.Services
     public interface IRAGService
     {
         Task InitializeAsync(CancellationToken cancellationToken = default);
-        Task<List<string>> SearchAsync(string query, CancellationToken cancellationToken = default);
-        Task<List<string>> RetrieveAsync(string query, CancellationToken cancellationToken = default);
+        Task<List<string>> SearchAsync(string query, string intentType, CancellationToken cancellationToken = default);
+        Task<List<string>> RetrieveAsync(string query, string intentType, CancellationToken cancellationToken = default);
     }
 }

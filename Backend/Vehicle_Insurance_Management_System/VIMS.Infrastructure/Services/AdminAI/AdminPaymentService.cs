@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using VIMS.Application.Interfaces.Services;
 using VIMS.Domain.DTOs;
+using VIMS.Domain.Enums;
 using VIMS.Infrastructure.Persistence;
 
 namespace VIMS.Infrastructure.Services.AdminAI
@@ -47,30 +48,77 @@ namespace VIMS.Infrastructure.Services.AdminAI
 
         public async Task<PaymentAggregateContextDto> GetPaymentAggregatesAsync(CancellationToken cancellationToken = default)
         {
-            var paidPayments = _context.Payments
+            var premiumPayments = _context.Payments
                 .AsNoTracking()
-                .Where(p => p.Status == VIMS.Domain.Enums.PaymentStatus.Paid);
+                .Where(p => p.PaymentType == PaymentType.Premium);
 
-            var allPayments = _context.Payments.AsNoTracking();
+            var paidPremiumPayments = premiumPayments
+                .Where(p => p.Status == PaymentStatus.Paid);
 
-            var totalPaidAmount = await paidPayments
+            var paidClaimPayouts = _context.Payments
+                .AsNoTracking()
+                .Where(p => p.Status == PaymentStatus.Paid && p.PaymentType == PaymentType.ClaimPayout);
+
+            var paidTransferFees = _context.Payments
+                .AsNoTracking()
+                .Where(p => p.Status == PaymentStatus.Paid && p.PaymentType == PaymentType.TransferFee);
+
+            var totalPremiumPaidAmount = await paidPremiumPayments
                 .Select(p => (decimal?)p.Amount)
                 .SumAsync(cancellationToken) ?? 0m;
 
-            var totalAmountAllStatuses = await allPayments
+            var totalPremiumAllStatuses = await premiumPayments
                 .Select(p => (decimal?)p.Amount)
                 .SumAsync(cancellationToken) ?? 0m;
 
-            var paidPaymentsCount = await paidPayments.CountAsync(cancellationToken);
-            var totalPaymentsCount = await allPayments.CountAsync(cancellationToken);
+            var totalClaimPayoutAmount = await paidClaimPayouts
+                .Select(p => (decimal?)p.Amount)
+                .SumAsync(cancellationToken) ?? 0m;
+
+            var totalTransferFeeAmount = await paidTransferFees
+                .Select(p => (decimal?)p.Amount)
+                .SumAsync(cancellationToken) ?? 0m;
+
+            var paidPremiumPaymentsCount = await paidPremiumPayments.CountAsync(cancellationToken);
+            var totalPremiumPaymentsCount = await premiumPayments.CountAsync(cancellationToken);
+            var claimPayoutCount = await paidClaimPayouts.CountAsync(cancellationToken);
+            var transferFeeCount = await paidTransferFees.CountAsync(cancellationToken);
 
             return new PaymentAggregateContextDto
             {
-                TotalPaidAmount = totalPaidAmount,
-                TotalAmountAllStatuses = totalAmountAllStatuses,
-                PaidPaymentsCount = paidPaymentsCount,
-                TotalPaymentsCount = totalPaymentsCount
+                TotalPaidAmount = totalPremiumPaidAmount,
+                TotalAmountAllStatuses = totalPremiumAllStatuses,
+                PaidPaymentsCount = paidPremiumPaymentsCount,
+                TotalPaymentsCount = totalPremiumPaymentsCount,
+                TotalClaimPayoutAmount = totalClaimPayoutAmount,
+                ClaimPayoutCount = claimPayoutCount,
+                TotalTransferFeeAmount = totalTransferFeeAmount,
+                TransferFeeCount = transferFeeCount
             };
+        }
+
+        public async Task<decimal> GetTotalPaymentAmountAsync(PaymentStatus? statusFilter = null, int? userId = null, CancellationToken cancellationToken = default)
+        {
+            var query = _context.Payments
+                .AsNoTracking()
+                .Where(p => p.PaymentType == PaymentType.Premium)
+                .AsQueryable();
+
+            if (statusFilter.HasValue)
+            {
+                query = query.Where(p => p.Status == statusFilter.Value);
+            }
+            else
+            {
+                query = query.Where(p => p.Status == PaymentStatus.Paid);
+            }
+
+            if (userId.HasValue)
+            {
+                query = query.Where(p => p.Policy.CustomerId == userId.Value);
+            }
+
+            return await query.SumAsync(p => (decimal?)p.Amount, cancellationToken) ?? 0m;
         }
 
         private static System.Linq.Expressions.Expression<Func<VIMS.Domain.Entities.Payment, PaymentContextDto>> Map()
@@ -85,6 +133,7 @@ namespace VIMS.Infrastructure.Services.AdminAI
                 PaymentDate = p.PaymentDate,
                 Status = p.Status.ToString(),
                 PaymentMethod = p.PaymentMethod.ToString(),
+                PaymentType = p.PaymentType.ToString(),
                 TransactionReference = p.TransactionReference
             };
         }

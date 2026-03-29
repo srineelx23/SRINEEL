@@ -33,14 +33,22 @@ namespace VIMS.Infrastructure.Services.AdminAI
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<VehicleContextDto>> GetRecentVehiclesAsync(int take = 50, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<VehicleContextDto>> GetRelevantVehiclesAsync(int take = 10, CancellationToken cancellationToken = default)
         {
-            var safeTake = take <= 0 ? 50 : take;
+            var safeTake = take <= 0 ? 10 : Math.Min(take, 10);
             return await _context.Vehicles
                 .AsNoTracking()
                 .OrderByDescending(v => v.VehicleId)
                 .Take(safeTake)
-                .Select(Map())
+                .Select(v => new VehicleContextDto
+                {
+                    VehicleId = v.VehicleId,
+                    CustomerId = v.CustomerId,
+                    RegistrationNumber = v.RegistrationNumber,
+                    Make = v.Make,
+                    Model = v.Model,
+                    Year = v.Year
+                })
                 .ToListAsync(cancellationToken);
         }
 

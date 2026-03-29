@@ -53,6 +53,8 @@ namespace VIMS.Infrastructure.Services.RAG
                     {
                         var clonedChunk = new RagChunkDTO
                         {
+                            Type = e.Chunk.Type,
+                            Source = e.Chunk.Source,
                             SourceType = e.Chunk.SourceType,
                             SourceId = e.Chunk.SourceId,
                             Text = e.Chunk.Text,

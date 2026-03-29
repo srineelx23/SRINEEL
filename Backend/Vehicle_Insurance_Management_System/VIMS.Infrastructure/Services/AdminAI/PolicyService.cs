@@ -39,7 +39,9 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }
@@ -69,17 +71,24 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IReadOnlyList<PolicyContextDto>> GetRecentPoliciesAsync(int take = 20, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<PolicyContextDto>> GetPoliciesExpiringInRangeAsync(DateTime fromInclusiveUtc, DateTime toInclusiveUtc, int take = 10, CancellationToken cancellationToken = default)
         {
-            var safeTake = take <= 0 ? 20 : take;
+            var safeTake = take <= 0 ? 10 : Math.Min(take, 10);
+            var fromDate = fromInclusiveUtc.Date;
+            var toDate = toInclusiveUtc.Date;
+
             return await _context.Policies
                 .AsNoTracking()
-                .OrderByDescending(p => p.StartDate)
+                .Where(p => p.EndDate.Date >= fromDate && p.EndDate.Date <= toDate)
+                .OrderBy(p => p.EndDate)
+                .ThenByDescending(p => p.PolicyId)
                 .Take(safeTake)
                 .Select(p => new PolicyContextDto
                 {
@@ -100,7 +109,103 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
+                })
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<PolicyContextDto>> GetZeroDepreciationPoliciesWithVehiclesAsync(int take = 10, CancellationToken cancellationToken = default)
+        {
+            var safeTake = take <= 0 ? 10 : Math.Min(take, 10);
+
+            return await _context.Policies
+                .AsNoTracking()
+                .Where(p => p.Plan.ZeroDepreciationAvailable || p.Plan.PolicyType.ToLower().Contains("zerodepreciation") || p.Plan.PlanName.ToLower().Contains("zero depreciation"))
+                .OrderByDescending(p => p.StartDate)
+                .ThenByDescending(p => p.PolicyId)
+                .Take(safeTake)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    PlanId = p.PlanId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    InvoiceAmount = p.InvoiceAmount,
+                    IDV = p.IDV,
+                    ClaimCount = p.ClaimCount,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleMake = p.Vehicle.Make,
+                    VehicleModel = p.Vehicle.Model,
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
+                })
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<decimal> GetTotalPremiumAmountAsync(int? userId = null, bool pendingPaymentOnly = false, CancellationToken cancellationToken = default)
+        {
+            var query = _context.Policies
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (userId.HasValue)
+            {
+                query = query.Where(p => p.CustomerId == userId.Value);
+            }
+
+            if (pendingPaymentOnly)
+            {
+                query = query.Where(p => p.Status == PolicyStatus.PendingPayment);
+            }
+
+            return await query.SumAsync(p => (decimal?)p.PremiumAmount, cancellationToken) ?? 0m;
+        }
+
+        public async Task<IReadOnlyList<PolicyContextDto>> GetRelevantPoliciesAsync(bool pendingPaymentOnly = false, bool highestIdvFirst = false, int take = 10, CancellationToken cancellationToken = default)
+        {
+            var safeTake = take <= 0 ? 10 : Math.Min(take, 10);
+
+            var query = _context.Policies
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (pendingPaymentOnly)
+            {
+                query = query.Where(p => p.Status == PolicyStatus.PendingPayment);
+            }
+
+            query = highestIdvFirst
+                ? query.OrderByDescending(p => p.IDV).ThenByDescending(p => p.PolicyId)
+                : query.OrderByDescending(p => p.StartDate);
+
+            return await query
+                .Take(safeTake)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    IDV = p.IDV,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .ToListAsync(cancellationToken);
         }
@@ -132,7 +237,9 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .ToListAsync(cancellationToken);
         }
@@ -163,7 +270,91 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<PolicyContextDto?> GetPolicyWithHighestIdvByFiltersAsync(string? vehicleType, string? fuelType, string? planType, CancellationToken cancellationToken = default)
+        {
+            var query = _context.Policies
+                .AsNoTracking()
+                .Where(p => p.Status != PolicyStatus.Draft)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(vehicleType))
+            {
+                var vehicleTypeFilter = vehicleType.Trim().ToLowerInvariant();
+
+                if (vehicleTypeFilter == "car")
+                {
+                    query = query.Where(p =>
+                        p.Vehicle.VehicleType.ToLower().Contains("car") ||
+                        p.Vehicle.VehicleType.ToLower().Contains("private") ||
+                        p.Vehicle.VehicleType.ToLower().Contains("four"));
+                }
+                else if (vehicleTypeFilter == "private")
+                {
+                    query = query.Where(p =>
+                        p.Vehicle.VehicleType.ToLower().Contains("private") ||
+                        p.Vehicle.VehicleType.ToLower().Contains("car") ||
+                        p.Vehicle.VehicleType.ToLower().Contains("four"));
+                }
+                else
+                {
+                    query = query.Where(p => p.Vehicle.VehicleType.ToLower().Contains(vehicleTypeFilter));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(fuelType))
+            {
+                var fuelTypeFilter = fuelType.Trim().ToLowerInvariant();
+
+                if (fuelTypeFilter == "electric")
+                {
+                    query = query.Where(p =>
+                        p.Vehicle.FuelType.ToLower().Contains("electric") ||
+                        p.Vehicle.FuelType.ToLower().Contains("ev"));
+                }
+                else
+                {
+                    query = query.Where(p => p.Vehicle.FuelType.ToLower().Contains(fuelTypeFilter));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(planType))
+            {
+                var planTypeFilter = planType.Trim().ToLowerInvariant();
+                query = query.Where(p => p.Plan.PolicyType.ToLower().Contains(planTypeFilter) || p.Plan.PlanName.ToLower().Contains(planTypeFilter));
+            }
+
+            return await query
+                .OrderByDescending(p => p.IDV)
+                .ThenByDescending(p => p.PolicyId)
+                .Select(p => new PolicyContextDto
+                {
+                    PolicyId = p.PolicyId,
+                    PolicyNumber = p.PolicyNumber,
+                    CustomerId = p.CustomerId,
+                    CustomerName = p.Customer.FullName,
+                    VehicleId = p.VehicleId,
+                    PlanId = p.PlanId,
+                    Status = p.Status.ToString(),
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    PremiumAmount = p.PremiumAmount,
+                    InvoiceAmount = p.InvoiceAmount,
+                    IDV = p.IDV,
+                    ClaimCount = p.ClaimCount,
+                    PlanName = p.Plan.PlanName,
+                    VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
+                    VehicleMake = p.Vehicle.Make,
+                    VehicleModel = p.Vehicle.Model,
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }
@@ -194,7 +385,9 @@ namespace VIMS.Infrastructure.Services.AdminAI
                     VehicleRegistrationNumber = p.Vehicle.RegistrationNumber,
                     VehicleMake = p.Vehicle.Make,
                     VehicleModel = p.Vehicle.Model,
-                    VehicleYear = p.Vehicle.Year
+                    VehicleYear = p.Vehicle.Year,
+                    VehicleType = p.Vehicle.VehicleType,
+                    FuelType = p.Vehicle.FuelType
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }

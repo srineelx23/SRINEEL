@@ -9,6 +9,7 @@ using VIMS.Domain.Entities;
 using VIMS.Domain.Enums;
 using Xunit;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace VIMS.Application.Tests
 {
@@ -105,6 +106,49 @@ namespace VIMS.Application.Tests
             Assert.Equal("Claim rejected", result);
             Assert.Equal(ClaimStatus.Rejected, claim.Status);
             _claimsRepoMock.Verify(repo => repo.UpdateAsync(claim), Times.Once);
+        }
+
+        [Fact]
+        public void TryExtractOwnerName_ShouldPreferComplainantDetailsName_FromFirText()
+        {
+            // Arrange
+            const string firText = @"
+Complainant Details
+Name: Lakshmi Venkatesh Iyer
+Address: 12 MG Road, Bengaluru
+
+Incident Description
+The complainant went to retrieve the vehicle from parking and found it missing.";
+
+            // Act
+            var extractedName = InvokeTryExtractOwnerName(firText);
+
+            // Assert
+            Assert.Equal("Lakshmi Venkatesh Iyer", extractedName);
+        }
+
+        [Fact]
+        public void TryExtractOwnerName_ShouldNotReturnNarrativePhrase_WhenNoPersonNameExists()
+        {
+            // Arrange
+            const string firText = @"
+Incident Description
+The complainant went to retrieve the vehicle from parking and reported the incident.";
+
+            // Act
+            var extractedName = InvokeTryExtractOwnerName(firText);
+
+            // Assert
+            Assert.True(string.IsNullOrWhiteSpace(extractedName));
+        }
+
+        private static string InvokeTryExtractOwnerName(string text)
+        {
+            var method = typeof(ClaimsService).GetMethod("TryExtractOwnerName", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var result = method!.Invoke(null, new object[] { text });
+            return result as string ?? string.Empty;
         }
     }
 }

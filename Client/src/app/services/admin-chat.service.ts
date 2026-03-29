@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface AdminChatRequest {
   question: string;
   history?: string[];
+  sessionId?: string;
 }
 
 export interface AdminChatResponse {
@@ -21,8 +22,8 @@ export class AdminChatService {
   private readonly http = inject(HttpClient);
   private readonly backendUrl = 'https://localhost:7257/api/admin/chat';
 
-  ask(question: string, history: string[] = []): Observable<AdminChatResponse> {
-    const payload: AdminChatRequest = { question, history };
+  ask(question: string, history: string[] = [], sessionId?: string): Observable<AdminChatResponse> {
+    const payload: AdminChatRequest = { question, history, sessionId };
     return this.http.post<AdminChatResponse>(this.backendUrl, payload);
   }
 }

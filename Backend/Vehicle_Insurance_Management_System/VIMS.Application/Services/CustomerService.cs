@@ -481,7 +481,8 @@ namespace VIMS.Application.Services
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
                     TransactionReference = transactionReference ?? "Transfer Fee",
-                    PaymentMethod = paymentMethod
+                    PaymentMethod = paymentMethod,
+                    PaymentType = PaymentType.TransferFee
                 };
 
                 // After paying the fee, if the current year was already paid by the old owner, 
@@ -526,7 +527,8 @@ namespace VIMS.Application.Services
                     PaymentDate = DateTime.UtcNow,
                     Status = PaymentStatus.Paid,
                     TransactionReference = transactionReference ?? "Premium",
-                    PaymentMethod = paymentMethod
+                    PaymentMethod = paymentMethod,
+                    PaymentType = PaymentType.Premium
                 };
                 policy.Status = PolicyStatus.Active;
                 policy.CurrentYearNumber = 1;
@@ -591,7 +593,8 @@ namespace VIMS.Application.Services
                 PaymentDate = DateTime.UtcNow,
                 Status = PaymentStatus.Paid,
                 TransactionReference = transactionReference ?? "Premium",
-                PaymentMethod = paymentMethod
+                PaymentMethod = paymentMethod,
+                PaymentType = PaymentType.Premium
             };
 
             policy.CurrentYearNumber++;

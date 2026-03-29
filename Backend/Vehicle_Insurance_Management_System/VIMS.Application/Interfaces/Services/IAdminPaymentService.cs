@@ -1,4 +1,5 @@
 using VIMS.Domain.DTOs;
+using VIMS.Domain.Enums;
 
 namespace VIMS.Application.Interfaces.Services
 {
@@ -8,5 +9,6 @@ namespace VIMS.Application.Interfaces.Services
         Task<IReadOnlyList<PaymentContextDto>> GetPaymentsByPolicyIdAsync(int policyId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<PaymentContextDto>> GetPaymentsByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         Task<PaymentAggregateContextDto> GetPaymentAggregatesAsync(CancellationToken cancellationToken = default);
+        Task<decimal> GetTotalPaymentAmountAsync(PaymentStatus? statusFilter = null, int? userId = null, CancellationToken cancellationToken = default);
     }
 }

@@ -135,8 +135,7 @@ namespace VIMS.Infrastructure.Services
                 .AnyAsync(p => p.Policy.CustomerId == refereeUserId
                                && p.Status == PaymentStatus.Paid
                                && p.Amount > 0
-                               && !EF.Functions.Like(p.TransactionReference ?? string.Empty, "%Transfer%")
-                               && !EF.Functions.Like(p.TransactionReference ?? string.Empty, "%Claim%"));
+                               && p.PaymentType == PaymentType.Premium);
 
             if (hasAnyPaidPremium)
             {
@@ -203,8 +202,7 @@ namespace VIMS.Infrastructure.Services
                 .CountAsync(p => p.Policy.CustomerId == refereeUserId
                                  && p.Status == PaymentStatus.Paid
                                  && p.Amount > 0
-                                 && !EF.Functions.Like(p.TransactionReference ?? string.Empty, "%Transfer%")
-                                 && !EF.Functions.Like(p.TransactionReference ?? string.Empty, "%Claim%"));
+                                 && p.PaymentType == PaymentType.Premium);
 
             if (paidPremiumCount != 1)
             {

@@ -20,5 +20,7 @@ namespace VIMS.Domain.DTOs
         public string VehicleMake { get; set; } = string.Empty;
         public string VehicleModel { get; set; } = string.Empty;
         public int VehicleYear { get; set; }
+        public string VehicleType { get; set; } = string.Empty;
+        public string FuelType { get; set; } = string.Empty;
     }
 }

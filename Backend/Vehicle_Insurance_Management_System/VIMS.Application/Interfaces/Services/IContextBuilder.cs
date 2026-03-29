@@ -12,6 +12,7 @@ namespace VIMS.Application.Interfaces.Services
             IReadOnlyList<VehicleContextDto> vehicles,
             IReadOnlyList<PaymentContextDto> payments,
             PaymentAggregateContextDto? paymentAggregates,
+            IReadOnlyDictionary<string, object> computed,
             IReadOnlyList<VehicleApplicationContextDto> applications,
             IReadOnlyList<GarageContextDto> garages,
             IReadOnlyList<NotificationContextDto> notifications,

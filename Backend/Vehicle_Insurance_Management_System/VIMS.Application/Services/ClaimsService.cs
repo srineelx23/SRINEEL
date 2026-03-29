@@ -287,7 +287,8 @@ namespace VIMS.Application.Services
                 Amount = claim.ApprovedAmount ?? 0m,
                 PaymentDate = DateTime.UtcNow,
                 Status = PaymentStatus.Paid,
-                TransactionReference = $"Claim #{claim.ClaimNumber}"
+                TransactionReference = $"Claim #{claim.ClaimNumber}",
+                PaymentType = PaymentType.ClaimPayout
             };
 
             // create payment via injected repository
@@ -560,20 +561,6 @@ namespace VIMS.Application.Services
                             mismatch = true;
                             reasons.Add($"Third Party vehicle mismatch: Repair bill vehicle ({billRegs[0]}) does not match invoice vehicle ({invoiceRegs[0]}).");
                         }
-
-                        var expectedNormalized = NormalizeVehicleNumber(expectedVehicleReg);
-                        if (!string.IsNullOrEmpty(expectedNormalized))
-                        {
-                            var billMatchesPolicy = billRegs.Any(r => r.Equals(expectedNormalized, StringComparison.OrdinalIgnoreCase));
-                            var invoiceMatchesPolicy = invoiceRegs.Any(r => r.Equals(expectedNormalized, StringComparison.OrdinalIgnoreCase));
-
-                            if (!billMatchesPolicy || !invoiceMatchesPolicy)
-                            {
-                                score += 30;
-                                mismatch = true;
-                                reasons.Add($"Third Party policy mismatch: Expected policy vehicle number {expectedNormalized} was not found in both documents.");
-                            }
-                        }
                     }
 
                     var billOwner = TryExtractOwnerName(document1Text);
@@ -596,21 +583,6 @@ namespace VIMS.Application.Services
                     {
                         score += 35;
                         reasons.Add($"Third Party owner mismatch: Repair bill owner ({billOwner}) does not match invoice owner ({invoiceOwner}).");
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(expectedOwnerName))
-                    {
-                        if (!string.IsNullOrWhiteSpace(billOwner) && !IsOwnerLikelyMatch(billOwner, expectedOwnerName))
-                        {
-                            score += 25;
-                            reasons.Add($"Third Party owner-policy mismatch: Repair bill owner ({billOwner}) does not match policy owner ({expectedOwnerName}).");
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(invoiceOwner) && !IsOwnerLikelyMatch(invoiceOwner, expectedOwnerName))
-                        {
-                            score += 25;
-                            reasons.Add($"Third Party owner-policy mismatch: Invoice owner ({invoiceOwner}) does not match policy owner ({expectedOwnerName}).");
-                        }
                     }
                 }
             }
@@ -744,19 +716,225 @@ namespace VIMS.Application.Services
                 return string.Empty;
             }
 
-            var ownerRegex = new Regex(@"(?im)(?:owner(?:'s)?\s*name|name\s*of\s*owner|insured\s*name|policy\s*holder|complainant\s*name|name\s*of\s*complainant|complainant)\s*[:\-]\s*([A-Za-z][A-Za-z .]{2,80})");
-            var match = ownerRegex.Match(text);
-            if (match.Success)
+            // FIR-first strategy: prefer complainant details section over narrative text.
+            var complainantDetailsBlockRegex = new Regex(@"(?is)\bcomplainant\s+details\b(?<block>.*?)(?:\bstolen\s+vehicle\s+details\b|\bincident\s+description\b|\z)");
+            var complainantDetailsBlockMatch = complainantDetailsBlockRegex.Match(text);
+            if (complainantDetailsBlockMatch.Success)
             {
-                return match.Groups[1].Value.Trim();
+                var blockCandidate = ExtractFirstPersonLikeLine(complainantDetailsBlockMatch.Groups["block"].Value);
+                if (!string.IsNullOrWhiteSpace(blockCandidate))
+                {
+                    return blockCandidate;
+                }
+            }
+
+            // FIR table formats often carry explicit complainant/name labels.
+            var firComplainantRegex = new Regex(@"(?im)^\s*(?:complainant(?:\s*name)?|name\s*of\s*complainant|name)\s*[:\-]?\s*([A-Za-z][A-Za-z .]{2,120})\s*$");
+            foreach (Match firComplainantMatch in firComplainantRegex.Matches(text))
+            {
+                var candidate = SanitizeExtractedName(firComplainantMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Highest-confidence invoice pattern: BILLED TO block, then first valid person-like line.
+            var billedToBlockRegex = new Regex(@"(?is)billed\s*to\s*\(\s*buyer\s*\)\s*(?<block>.*?)(?:\bbilled\s*from\b|\bvehicle\b|\bprice\s*details\b|\z)");
+            var billedToBlockMatch = billedToBlockRegex.Match(text);
+            if (billedToBlockMatch.Success)
+            {
+                var blockCandidate = ExtractFirstPersonLikeLine(billedToBlockMatch.Groups["block"].Value);
+                if (!string.IsNullOrWhiteSpace(blockCandidate))
+                {
+                    return blockCandidate;
+                }
+            }
+
+            // Next-best: explicit owner/insured/complainant labels.
+            var ownerRegex = new Regex(@"(?is)(?:owner(?:'s)?\s*name|name\s*of\s*owner|insured\s*name|policy\s*holder|complainant\s*name|name\s*of\s*complainant)\s*[:\-]?\s*(?:\r?\n\s*)?([A-Za-z][A-Za-z .]{2,120})");
+            foreach (Match ownerMatch in ownerRegex.Matches(text))
+            {
+                var candidate = SanitizeExtractedName(ownerMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Narrative FIR line support: "the complainant, <Name>, states/reported..."
+            var narrativeComplainantRegex = new Regex(@"(?is)\bcomplainant\s*,?\s*([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+){1,3})\s*,?\s*(?:states?|reported|went|informed|submitted)\b");
+            var narrativeComplainantMatch = narrativeComplainantRegex.Match(text);
+            if (narrativeComplainantMatch.Success)
+            {
+                var candidate = SanitizeExtractedName(narrativeComplainantMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Table-like OCR sometimes flattens rows into "Owner Name <value>" without separators.
+            var ownerInlineRegex = new Regex(@"(?im)^\s*(?:owner\s*name|insured\s*name)\s+([A-Za-z][A-Za-z .]{2,120})\s*$");
+            foreach (Match ownerInlineMatch in ownerInlineRegex.Matches(text))
+            {
+                var candidate = SanitizeExtractedName(ownerInlineMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Generic fallback: "Billed To" with optional buyer marker.
+            var billedToRegex = new Regex(@"(?is)(?:billed\s*to(?:\s*\(\s*buyer\s*\))?)\s*[:\-]?\s*(?:\r?\n\s*)?([A-Za-z][A-Za-z .]{2,120})");
+            foreach (Match billedToMatch in billedToRegex.Matches(text))
+            {
+                var candidate = SanitizeExtractedName(billedToMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Flattened OCR can merge columns and labels; scan a short window after "Billed To" for a person-like name.
+            var billedToWindowRegex = new Regex(@"(?is)billed\s*to(?:\s*\(\s*buyer\s*\))?\s*[:\-]?\s*(.{0,350})");
+            var billedToWindowMatch = billedToWindowRegex.Match(text);
+            if (billedToWindowMatch.Success)
+            {
+                var candidate = FindPersonNameCandidate(billedToWindowMatch.Groups[1].Value);
+                if (!string.IsNullOrWhiteSpace(candidate))
+                {
+                    return candidate;
+                }
             }
 
             // FIR layouts often have a plain "Name" row under a complainant section.
             var genericNameRegex = new Regex(@"(?im)^\s*name\s*[:\-]?\s*([A-Za-z][A-Za-z .]{2,80})\s*$");
-            var genericNameMatch = genericNameRegex.Match(text);
-            if (genericNameMatch.Success)
+            foreach (Match genericNameMatch in genericNameRegex.Matches(text))
             {
-                return genericNameMatch.Groups[1].Value.Trim();
+                var candidate = SanitizeExtractedName(genericNameMatch.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            // Last resort: find a person-like full name anywhere in document text.
+            var fallbackCandidate = FindPersonNameCandidate(text);
+            if (!string.IsNullOrWhiteSpace(fallbackCandidate))
+            {
+                return fallbackCandidate;
+            }
+
+            return string.Empty;
+        }
+
+        private static string SanitizeExtractedName(string? rawName)
+        {
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                return string.Empty;
+            }
+
+            var trimmed = rawName.Trim();
+            trimmed = Regex.Replace(trimmed, @"\s+", " ");
+            trimmed = Regex.Replace(trimmed, @"^(?:name(?:\s*of\s*complainant)?|complainant(?:\s*name)?|owner(?:'s)?\s*name|insured\s*name|policy\s*holder)\s*[:\-]?\s*", string.Empty, RegexOptions.IgnoreCase);
+
+            // Strip common trailing field labels that OCR may merge into the same line.
+            var noiseRegex = new Regex(@"\b(?:No\.?|PAN|GSTIN|Reg(?:istration)?(?:\s*No)?\.?|Engine|Chassis|Date)\b", RegexOptions.IgnoreCase);
+            var noiseMatch = noiseRegex.Match(trimmed);
+            if (noiseMatch.Success)
+            {
+                trimmed = trimmed[..noiseMatch.Index].Trim();
+            }
+
+            return trimmed;
+        }
+
+        private static string ExtractFirstPersonLikeLine(string blockText)
+        {
+            if (string.IsNullOrWhiteSpace(blockText))
+            {
+                return string.Empty;
+            }
+
+            var lines = blockText
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => SanitizeExtractedName(l))
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .ToList();
+
+            foreach (var line in lines)
+            {
+                if (IsLikelyPersonName(line))
+                {
+                    return line;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static bool IsLikelyPersonName(string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                return false;
+            }
+
+            if (candidate == candidate.ToLowerInvariant())
+            {
+                return false;
+            }
+
+            if (candidate.Length < 3 || candidate.Length > 80)
+            {
+                return false;
+            }
+
+            // Reject company/dealer/workshop style owner extractions.
+            var companyWords = new[]
+            {
+                "MOTORS", "MOTOR", "AUTO", "WORKSHOP", "GARAGE", "PVT", "LTD", "LLP", "GSTIN", "DEALER", "SHOWROOM", "ENTERPRISES", "TRADERS", "SERVICES", "SERVICE"
+            };
+
+            if (companyWords.Any(w => candidate.Contains(w, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            var nonPersonWords = new[]
+            {
+                "ROAD", "NAGAR", "LANE", "CROSSING", "TEMPLE", "CITY", "STATE", "DISTRICT", "VEHICLE", "BUYER", "SELLER", "INVOICE", "JOB", "CARD",
+                "WENT", "RETRIEVE", "STATES", "REPORTED", "PARKING", "SEARCH", "ENQUIRED", "ENQUIRE", "PREMISES", "DUTY", "SUBMITTED", "ORIGINAL", "DOCUMENTS", "INVESTIGATION",
+                "INCIDENT", "DESCRIPTION", "COMPLAINANT", "DETAILS"
+            };
+
+            if (nonPersonWords.Any(w => candidate.Contains(w, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            // Person names generally have at least two alphabetic tokens.
+            var tokenCount = Regex.Matches(candidate, @"[A-Za-z]{2,}").Count;
+            return tokenCount >= 2;
+        }
+
+        private static string FindPersonNameCandidate(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var personRegex = new Regex(@"\b([A-Z][A-Za-z]{1,}(?:\s+[A-Z][A-Za-z]{1,}){1,3})\b");
+            foreach (Match match in personRegex.Matches(text))
+            {
+                var candidate = SanitizeExtractedName(match.Groups[1].Value);
+                if (IsLikelyPersonName(candidate))
+                {
+                    return candidate;
+                }
             }
 
             return string.Empty;

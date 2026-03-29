@@ -6,6 +6,6 @@ namespace VIMS.Application.Interfaces.Services
     {
         Task<VehicleContextDto?> GetVehicleByIdAsync(int vehicleId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<VehicleContextDto>> GetVehiclesByUserIdAsync(int userId, CancellationToken cancellationToken = default);
-        Task<IReadOnlyList<VehicleContextDto>> GetRecentVehiclesAsync(int take = 50, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<VehicleContextDto>> GetRelevantVehiclesAsync(int take = 10, CancellationToken cancellationToken = default);
     }
 }

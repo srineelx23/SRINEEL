@@ -14,6 +14,13 @@ namespace VIMS.Infrastructure.Services.RAG
 {
     public class RAGService : IRAGService
     {
+        private const int ChunkTargetSize = 180;
+        private const int ChunkMinSize = 120;
+        private const int ChunkOverlapSize = 30;
+        private const float MinSimilarityThreshold = 0.65f;
+        private const int CandidatePoolSize = 12;
+        private const int MaxSelectedRules = 3;
+
         private readonly IServiceProvider _serviceProvider;
         private readonly IVectorStoreService _vectorStoreService;
         private readonly ILogger<RAGService> _logger;
@@ -132,7 +139,8 @@ namespace VIMS.Infrastructure.Services.RAG
         {
             if (string.IsNullOrWhiteSpace(text)) return;
 
-            var rawChunks = SplitIntoOptimalChunks(text, 400); 
+            var ruleType = InferRuleType(sourceId, text);
+            var rawChunks = SplitIntoOptimalChunks(text, ChunkTargetSize);
             var entries = new List<(RagChunkDTO Chunk, float[] Embedding)>();
 
             foreach (var chunkText in rawChunks)
@@ -145,6 +153,8 @@ namespace VIMS.Infrastructure.Services.RAG
                         entries.Add((
                             new RagChunkDTO
                             {
+                                Type = ruleType,
+                                Source = sourceId,
                                 SourceType = sourceType,
                                 SourceId = sourceId,
                                 Text = chunkText,
@@ -165,7 +175,7 @@ namespace VIMS.Infrastructure.Services.RAG
             }
         }
 
-        public async Task<List<string>> RetrieveAsync(string query, CancellationToken cancellationToken = default)
+        public async Task<List<string>> RetrieveAsync(string query, string intentType, CancellationToken cancellationToken = default)
         {
             if (!_isInitialized)
             {
@@ -205,46 +215,296 @@ namespace VIMS.Infrastructure.Services.RAG
             }
 
             var candidates = await _vectorStoreService.GetAllAsync(cancellationToken);
-            var topMatches = vectorSearchService.GetTopMatches(queryVector, candidates, 3);
+            var normalizedIntentType = NormalizeIntentType(intentType);
+            var intentFilteredCandidates = FilterByIntentType(candidates, normalizedIntentType);
 
-            var scoredChunks = topMatches
+            if (intentFilteredCandidates.Count == 0)
+            {
+                _logger.LogInformation(
+                    "RAG retrieval found no chunks for intentType={IntentType}. Query={Query}",
+                    normalizedIntentType,
+                    query);
+                return new List<string>();
+            }
+
+            var topMatches = vectorSearchService.GetTopMatches(queryVector, intentFilteredCandidates, CandidatePoolSize);
+
+            foreach (var match in topMatches)
+            {
+                _logger.LogInformation(
+                    "RAG candidate score={Score:F3} type={Type} source={Source}",
+                    match.Similarity,
+                    match.Type,
+                    match.Source);
+            }
+
+            var highRelevance = topMatches
+                .Where(c => c.Similarity >= MinSimilarityThreshold)
+                .ToList();
+
+            var deduplicated = RemoveDuplicatesAndOverlaps(highRelevance);
+
+            var limited = deduplicated
+                .Take(MaxSelectedRules)
+                .ToList();
+
+            foreach (var selected in limited)
+            {
+                _logger.LogInformation(
+                    "RAG selected rule score={Score:F3} type={Type} source={Source} text={Text}",
+                    selected.Similarity,
+                    selected.Type,
+                    selected.Source,
+                    TruncateForLog(selected.Text, 160));
+            }
+
+            var scoredChunks = limited
                 .Select(c => c.Text)
                 .ToList();
 
             return scoredChunks;
         }
 
-        public Task<List<string>> SearchAsync(string query, CancellationToken cancellationToken = default)
+        public Task<List<string>> SearchAsync(string query, string intentType, CancellationToken cancellationToken = default)
         {
-            return RetrieveAsync(query, cancellationToken);
+            return RetrieveAsync(query, intentType, cancellationToken);
         }
 
         private List<string> SplitIntoOptimalChunks(string text, int targetSize)
         {
             var chunks = new List<string>();
-            var words = text.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            var currentChunk = new List<string>();
-            var currentLength = 0;
-
-            foreach (var word in words)
+            var normalized = text.Replace("\r", " ").Replace("\n", " ").Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
             {
-                if (currentLength + word.Length + 1 > targetSize && currentChunk.Count > 0)
-                {
-                    chunks.Add(string.Join(" ", currentChunk));
-                    currentChunk.Clear();
-                    currentLength = 0;
-                }
-
-                currentChunk.Add(word);
-                currentLength += word.Length + 1;
+                return chunks;
             }
 
-            if (currentChunk.Count > 0)
+            var sentences = normalized
+                .Split(new[] { ". ", "! ", "? ", "; " }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 0)
+                .ToList();
+
+            if (sentences.Count == 0)
             {
-                chunks.Add(string.Join(" ", currentChunk));
+                sentences.Add(normalized);
+            }
+
+            var current = string.Empty;
+            foreach (var sentence in sentences)
+            {
+                var candidate = string.IsNullOrEmpty(current) ? sentence : $"{current}. {sentence}";
+                if (candidate.Length <= targetSize)
+                {
+                    current = candidate;
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(current))
+                {
+                    chunks.Add(current.Trim());
+                }
+
+                if (sentence.Length > targetSize)
+                {
+                    chunks.AddRange(SplitLongSentence(sentence, targetSize));
+                    current = string.Empty;
+                }
+                else
+                {
+                    current = sentence;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(current))
+            {
+                chunks.Add(current.Trim());
+            }
+
+            chunks = ApplyChunkOverlap(chunks, ChunkOverlapSize)
+                .Select(c => c.Trim())
+                .Where(c => c.Length >= Math.Min(ChunkMinSize, targetSize))
+                .ToList();
+
+            if (chunks.Count == 0 && normalized.Length > 0)
+            {
+                chunks.Add(normalized.Length <= targetSize ? normalized : normalized[..targetSize]);
             }
 
             return chunks;
+        }
+
+        private static List<string> SplitLongSentence(string sentence, int targetSize)
+        {
+            var words = sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var parts = new List<string>();
+            var current = new List<string>();
+            var len = 0;
+
+            foreach (var word in words)
+            {
+                if (len + word.Length + 1 > targetSize && current.Count > 0)
+                {
+                    parts.Add(string.Join(" ", current));
+                    current.Clear();
+                    len = 0;
+                }
+
+                current.Add(word);
+                len += word.Length + 1;
+            }
+
+            if (current.Count > 0)
+            {
+                parts.Add(string.Join(" ", current));
+            }
+
+            return parts;
+        }
+
+        private static IReadOnlyList<string> ApplyChunkOverlap(IReadOnlyList<string> chunks, int overlapChars)
+        {
+            if (chunks.Count <= 1 || overlapChars <= 0)
+            {
+                return chunks;
+            }
+
+            var overlapped = new List<string>(chunks.Count);
+            for (var i = 0; i < chunks.Count; i++)
+            {
+                var current = chunks[i];
+                if (i == 0)
+                {
+                    overlapped.Add(current);
+                    continue;
+                }
+
+                var previous = chunks[i - 1];
+                var prefix = previous.Length <= overlapChars
+                    ? previous
+                    : previous[^overlapChars..];
+
+                overlapped.Add($"{prefix} {current}".Trim());
+            }
+
+            return overlapped;
+        }
+
+        private static string InferRuleType(string sourceId, string text)
+        {
+            var source = (sourceId ?? string.Empty).ToLowerInvariant();
+            var content = (text ?? string.Empty).ToLowerInvariant();
+
+            if (source.Contains("claim") || content.Contains("claim")) return "CLAIM";
+            if (source.Contains("referral") || content.Contains("referral") || content.Contains("referrer") || content.Contains("referee")) return "REFERRAL";
+            if (source.Contains("payment") || content.Contains("payment") || content.Contains("premium") || content.Contains("invoice")) return "PAYMENT";
+            if (source.Contains("policy") || content.Contains("policy") || content.Contains("coverage") || content.Contains("eligible")) return "POLICY";
+            return "POLICY";
+        }
+
+        private static string NormalizeIntentType(string intentType)
+        {
+            if (string.IsNullOrWhiteSpace(intentType)) return "MIXED";
+
+            var normalized = intentType.Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "CLAIM" => "CLAIM",
+                "POLICY" => "POLICY",
+                "REFERRAL" => "REFERRAL",
+                "PAYMENT" => "PAYMENT",
+                _ => "MIXED"
+            };
+        }
+
+        private static IReadOnlyList<(RagChunkDTO Chunk, float[] Embedding)> FilterByIntentType(
+            IReadOnlyList<(RagChunkDTO Chunk, float[] Embedding)> candidates,
+            string intentType)
+        {
+            if (intentType == "MIXED")
+            {
+                return candidates;
+            }
+
+            return candidates
+                .Where(c => string.Equals(c.Chunk.Type, intentType, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private static List<RagChunkDTO> RemoveDuplicatesAndOverlaps(IReadOnlyList<RagChunkDTO> matches)
+        {
+            var result = new List<RagChunkDTO>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var match in matches.OrderByDescending(m => m.Similarity))
+            {
+                var normalized = NormalizeText(match.Text);
+                if (normalized.Length == 0 || seen.Contains(normalized))
+                {
+                    continue;
+                }
+
+                var isOverlap = result.Any(existing => IsOverlapping(existing.Text, match.Text));
+                if (isOverlap)
+                {
+                    continue;
+                }
+
+                seen.Add(normalized);
+                result.Add(match);
+            }
+
+            return result;
+        }
+
+        private static bool IsOverlapping(string left, string right)
+        {
+            var a = NormalizeText(left);
+            var b = NormalizeText(right);
+            if (a.Length == 0 || b.Length == 0)
+            {
+                return false;
+            }
+
+            if (a.Contains(b, StringComparison.OrdinalIgnoreCase) || b.Contains(a, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var leftTokens = a.Split(' ', StringSplitOptions.RemoveEmptyEntries).Distinct().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var rightTokens = b.Split(' ', StringSplitOptions.RemoveEmptyEntries).Distinct().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (leftTokens.Count == 0 || rightTokens.Count == 0)
+            {
+                return false;
+            }
+
+            var intersection = leftTokens.Intersect(rightTokens, StringComparer.OrdinalIgnoreCase).Count();
+            var union = leftTokens.Union(rightTokens, StringComparer.OrdinalIgnoreCase).Count();
+            var jaccard = union == 0 ? 0d : (double)intersection / union;
+            return jaccard >= 0.75;
+        }
+
+        private static string NormalizeText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", text
+                .Trim()
+                .ToLowerInvariant()
+                .Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private static string TruncateForLog(string input, int max)
+        {
+            if (string.IsNullOrWhiteSpace(input) || input.Length <= max)
+            {
+                return input;
+            }
+
+            return input[..max] + "...";
         }
 
     }

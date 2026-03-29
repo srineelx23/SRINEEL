@@ -98,6 +98,10 @@ namespace VIMS.Infrastructure.Persistence
                 .WithMany(p => p.Payments)
                 .HasForeignKey(p => p.PolicyId);
 
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.PaymentType)
+                .HasDefaultValue(VIMS.Domain.Enums.PaymentType.Premium);
+
             // ================= REFERRAL/WALLET =================
             modelBuilder.Entity<User>()
                 .HasOne<User>()

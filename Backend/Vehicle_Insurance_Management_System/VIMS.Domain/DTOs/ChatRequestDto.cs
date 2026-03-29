@@ -7,6 +7,8 @@ namespace VIMS.Domain.DTOs
         [Required]
         public string Question { get; set; } = string.Empty;
 
+        public string SessionId { get; set; } = string.Empty;
+
         public List<string> History { get; set; } = new();
     }
 }

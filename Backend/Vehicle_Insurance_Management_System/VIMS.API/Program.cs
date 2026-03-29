@@ -82,8 +82,10 @@ namespace VIMS.API
             builder.Services.AddHostedService<VIMS.API.Services.PolicyExpirationWorker>();
 
             builder.Services.AddScoped<IChatOrchestratorService, ChatOrchestratorService>();
+            builder.Services.AddSingleton<IAdminChatSessionMemoryService, AdminChatSessionMemoryService>();
             builder.Services.AddScoped<IIntentParser, IntentParser>();
             builder.Services.AddScoped<IContextBuilder, ContextBuilder>();
+            builder.Services.AddScoped<IBusinessRuleEvaluatorService, BusinessRuleEvaluatorService>();
             builder.Services.AddScoped<IPromptBuilder, PromptBuilder>();
             builder.Services.AddScoped<ILlmService, LlmRouterService>();
             builder.Services.AddHttpClient<IGeminiLlmProvider, VIMS.Infrastructure.Services.AdminAI.GeminiService>();

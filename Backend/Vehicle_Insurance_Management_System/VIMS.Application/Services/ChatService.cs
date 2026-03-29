@@ -138,7 +138,7 @@ User Question:
         {
             try
             {
-                return await _ragService.RetrieveAsync(query, cancellationToken);
+                return await _ragService.RetrieveAsync(query, "MIXED", cancellationToken);
             }
             catch
             {

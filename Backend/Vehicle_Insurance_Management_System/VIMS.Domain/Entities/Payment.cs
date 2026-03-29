@@ -18,6 +18,7 @@ namespace VIMS.Domain.Entities
         public PaymentStatus Status { get; set; }
         public string? TransactionReference { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
+        public PaymentType PaymentType { get; set; } = PaymentType.Premium;
 
         // Navigation
         public Policy Policy { get; set; } = null!;

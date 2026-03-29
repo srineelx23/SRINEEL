@@ -1139,6 +1139,7 @@ select.form-control~.floating-label {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .meta-label {
@@ -1161,6 +1162,16 @@ select.form-control~.floating-label {
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
+}
+
+/* Allow long plan names to wrap in insured vehicle cards */
+.vehicle-meta .plan-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.25;
 }
 
 /* Overview List (recent items) */
